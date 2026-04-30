@@ -98,6 +98,46 @@ class VesselController extends Controller
     }
 
     /**
+     * Search Vessels
+     *
+     * Fuzzy search for vessels by name, MMSI, or IMO.
+     * Returns up to 20 results, including offline vessels.
+     *
+     * @queryParam q string required The search query. Minimum 2 characters. Example: MAE
+     */
+    public function search(Request $request): JsonResponse
+    {
+        $q = $request->input('q');
+
+        if (empty($q) || strlen($q) < 2) {
+            return response()->json(['data' => []]);
+        }
+
+        $vessels = Vessel::where('name', 'like', "%{$q}%")
+            ->orWhere('mmsi', 'like', "{$q}%")
+            ->orWhere('imo', 'like', "{$q}%")
+            ->orderBy('last_seen_at', 'desc')
+            ->limit(20)
+            ->get(['mmsi', 'imo', 'name', 'last_seen_at', 'lat', 'lng']);
+
+        $formatted = $vessels->map(function ($v) {
+            return [
+                'category' => 'vessel',
+                'mmsi' => (string) $v->mmsi,
+                'imo' => (string) $v->imo,
+                'name' => $v->name,
+                'lat' => (float) $v->lat,
+                'lng' => (float) $v->lng,
+                'last_seen_at' => $v->last_seen_at,
+            ];
+        });
+
+        return response()->json([
+            'data' => $formatted,
+        ]);
+    }
+
+    /**
      * Lookup Vessel by MMSI
      *
      * Retrieve the latest known state, identity, and location for a specific vessel from the SIST database.

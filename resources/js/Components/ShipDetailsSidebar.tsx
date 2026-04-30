@@ -201,6 +201,13 @@ export default function ShipDetailsSidebar({
         history: false,
     });
 
+    const isOffline = useMemo(() => {
+        if (!details?.last_seen_at) return false;
+        const lastSeen = new Date(details.last_seen_at).getTime();
+        const ageHours = (Date.now() - lastSeen) / 3600000;
+        return ageHours > 1;
+    }, [details?.last_seen_at]);
+
     const [lastMmsi, setLastMmsi] = useState<number | null>(null);
 
     const currentMmsi = vessel?.mmsi ?? null;
@@ -553,15 +560,27 @@ export default function ShipDetailsSidebar({
                 </div>
 
                 <div className="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-8">
+                    {isOffline && (
+                        <div className="bg-red-500/10 border border-red-500/50 p-4 mb-4">
+                            <h3 className="text-red-400 font-bold uppercase tracking-widest text-xs mb-1">
+                                Offline / Historical Data Only
+                            </h3>
+                            <p className="text-red-400/80 text-[10px] leading-relaxed">
+                                This vessel has not transmitted AIS data in the last hour. The
+                                status shown is outdated. Historical trajectory analysis remains
+                                available.
+                            </p>
+                        </div>
+                    )}
                     <section
                         aria-labelledby="live-status-section"
                         aria-busy={loading.details}
-                        className={loading.details ? 'animate-pulse opacity-50' : ''}
+                        className={`${loading.details ? 'animate-pulse opacity-50' : ''} ${isOffline ? 'grayscale opacity-60 pointer-events-none' : ''}`}
                     >
                         <SectionTitle
                             id="live-status-section"
                             icon={<FaLocationDot aria-hidden="true" />}
-                            title="Live Status"
+                            title={isOffline ? 'Last Known Status' : 'Live Status'}
                         />
                         <div className="grid grid-cols-2 gap-4 mt-4">
                             <StatusCard
