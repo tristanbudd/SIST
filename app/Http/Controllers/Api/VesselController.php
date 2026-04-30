@@ -98,6 +98,46 @@ class VesselController extends Controller
     }
 
     /**
+     * Search Vessels
+     *
+     * Fuzzy search for vessels by name, MMSI, or IMO.
+     * Returns up to 20 results, including offline vessels.
+     *
+     * @queryParam q string required The search query. Minimum 2 characters. Example: MAE
+     */
+    public function search(Request $request): JsonResponse
+    {
+        $q = $request->input('q');
+
+        if (empty($q) || strlen($q) < 2) {
+            return response()->json(['data' => []]);
+        }
+
+        $vessels = Vessel::where('name', 'like', "%{$q}%")
+            ->orWhere('mmsi', 'like', "{$q}%")
+            ->orWhere('imo', 'like', "{$q}%")
+            ->orderBy('last_seen_at', 'desc')
+            ->limit(20)
+            ->get(['mmsi', 'imo', 'name', 'last_seen_at', 'lat', 'lng']);
+
+        $formatted = $vessels->map(function ($v) {
+            return [
+                'category' => 'vessel',
+                'mmsi' => (string) $v->mmsi,
+                'imo' => (string) $v->imo,
+                'name' => $v->name,
+                'lat' => (float) $v->lat,
+                'lng' => (float) $v->lng,
+                'last_seen_at' => $v->last_seen_at,
+            ];
+        });
+
+        return response()->json([
+            'data' => $formatted,
+        ]);
+    }
+
+    /**
      * Lookup Vessel by MMSI
      *
      * Retrieve the latest known state, identity, and location for a specific vessel from the SIST database.
@@ -195,6 +235,8 @@ class VesselController extends Controller
      * @urlParam mmsi integer required The MMSI of the vessel. Example: 235000123
      *
      * @queryParam hours integer Number of past hours to retrieve. Defaults to 24. Example: 48
+     * @queryParam start string ISO 8601 start timestamp. If provided with end, takes precedence over hours. Example: 2026-04-01T00:00:00Z
+     * @queryParam end string ISO 8601 end timestamp. If provided with start, takes precedence over hours. Example: 2026-04-02T00:00:00Z
      *
      * @response 200 scenario="History found" {
      * "mmsi": 235000123,
@@ -224,11 +266,23 @@ class VesselController extends Controller
             ], 404);
         }
 
-        $hours = $request->input('hours', 24);
+        $start = $request->input('start');
+        $end = $request->input('end');
 
-        $positions = VesselPosition::where('mmsi', $mmsi)
-            ->where('recorded_at', '>=', now()->subHours($hours))
-            ->orderBy('recorded_at', 'desc')
+        $query = VesselPosition::where('mmsi', $mmsi);
+
+        if ($start && $end) {
+            $query->whereBetween('recorded_at', [$start, $end]);
+        } elseif ($start) {
+            $query->where('recorded_at', '>=', $start);
+        } elseif ($end) {
+            $query->where('recorded_at', '<=', $end);
+        } else {
+            $hours = $request->input('hours', 24);
+            $query->where('recorded_at', '>=', now()->subHours($hours));
+        }
+
+        $positions = $query->orderBy('recorded_at', 'desc')
             ->get([
                 'mmsi',
                 'lat',

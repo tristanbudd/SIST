@@ -173,6 +173,16 @@ export default function ShipDetailsSidebar({
     const [sanctions, setSanctions] = useState<SanctionsData | null>(null);
     const [history, setHistory] = useState<HistoryPosition[]>([]);
     const [historyHours, setHistoryHours] = useState(1);
+    const [historyMode, setHistoryMode] = useState<'hours' | 'window'>('hours');
+    const [historyStart, setHistoryStart] = useState<string>(() => {
+        const d = new Date();
+        d.setHours(d.getHours() - 24);
+        return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+    });
+    const [historyEnd, setHistoryEnd] = useState<string>(() => {
+        const d = new Date();
+        return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+    });
     const [waypointsLimit, setWaypointsLimit] = useState(10);
     const [hasEnvError, setHasEnvError] = useState(false);
     const [hasSanctionsError, setHasSanctionsError] = useState(false);
@@ -190,6 +200,21 @@ export default function ShipDetailsSidebar({
         sanctions: false,
         history: false,
     });
+
+    const [isOffline, setIsOffline] = useState(false);
+
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            if (!details || !details.last_seen_at) {
+                setIsOffline(false);
+                return;
+            }
+            const lastSeen = new Date(details.last_seen_at).getTime();
+            const ageHours = (Date.now() - lastSeen) / 3600000;
+            setIsOffline(ageHours > 1);
+        }, 0);
+        return () => clearTimeout(timer);
+    }, [details]);
 
     const [lastMmsi, setLastMmsi] = useState<number | null>(null);
 
@@ -216,9 +241,24 @@ export default function ShipDetailsSidebar({
         }
     }
 
-    const [lastHistoryHours, setLastHistoryHours] = useState(historyHours);
-    if (historyHours !== lastHistoryHours) {
-        setLastHistoryHours(historyHours);
+    const [lastHistoryParams, setLastHistoryParams] = useState({
+        mode: historyMode,
+        hours: historyHours,
+        start: historyStart,
+        end: historyEnd,
+    });
+    if (
+        historyMode !== lastHistoryParams.mode ||
+        (historyMode === 'hours' && historyHours !== lastHistoryParams.hours) ||
+        (historyMode === 'window' &&
+            (historyStart !== lastHistoryParams.start || historyEnd !== lastHistoryParams.end))
+    ) {
+        setLastHistoryParams({
+            mode: historyMode,
+            hours: historyHours,
+            start: historyStart,
+            end: historyEnd,
+        });
         setLoading((prev) => ({ ...prev, history: true }));
     }
 
@@ -299,12 +339,15 @@ export default function ShipDetailsSidebar({
             }
 
             try {
-                const res = await axios.get(
-                    `https://sist.tristanbudd.com/api/v1/vessels/${mmsi}/history?hours=${historyHours}`,
-                    {
-                        signal,
-                    }
-                );
+                let url = `https://sist.tristanbudd.com/api/v1/vessels/${mmsi}/history`;
+                if (historyMode === 'window' && historyStart && historyEnd) {
+                    const startUtc = new Date(historyStart).toISOString();
+                    const endUtc = new Date(historyEnd).toISOString();
+                    url += `?start=${encodeURIComponent(startUtc)}&end=${encodeURIComponent(endUtc)}`;
+                } else {
+                    url += `?hours=${historyHours}`;
+                }
+                const res = await axios.get(url, { signal });
                 let data = res.data.history || [];
 
                 // Synchronizes the historical breadcrumb trail with the live vessel details
@@ -349,7 +392,7 @@ export default function ShipDetailsSidebar({
                 }
             }
         },
-        [historyHours, onHistoryUpdate]
+        [historyMode, historyHours, historyStart, historyEnd, onHistoryUpdate]
     );
 
     const generatedLinks = useMemo<ExternalLink[]>(() => {
@@ -525,15 +568,27 @@ export default function ShipDetailsSidebar({
                 </div>
 
                 <div className="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-8">
+                    {isOffline && (
+                        <div className="bg-red-500/10 border border-red-500/50 p-4 mb-4">
+                            <h3 className="text-red-400 font-bold uppercase tracking-widest text-xs mb-1">
+                                Offline / Historical Data Only
+                            </h3>
+                            <p className="text-red-400/80 text-[10px] leading-relaxed">
+                                This vessel has not transmitted AIS data in the last hour. The
+                                status shown is outdated. Historical trajectory analysis remains
+                                available.
+                            </p>
+                        </div>
+                    )}
                     <section
                         aria-labelledby="live-status-section"
                         aria-busy={loading.details}
-                        className={loading.details ? 'animate-pulse opacity-50' : ''}
+                        className={`${loading.details ? 'animate-pulse opacity-50' : ''} ${isOffline ? 'grayscale opacity-60 pointer-events-none' : ''}`}
                     >
                         <SectionTitle
                             id="live-status-section"
                             icon={<FaLocationDot aria-hidden="true" />}
-                            title="Live Status"
+                            title={isOffline ? 'Last Known Status' : 'Live Status'}
                         />
                         <div className="grid grid-cols-2 gap-4 mt-4">
                             <StatusCard
@@ -924,31 +979,83 @@ export default function ShipDetailsSidebar({
                                             </button>
                                         </div>
 
-                                        <div className="space-y-2 pt-4 border-t border-white/5">
+                                        <div className="space-y-3 pt-4 border-t border-white/5">
                                             <div className="flex justify-between items-center">
                                                 <span className="text-[10px] text-zinc-500 uppercase font-bold tracking-tight">
                                                     History Window
                                                 </span>
-                                                <span className="text-[10px] text-zinc-200 font-mono">
-                                                    {historyHours} Hours
-                                                </span>
+                                                <div className="flex items-center bg-zinc-900 border border-white/10 rounded-sm overflow-hidden">
+                                                    <button
+                                                        onClick={() => setHistoryMode('hours')}
+                                                        className={`px-2 py-1 text-[9px] font-bold uppercase tracking-widest transition-colors ${historyMode === 'hours' ? 'bg-zinc-700 text-white' : 'text-zinc-500 hover:text-zinc-300'}`}
+                                                    >
+                                                        Recent
+                                                    </button>
+                                                    <button
+                                                        onClick={() => setHistoryMode('window')}
+                                                        className={`px-2 py-1 text-[9px] font-bold uppercase tracking-widest transition-colors ${historyMode === 'window' ? 'bg-zinc-700 text-white' : 'text-zinc-500 hover:text-zinc-300'}`}
+                                                    >
+                                                        Custom
+                                                    </button>
+                                                </div>
                                             </div>
-                                            <input
-                                                type="range"
-                                                min="1"
-                                                max="168"
-                                                step="1"
-                                                value={historyHours}
-                                                onChange={(e) =>
-                                                    setHistoryHours(parseInt(e.target.value))
-                                                }
-                                                className="w-full h-1 bg-zinc-800 appearance-none cursor-pointer accent-white"
-                                            />
-                                            <div className="flex justify-between text-[8px] text-zinc-600 font-black uppercase tracking-widest">
-                                                <span>1h</span>
-                                                <span>24h</span>
-                                                <span>7d</span>
-                                            </div>
+
+                                            {historyMode === 'hours' ? (
+                                                <div className="space-y-2">
+                                                    <div className="flex justify-end">
+                                                        <span className="text-[10px] text-zinc-200 font-mono">
+                                                            {historyHours} Hours
+                                                        </span>
+                                                    </div>
+                                                    <input
+                                                        type="range"
+                                                        min="1"
+                                                        max="168"
+                                                        step="1"
+                                                        value={historyHours}
+                                                        onChange={(e) =>
+                                                            setHistoryHours(
+                                                                parseInt(e.target.value)
+                                                            )
+                                                        }
+                                                        className="w-full h-1 bg-zinc-800 appearance-none cursor-pointer accent-white"
+                                                    />
+                                                    <div className="flex justify-between text-[8px] text-zinc-600 font-black uppercase tracking-widest">
+                                                        <span>1h</span>
+                                                        <span>24h</span>
+                                                        <span>7d</span>
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <div className="grid grid-cols-2 gap-2">
+                                                    <div className="flex flex-col gap-1">
+                                                        <span className="text-[9px] text-zinc-500 uppercase font-bold">
+                                                            Start
+                                                        </span>
+                                                        <input
+                                                            type="datetime-local"
+                                                            value={historyStart}
+                                                            onChange={(e) =>
+                                                                setHistoryStart(e.target.value)
+                                                            }
+                                                            className="bg-zinc-900 border border-white/10 text-white text-[10px] p-1.5 focus:outline-none focus:border-zinc-500 font-mono custom-datetime-picker"
+                                                        />
+                                                    </div>
+                                                    <div className="flex flex-col gap-1">
+                                                        <span className="text-[9px] text-zinc-500 uppercase font-bold">
+                                                            End
+                                                        </span>
+                                                        <input
+                                                            type="datetime-local"
+                                                            value={historyEnd}
+                                                            onChange={(e) =>
+                                                                setHistoryEnd(e.target.value)
+                                                            }
+                                                            className="bg-zinc-900 border border-white/10 text-white text-[10px] p-1.5 focus:outline-none focus:border-zinc-500 font-mono custom-datetime-picker"
+                                                        />
+                                                    </div>
+                                                </div>
+                                            )}
                                         </div>
 
                                         {history.length > 0 && (

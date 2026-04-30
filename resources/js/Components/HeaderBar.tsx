@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
+import axios from 'axios';
 import portsGeoJson from '../../data/ports.json';
 import countriesJson from '../../data/countries.json';
 import citiesJson from '../../data/cities.json';
@@ -12,6 +13,8 @@ interface Vessel {
     category: 'vessel';
     lat: number;
     lng: number;
+    last_seen_at?: string;
+    isOffline?: boolean;
 }
 
 interface Port {
@@ -245,6 +248,62 @@ export default function HeaderBar({
     const isSearchEmpty = !activeQuery.trim();
     const hasRecents = recentSearches.length > 0;
 
+    const [remoteVessels, setRemoteVessels] = useState<Vessel[]>([]);
+    const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    useEffect(() => {
+        if (isSearchEmpty || activeQuery.trim().length < 2) {
+            const clearTimer = setTimeout(() => setRemoteVessels([]), 0);
+            return () => clearTimeout(clearTimer);
+        }
+
+        if (searchTimeoutRef.current) {
+            clearTimeout(searchTimeoutRef.current);
+        }
+
+        searchTimeoutRef.current = setTimeout(async () => {
+            try {
+                const res = await axios.get('https://sist.tristanbudd.com/api/v1/vessels/search', {
+                    params: { q: activeQuery.trim() },
+                });
+
+                const fetched = res.data.data || [];
+                const parsed: Vessel[] = fetched.map(
+                    (v: {
+                        mmsi: string;
+                        imo: string;
+                        name: string;
+                        lat: number;
+                        lng: number;
+                        last_seen_at: string;
+                    }) => {
+                        const lastSeen = new Date(v.last_seen_at).getTime();
+                        const ageHours = (Date.now() - lastSeen) / 3600000;
+                        return {
+                            category: 'vessel',
+                            name: v.name || 'UNKNOWN',
+                            mmsi: String(v.mmsi),
+                            imo: String(v.imo || ''),
+                            lat: v.lat,
+                            lng: v.lng,
+                            last_seen_at: v.last_seen_at,
+                            isOffline: ageHours > 1,
+                        };
+                    }
+                );
+                setRemoteVessels(parsed);
+            } catch (err) {
+                console.error('Failed to search remote vessels', err);
+            }
+        }, 300);
+
+        return () => {
+            if (searchTimeoutRef.current) {
+                clearTimeout(searchTimeoutRef.current);
+            }
+        };
+    }, [activeQuery, isSearchEmpty]);
+
     useEffect(() => {
         if (selectedIndex >= 0 && scrollContainerRef.current) {
             const selectedElement =
@@ -275,15 +334,20 @@ export default function HeaderBar({
             lat: v.lat,
             lng: v.lng,
         }));
+
+        const liveMmsis = new Set(liveVessels.map((v) => v.mmsi));
+        const mergedRemoteVessels = remoteVessels.filter((v) => !liveMmsis.has(v.mmsi));
+
         return [
             ...liveVessels,
+            ...mergedRemoteVessels,
             ...WORLD_PORTS,
             ...WORLD_COUNTRIES,
             ...WORLD_CITIES,
             ...WORLD_CONTINENTS,
             ...WORLD_OCEANS,
         ];
-    }, [trackedVessels]);
+    }, [trackedVessels, remoteVessels]);
 
     const suggestions = useMemo(() => {
         const q = activeQuery.toUpperCase().trim();
@@ -665,8 +729,16 @@ export default function HeaderBar({
                                                     className={`w-3 h-3 ${isSelected ? 'text-white' : 'text-zinc-500'}`}
                                                 />
                                                 <div className="flex flex-col">
-                                                    <span className="text-white text-[11px] font-bold">
+                                                    <span
+                                                        className={`text-[11px] font-bold ${item.category === 'vessel' && item.isOffline ? 'text-zinc-400' : 'text-white'}`}
+                                                    >
                                                         {item.name}
+                                                        {item.category === 'vessel' &&
+                                                            item.isOffline && (
+                                                                <span className="ml-2 inline-flex items-center px-1.5 py-0.5 text-[8px] font-black uppercase tracking-widest bg-zinc-800/50 border border-zinc-700/50 text-zinc-500 rounded-sm">
+                                                                    Offline
+                                                                </span>
+                                                            )}
                                                     </span>
                                                     <span
                                                         className={`text-[8px] font-mono uppercase ${isSelected ? 'text-zinc-300' : 'text-zinc-500'}`}
@@ -780,8 +852,16 @@ export default function HeaderBar({
                                                         className={`w-3 h-3 ${isSelected ? 'text-white' : 'text-zinc-500'}`}
                                                     />
                                                     <div className="flex flex-col">
-                                                        <span className="text-white text-[11px] font-bold">
+                                                        <span
+                                                            className={`text-[11px] font-bold ${item.category === 'vessel' && item.isOffline ? 'text-zinc-400' : 'text-white'}`}
+                                                        >
                                                             {item.name}
+                                                            {item.category === 'vessel' &&
+                                                                item.isOffline && (
+                                                                    <span className="ml-2 inline-flex items-center px-1.5 py-0.5 text-[8px] font-black uppercase tracking-widest bg-zinc-800/50 border border-zinc-700/50 text-zinc-500 rounded-sm">
+                                                                        Offline
+                                                                    </span>
+                                                                )}
                                                         </span>
                                                         <span
                                                             className={`text-[9px] font-mono uppercase ${isSelected ? 'text-zinc-300' : 'text-zinc-500'}`}
