@@ -638,7 +638,7 @@ export default function ShipDetailsSidebar({
                             />
                             <StatusCard
                                 label="Speed"
-                                value={loading.details ? '...' : `${details?.speed || '12.4'} kn`}
+                                value={loading.details ? '...' : `${details?.speed ?? '0'} kn`}
                                 icon={<FaGaugeHigh className="text-zinc-500" />}
                             />
                             <StatusCard
@@ -646,13 +646,13 @@ export default function ShipDetailsSidebar({
                                 value={
                                     loading.details
                                         ? '...'
-                                        : `${details?.course || vessel.course || '0'}°`
+                                        : `${details?.course ?? vessel.course ?? '0'}°`
                                 }
                                 icon={<FaCompass className="text-zinc-500" />}
                             />
                             <StatusCard
                                 label="Heading"
-                                value={loading.details ? '...' : `${details?.heading || 'N/A'}°`}
+                                value={loading.details ? '...' : `${details?.heading ?? 'N/A'}°`}
                                 icon={<FaLocationArrow className="text-zinc-500" />}
                             />
                         </div>
