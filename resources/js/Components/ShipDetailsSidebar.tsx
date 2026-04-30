@@ -201,12 +201,17 @@ export default function ShipDetailsSidebar({
         history: false,
     });
 
-    const isOffline = useMemo(() => {
-        if (!details?.last_seen_at) return false;
+    const [isOffline, setIsOffline] = useState(false);
+
+    useEffect(() => {
+        if (!details || !details.last_seen_at) {
+            setIsOffline(false);
+            return;
+        }
         const lastSeen = new Date(details.last_seen_at).getTime();
         const ageHours = (Date.now() - lastSeen) / 3600000;
-        return ageHours > 1;
-    }, [details?.last_seen_at]);
+        setIsOffline(ageHours > 1);
+    }, [details]);
 
     const [lastMmsi, setLastMmsi] = useState<number | null>(null);
 
