@@ -195,6 +195,8 @@ class VesselController extends Controller
      * @urlParam mmsi integer required The MMSI of the vessel. Example: 235000123
      *
      * @queryParam hours integer Number of past hours to retrieve. Defaults to 24. Example: 48
+     * @queryParam start string ISO 8601 start timestamp. If provided with end, takes precedence over hours. Example: 2026-04-01T00:00:00Z
+     * @queryParam end string ISO 8601 end timestamp. If provided with start, takes precedence over hours. Example: 2026-04-02T00:00:00Z
      *
      * @response 200 scenario="History found" {
      * "mmsi": 235000123,
@@ -224,11 +226,23 @@ class VesselController extends Controller
             ], 404);
         }
 
-        $hours = $request->input('hours', 24);
+        $start = $request->input('start');
+        $end = $request->input('end');
 
-        $positions = VesselPosition::where('mmsi', $mmsi)
-            ->where('recorded_at', '>=', now()->subHours($hours))
-            ->orderBy('recorded_at', 'desc')
+        $query = VesselPosition::where('mmsi', $mmsi);
+
+        if ($start && $end) {
+            $query->whereBetween('recorded_at', [$start, $end]);
+        } elseif ($start) {
+            $query->where('recorded_at', '>=', $start);
+        } elseif ($end) {
+            $query->where('recorded_at', '<=', $end);
+        } else {
+            $hours = $request->input('hours', 24);
+            $query->where('recorded_at', '>=', now()->subHours($hours));
+        }
+
+        $positions = $query->orderBy('recorded_at', 'desc')
             ->get([
                 'mmsi',
                 'lat',
