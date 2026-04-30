@@ -23,12 +23,20 @@ SIST provides a powerful interface for tracking, analysing, and flagging vessel 
 
 The platform is built with a Laravel backend and a React + Inertia.js frontend, offering a fast, responsive, and scalable architecture for real-time maritime intelligence.
 
-It aims to support:
+It currently supports:
 
-- Monitoring vessel movement and behaviour.
-- Detecting anomalies and suspicious activity.
+- Monitoring vessel movement and behaviour in real time.
+- Detecting anomalies and suspicious activity through external data source integrations.
 - Visualising maritime data in a clear, actionable way.
 - Providing a foundation for further intelligence tooling.
+
+### System Disclosures
+
+**AIS Coverage Limits** - SIST's AIS tracking is subject to terrestrial and satellite reception limits. Coverage is not 100% global, and vessel data may experience latency or intermittent gaps depending on region.
+
+**Data Integrity** - Information is aggregated from public, open-source maritime feeds. SIST provides this for tracking and research purposes, but absolute data integrity depends on external source accuracy.
+
+**Developmental Status** - SIST is a new platform undergoing active testing. Features, analytics, and data accuracy are currently under evaluation.
 
 ---
 
@@ -42,13 +50,19 @@ Local docs: Available under `http://127.0.0.1:8000/docs` or `http://127.0.0.1:80
 
 ## Features
 
-[TO BE COMPLETED]
+### Completed
 
----
+- Real Time Fleet Tracking: View active vessels on a dynamic, high performance map.
+- Hybrid Search System: Search for active and offline vessels with a highly responsive search bar.
+- Detailed Vessel Profiles: Access deep insights into a ship's current status, voyage details, and historical route data.
+- Sanctions Compliance Verification: Automatically check vessel identifiers against official sanction lists and dark fleet networks.
+- Historical Trajectory Analysis: Select custom time windows to analyse past movement and waypoints.
 
-## Preview
+### Planned Updates
 
-[TO BE COMPLETED]
+- Suspicion Scoring: Vessel analysis to assess a proprietary suspicion score and track strange behaviour. Will consider implementing AI to assist with anomaly detection.
+- Ships of Interest Panel: A dedicated interface for managing flagged or closely watched vessels.
+- Analysis Tooling: Additional slide out panels on the left to provide further map and analysis capabilities.
 
 ---
 
