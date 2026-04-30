@@ -204,13 +204,16 @@ export default function ShipDetailsSidebar({
     const [isOffline, setIsOffline] = useState(false);
 
     useEffect(() => {
-        if (!details || !details.last_seen_at) {
-            setIsOffline(false);
-            return;
-        }
-        const lastSeen = new Date(details.last_seen_at).getTime();
-        const ageHours = (Date.now() - lastSeen) / 3600000;
-        setIsOffline(ageHours > 1);
+        const timer = setTimeout(() => {
+            if (!details || !details.last_seen_at) {
+                setIsOffline(false);
+                return;
+            }
+            const lastSeen = new Date(details.last_seen_at).getTime();
+            const ageHours = (Date.now() - lastSeen) / 3600000;
+            setIsOffline(ageHours > 1);
+        }, 0);
+        return () => clearTimeout(timer);
     }, [details]);
 
     const [lastMmsi, setLastMmsi] = useState<number | null>(null);
