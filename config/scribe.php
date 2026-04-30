@@ -18,13 +18,14 @@ return [
 SIST (Ship Intelligence & Suspicion Tracker) provides maritime situational awareness APIs built on AIS vessel data.
 
 Use these endpoints to:
-- Check platform health and API status
-- Retrieve live and historical vessel intelligence
-- Enrich vessel context with weather and marine condition snapshots
-
-(TO BE EXPANDED)
+* Check platform health and API status
+* Retrieve live and historical vessel intelligence
+* Enrich vessel context with weather and marine condition snapshots
+* Check vessel sanctions status and network risk
 
 All responses are JSON and designed for dashboard, alerting, and analytics workflows.
+
+Rate limiting is enforced at 300 requests per minute by default. Sanctions queries are internally cached to prevent upstream provider limits.
 TEXT,
 
     // Text to place in the "Introduction" section, right after the `description`. Markdown and HTML are supported.

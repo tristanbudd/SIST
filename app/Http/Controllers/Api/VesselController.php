@@ -104,6 +104,20 @@ class VesselController extends Controller
      * Returns up to 20 results, including offline vessels.
      *
      * @queryParam q string required The search query. Minimum 2 characters. Example: MAE
+     *
+     * @response 200 scenario="Search results" {
+     * "data": [
+     * {
+     * "category": "vessel",
+     * "mmsi": "219225000",
+     * "imo": "9326093",
+     * "name": "MAERSK NORFOLK",
+     * "lat": 51.9542,
+     * "lng": 1.2589,
+     * "last_seen_at": "2026-04-13T12:20:07.000000Z"
+     * }
+     * ]
+     * }
      */
     public function search(Request $request): JsonResponse
     {
@@ -332,9 +346,9 @@ class VesselController extends Controller
     /**
      * Check Sanctions Status
      *
-     * Check if a vessel is listed on international sanctions lists using multiple sources:
-     * - sanctions.network (OFAC SDN, UN, EU sanctions lists)
-     * - FleetLeaks (sanctioned vessel map data)
+     * Check if a vessel is listed on international sanctions lists or associated with restricted entities using multiple data sources:
+     * - Sanctions.network: Checks against official OFAC SDN, UN, and EU sanctions lists to identify globally sanctioned entities.
+     * - FleetLeaks: Queries network analysis and dark fleet maps to identify vessels involved in irregular or unrecorded activities.
      *
      * @urlParam mmsi integer required The MMSI of the vessel. Example: 219225000
      *
