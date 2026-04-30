@@ -108,6 +108,7 @@ export default function Index() {
                 zoom={mapViewState.zoom}
                 onFleetUpdate={handleFleetUpdate}
                 selectedMmsi={selectedVessel?.mmsi ?? null}
+                selectedVessel={selectedVessel}
                 onVesselSelect={handleSelectVessel}
                 onClusterZoomNotice={handleClusterZoomNotice}
                 historyPositions={historyData}
