@@ -467,7 +467,17 @@ export default function HeaderBar({
                 const originalVessel = trackedVessels.find(
                     (v: MapVessel) => String(v.mmsi) === item.mmsi
                 );
-                onVesselSelect(originalVessel || null);
+                onVesselSelect(
+                    originalVessel ||
+                        ({
+                            mmsi: parseInt(item.mmsi),
+                            imo: item.imo ? parseInt(item.imo) : undefined,
+                            name: item.name,
+                            lat: item.lat,
+                            lng: item.lng,
+                            course: 0,
+                        } as MapVessel)
+                );
             }
         }
 

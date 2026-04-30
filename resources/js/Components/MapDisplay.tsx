@@ -110,6 +110,7 @@ function normalizeVessels(raw: Vessel[]): Vessel[] {
 function FleetLayer({
     onUpdate,
     selectedMmsi,
+    selectedVessel,
     onVesselSelect,
     onClusterZoomNotice,
     showAll,
@@ -123,6 +124,7 @@ function FleetLayer({
         currentArea: string;
     }) => void;
     selectedMmsi: number | null;
+    selectedVessel?: Vessel | null;
     onVesselSelect?: (vessel: Vessel | null) => void;
     onClusterZoomNotice?: () => void;
     showAll?: boolean;
@@ -614,6 +616,40 @@ function FleetLayer({
                         }}
                     />
                 ))}
+            {selectedVessel && !visibleVessels.some((v) => v.mmsi === selectedMmsi) && (
+                <Marker
+                    key={`offline-${selectedVessel.mmsi}`}
+                    position={[selectedVessel.lat, selectedVessel.lng]}
+                    interactive={true}
+                    bubblingMouseEvents={false}
+                    riseOnHover={true}
+                    icon={createVesselIcon(selectedVessel.course || 0, false, true)}
+                    eventHandlers={{
+                        mousedown: (e) =>
+                            handleMarkerClick(
+                                {
+                                    ...selectedVessel,
+                                    isCluster: false,
+                                    clusterCount: 1,
+                                    sumLat: selectedVessel.lat,
+                                    sumLng: selectedVessel.lng,
+                                } as ClusteredVessel,
+                                e
+                            ),
+                        click: (e) =>
+                            handleMarkerClick(
+                                {
+                                    ...selectedVessel,
+                                    isCluster: false,
+                                    clusterCount: 1,
+                                    sumLat: selectedVessel.lat,
+                                    sumLng: selectedVessel.lng,
+                                } as ClusteredVessel,
+                                e
+                            ),
+                    }}
+                />
+            )}
         </>
     );
 }
@@ -1039,6 +1075,7 @@ interface MapDisplayProps {
         currentArea: string;
     }) => void;
     selectedMmsi: number | null;
+    selectedVessel?: Vessel | null;
     onVesselSelect?: (vessel: Vessel | null) => void;
     onClusterZoomNotice?: () => void;
     historyPositions?: HistoryPosition[];
@@ -1053,6 +1090,7 @@ export default function MapDisplay({
     zoom = 3,
     onFleetUpdate,
     selectedMmsi,
+    selectedVessel = null,
     onVesselSelect,
     onClusterZoomNotice,
     historyPositions = [],
@@ -1087,6 +1125,7 @@ export default function MapDisplay({
                 <FleetLayer
                     onUpdate={onFleetUpdate}
                     selectedMmsi={selectedMmsi}
+                    selectedVessel={selectedVessel}
                     onVesselSelect={onVesselSelect}
                     onClusterZoomNotice={onClusterZoomNotice}
                     showAll={showVessels}
