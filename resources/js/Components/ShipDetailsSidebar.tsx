@@ -723,7 +723,7 @@ export default function ShipDetailsSidebar({
                                     >
                                         <div className="flex items-center gap-3 min-w-0">
                                             {loading.sanctions ? (
-                                                <div className="w-8 h-8 bg-zinc-800 animate-pulse" />
+                                                <div className="w-8 h-8 bg-zinc-800 animate-spin rounded-full border-2 border-t-zinc-400 border-zinc-800" />
                                             ) : hasSanctionsError ? (
                                                 <FaCircleExclamation className="text-amber-500 w-8 h-8 shrink-0" />
                                             ) : isOfficiallySanctioned ? (
