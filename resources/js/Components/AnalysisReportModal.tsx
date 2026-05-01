@@ -13,6 +13,13 @@ import {
     FaBuildingColumns,
     FaPassport,
     FaArrowUpRightFromSquare,
+    FaRoute,
+    FaMagnifyingGlass,
+    FaGaugeHigh,
+    FaCompass,
+    FaArrowTrendUp,
+    FaChevronLeft,
+    FaChevronRight,
 } from 'react-icons/fa6';
 import {
     Vessel,
@@ -21,6 +28,7 @@ import {
     SanctionRecord,
     WeatherData,
     TideData,
+    HistoryPosition,
 } from './ShipDetailsSidebar';
 
 interface AnalysisReportModalProps {
@@ -31,7 +39,15 @@ interface AnalysisReportModalProps {
     sanctions: SanctionsData | null;
     weather: WeatherData | null;
     tides: TideData | null;
+    history: HistoryPosition[];
     isOffline: boolean;
+    loading?: {
+        details: boolean;
+        weather: boolean;
+        tides: boolean;
+        sanctions: boolean;
+        history: boolean;
+    };
 }
 
 const SANCTIONER_MAPPING: Record<string, { name: string; body: string }> = {
@@ -146,7 +162,7 @@ const SanctionRecordCard = ({
     );
 };
 
-type TabType = 'overview' | 'particulars' | 'sanctions' | 'environment' | 'activity';
+type TabType = 'overview' | 'particulars' | 'sanctions' | 'environment' | 'waypoints' | 'activity';
 
 function formatPositionAge(seconds: number | undefined): string {
     if (seconds === undefined) return 'N/A';
@@ -230,6 +246,20 @@ const DataRow = ({
     </div>
 );
 
+function getDistance(lat1: number, lon1: number, lat2: number, lon2: number) {
+    const R = 6371; // Radius of the earth in km
+    const dLat = (lat2 - lat1) * (Math.PI / 180);
+    const dLon = (lon2 - lon1) * (Math.PI / 180);
+    const a =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(lat1 * (Math.PI / 180)) *
+            Math.cos(lat2 * (Math.PI / 180)) *
+            Math.sin(dLon / 2) *
+            Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+}
+
 export default function AnalysisReportModal({
     isOpen,
     onClose,
@@ -238,13 +268,118 @@ export default function AnalysisReportModal({
     sanctions,
     weather,
     tides,
+    history = [],
     isOffline = false,
+    loading = {
+        details: false,
+        weather: false,
+        tides: false,
+        sanctions: false,
+        history: false,
+    },
 }: AnalysisReportModalProps) {
     const [activeTab, setActiveTab] = useState<TabType>('overview');
     const [animateIn, setAnimateIn] = useState(false);
+    const [waypointFilters, setWaypointFilters] = useState({
+        search: '',
+        timeRange: 'all' as 'all' | '1h' | '6h' | '24h' | 'custom',
+        movementType: 'all' as 'all' | 'moving' | 'stationary',
+        relativeValue: '',
+        relativeUnit: 'h' as 'm' | 'h' | 'd',
+        customStart: '',
+        customEnd: '',
+    });
+    const [currentPage, setCurrentPage] = useState(1);
+    const pageSize = 10;
+
+    const handleFilterUpdate = (update: Partial<typeof waypointFilters>) => {
+        setWaypointFilters((prev) => ({ ...prev, ...update }));
+        setCurrentPage(1);
+    };
 
     const weatherContainerRef = useRef<HTMLDivElement>(null);
     const tideContainerRef = useRef<HTMLDivElement>(null);
+
+    const filteredHistory = useMemo(() => {
+        const now = new Date().getTime();
+        return history.filter((pos) => {
+            const speed = Number(pos.speed);
+            const recordedAt = new Date(pos.recorded_at).getTime();
+
+            // Movement Type Filter
+            if (waypointFilters.movementType === 'moving' && speed < 0.5) return false;
+            if (waypointFilters.movementType === 'stationary' && speed >= 0.5) return false;
+
+            // Time Range Filter
+            if (waypointFilters.timeRange === '1h' && now - recordedAt > 3600000) return false;
+            if (waypointFilters.timeRange === '6h' && now - recordedAt > 21600000) return false;
+            if (waypointFilters.timeRange === '24h' && now - recordedAt > 86400000) return false;
+
+            if (waypointFilters.timeRange === 'custom') {
+                if (waypointFilters.relativeValue) {
+                    const val = parseFloat(waypointFilters.relativeValue);
+                    if (!isNaN(val)) {
+                        const ms =
+                            waypointFilters.relativeUnit === 'm'
+                                ? val * 60000
+                                : waypointFilters.relativeUnit === 'h'
+                                  ? val * 3600000
+                                  : val * 86400000;
+                        if (now - recordedAt > ms) return false;
+                    }
+                } else {
+                    if (
+                        waypointFilters.customStart &&
+                        recordedAt < new Date(waypointFilters.customStart).getTime()
+                    )
+                        return false;
+                    if (
+                        waypointFilters.customEnd &&
+                        recordedAt > new Date(waypointFilters.customEnd).getTime()
+                    )
+                        return false;
+                }
+            }
+
+            // Search filter
+            const matchesSearch =
+                waypointFilters.search === '' ||
+                new Date(pos.recorded_at)
+                    .toLocaleString('en-GB')
+                    .toLowerCase()
+                    .includes(waypointFilters.search.toLowerCase()) ||
+                pos.lat.toString().includes(waypointFilters.search) ||
+                pos.lng.toString().includes(waypointFilters.search);
+
+            return matchesSearch;
+        });
+    }, [history, waypointFilters]);
+
+    const paginatedHistory = useMemo(() => {
+        const start = (currentPage - 1) * pageSize;
+        return filteredHistory.slice(start, start + pageSize);
+    }, [filteredHistory, currentPage]);
+
+    const totalPages = Math.ceil(filteredHistory.length / pageSize);
+
+    const stats = useMemo(() => {
+        if (history.length === 0) return { avgSpeed: 0, maxSpeed: 0, totalDist: 0 };
+        const speeds = history.map((p) => Number(p.speed));
+        const avgSpeed = speeds.reduce((a, b) => a + b, 0) / speeds.length;
+        const maxSpeed = Math.max(...speeds);
+
+        let totalDist = 0;
+        for (let i = 0; i < history.length - 1; i++) {
+            totalDist += getDistance(
+                Number(history[i].lat),
+                Number(history[i].lng),
+                Number(history[i + 1].lat),
+                Number(history[i + 1].lng)
+            );
+        }
+
+        return { avgSpeed, maxSpeed, totalDist };
+    }, [history]);
 
     useEffect(() => {
         if (isOpen) {
@@ -370,6 +505,7 @@ export default function AnalysisReportModal({
                 ).length || 0,
         },
         { id: 'environment', label: 'Environment', icon: <FaCloudSun /> },
+        { id: 'waypoints', label: 'Waypoints', icon: <FaRoute /> },
         { id: 'activity', label: 'Activity', icon: <FaEye /> },
     ];
 
@@ -377,10 +513,10 @@ export default function AnalysisReportModal({
 
     return (
         <div
-            className={`fixed inset-0 z-3000 flex items-center justify-center p-4 sm:p-6 transition-all duration-500 ${animateIn ? 'opacity-100 backdrop-blur-md bg-black/60' : 'opacity-0 pointer-events-none'}`}
+            className={`fixed inset-0 z-5000 flex items-center justify-center p-0 md:p-6 transition-all duration-500 ${animateIn ? 'opacity-100 backdrop-blur-md bg-black/60' : 'opacity-0 pointer-events-none'}`}
         >
             <div
-                className={`relative w-full max-w-5xl h-full max-h-[85vh] bg-zinc-950 border border-white/10 shadow-2xl flex flex-col transform transition-all duration-500 ease-out ${animateIn ? 'translate-y-0 scale-100' : 'translate-y-12 scale-95 opacity-0'}`}
+                className={`relative w-full md:max-w-5xl h-full md:max-h-[85vh] bg-zinc-950 border-0 md:border border-white/10 shadow-2xl flex flex-col transform transition-all duration-500 ease-out ${animateIn ? 'translate-y-0 scale-100' : 'translate-y-12 md:translate-y-12 scale-100 md:scale-95 opacity-0'}`}
                 role="dialog"
                 aria-modal="true"
                 aria-labelledby="analysis-modal-title"
@@ -403,11 +539,11 @@ export default function AnalysisReportModal({
                             </h2>
                             <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 mt-1 text-[11px] text-zinc-400 font-mono">
                                 <span>MMSI: {vessel.mmsi}</span>
-                                {details?.imo && (
-                                    <div className="flex items-center gap-3">
+                                {!!(details?.imo || vessel.imo) && (
+                                    <>
                                         <span className="hidden sm:block w-1 h-1 bg-zinc-600 rounded-full" />
-                                        <span>IMO: {details.imo}</span>
-                                    </div>
+                                        <span>IMO: {details?.imo || vessel.imo}</span>
+                                    </>
                                 )}
                             </div>
                         </div>
@@ -451,7 +587,18 @@ export default function AnalysisReportModal({
                     </div>
 
                     {/* Main Content Area */}
-                    <div className="flex-1 overflow-y-auto custom-scrollbar p-6 bg-zinc-950">
+                    <div className="flex-1 overflow-y-auto custom-scrollbar p-6 bg-zinc-950 relative">
+                        {/* Global Loading Overlay */}
+                        {loading.details && activeTab === 'overview' && (
+                            <div className="absolute inset-0 bg-zinc-950/50 backdrop-blur-[2px] z-50 flex items-center justify-center">
+                                <div className="flex flex-col items-center gap-3">
+                                    <div className="w-8 h-8 border-2 border-white/10 border-t-white/80 rounded-full animate-spin" />
+                                    <span className="text-[10px] font-black text-white uppercase tracking-widest animate-pulse">
+                                        Loading Intelligence...
+                                    </span>
+                                </div>
+                            </div>
+                        )}
                         {isOffline && (
                             <div className="bg-red-500/10 border border-red-500/50 p-4 mb-6 animate-in fade-in slide-in-from-top-2 duration-500">
                                 <h4 className="text-red-400 font-bold uppercase tracking-widest text-xs mb-1">
@@ -469,21 +616,27 @@ export default function AnalysisReportModal({
                             <div className="space-y-8 animate-in fade-in duration-300">
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div
-                                        className={`p-6 border flex flex-col justify-center items-center text-center gap-3 ${sanctions?.is_sanctioned ? 'bg-red-500/5 border-red-500/20' : 'bg-emerald-500/5 border-emerald-500/10'}`}
+                                        className={`p-6 border flex flex-col justify-center items-center text-center gap-3 ${loading.sanctions ? 'bg-zinc-900 border-zinc-800' : sanctions?.is_sanctioned ? 'bg-red-500/5 border-red-500/20' : 'bg-emerald-500/5 border-emerald-500/10'}`}
                                     >
                                         <div className="text-[11px] text-zinc-500 uppercase font-bold tracking-widest">
                                             Sanction Status
                                         </div>
                                         <div className="flex items-center gap-2">
-                                            {sanctions?.is_sanctioned ? (
+                                            {loading.sanctions ? (
+                                                <div className="w-6 h-6 bg-zinc-800 animate-spin rounded-full border-2 border-t-zinc-400 border-zinc-800" />
+                                            ) : sanctions?.is_sanctioned ? (
                                                 <FaCircleExclamation className="text-red-500 w-6 h-6" />
                                             ) : (
                                                 <FaCircleCheck className="text-emerald-500 w-6 h-6" />
                                             )}
                                             <span
-                                                className={`text-2xl font-black uppercase tracking-tight ${sanctions?.is_sanctioned ? 'text-red-500' : 'text-emerald-500'}`}
+                                                className={`text-2xl font-black uppercase tracking-tight ${loading.sanctions ? 'text-zinc-700' : sanctions?.is_sanctioned ? 'text-red-500' : 'text-emerald-500'}`}
                                             >
-                                                {sanctions?.is_sanctioned ? 'Sanctioned' : 'Clear'}
+                                                {loading.sanctions
+                                                    ? 'Checking...'
+                                                    : sanctions?.is_sanctioned
+                                                      ? 'Sanctioned'
+                                                      : 'Clear'}
                                             </span>
                                         </div>
                                     </div>
@@ -494,7 +647,11 @@ export default function AnalysisReportModal({
                                             Navigational Status
                                         </div>
                                         <span className="text-xl font-black text-white uppercase truncate">
-                                            {details?.nav_status_text || 'Unknown'}
+                                            {loading.details ? (
+                                                <div className="h-7 w-32 bg-white/5 animate-pulse mx-auto rounded-sm" />
+                                            ) : (
+                                                details?.nav_status_text || 'Unknown'
+                                            )}
                                         </span>
                                     </div>
                                 </div>
@@ -1084,6 +1241,477 @@ export default function AnalysisReportModal({
                                     </div>
                                     <div className="text-[11px] text-zinc-500 font-mono font-bold uppercase tracking-widest sm:text-right w-full sm:w-auto border-t border-white/5 sm:border-0 pt-2 sm:pt-0">
                                         Data: open-meteo.com
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {activeTab === 'waypoints' && (
+                            <div className="space-y-6 animate-in fade-in duration-300">
+                                <div className="flex flex-col gap-1">
+                                    <h3 className="text-lg font-black text-white uppercase tracking-tight flex items-center gap-2">
+                                        <FaRoute className="text-zinc-500" />
+                                        Waypoint Analysis Report
+                                    </h3>
+                                    <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">
+                                        Trajectory data and navigational diagnostics
+                                    </p>
+                                </div>
+
+                                {/* Unified Filter & Search Panel */}
+                                <div className="bg-white/2 border border-white/5 divide-y divide-white/5 overflow-hidden">
+                                    {/* Full Width Search */}
+                                    <div className="relative group">
+                                        <FaMagnifyingGlass className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600 group-focus-within:text-zinc-400 transition-colors w-3.5 h-3.5" />
+                                        <input
+                                            type="text"
+                                            placeholder="SEARCH BY TIMESTAMP, LATITUDE, OR LONGITUDE..."
+                                            value={waypointFilters.search}
+                                            onChange={(e) =>
+                                                handleFilterUpdate({ search: e.target.value })
+                                            }
+                                            className="w-full bg-transparent border-none text-white text-[10px] pl-10 pr-4 py-3.5 focus:outline-none focus:ring-0 font-bold uppercase tracking-wider placeholder:text-zinc-700"
+                                        />
+                                    </div>
+
+                                    {/* Selectors Grid */}
+                                    <div className="grid grid-cols-1 md:grid-cols-2">
+                                        <div className="p-4 space-y-3 bg-zinc-950/50">
+                                            <div className="flex items-center gap-2 text-[9px] font-black text-zinc-500 uppercase tracking-widest">
+                                                <FaClock className="w-3 h-3" />
+                                                Time Window
+                                            </div>
+                                            <div className="flex bg-white/5 border border-white/10 p-1">
+                                                {(
+                                                    ['all', '1h', '6h', '24h', 'custom'] as const
+                                                ).map((t) => (
+                                                    <button
+                                                        key={t}
+                                                        onClick={() =>
+                                                            handleFilterUpdate({ timeRange: t })
+                                                        }
+                                                        className={`flex-1 py-1.5 text-[9px] font-black uppercase tracking-widest transition-colors ${waypointFilters.timeRange === t ? 'bg-zinc-800 text-white' : 'text-zinc-600 hover:text-zinc-400'}`}
+                                                    >
+                                                        {t === 'all' ? 'FULL' : t.toUpperCase()}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                        <div className="p-4 space-y-3 bg-zinc-950/50 border-t md:border-t-0 md:border-l border-white/5">
+                                            <div className="flex items-center gap-2 text-[9px] font-black text-zinc-500 uppercase tracking-widest">
+                                                <FaGaugeHigh className="w-3 h-3" />
+                                                Movement Analysis
+                                            </div>
+                                            <div className="flex bg-white/5 border border-white/10 p-1">
+                                                {(['all', 'moving', 'stationary'] as const).map(
+                                                    (m) => (
+                                                        <button
+                                                            key={m}
+                                                            onClick={() =>
+                                                                handleFilterUpdate({
+                                                                    movementType: m,
+                                                                })
+                                                            }
+                                                            className={`flex-1 py-1.5 text-[9px] font-black uppercase tracking-widest transition-colors ${waypointFilters.movementType === m ? 'bg-zinc-800 text-white' : 'text-zinc-600 hover:text-zinc-400'}`}
+                                                        >
+                                                            {m.toUpperCase()}
+                                                        </button>
+                                                    )
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Custom Controls (Embedded) */}
+                                    {waypointFilters.timeRange === 'custom' && (
+                                        <div className="p-4 bg-zinc-900/30 grid grid-cols-1 md:grid-cols-2 gap-6 animate-in fade-in slide-in-from-top-1 duration-300">
+                                            <div className="space-y-3">
+                                                <span className="text-[9px] text-zinc-600 font-black uppercase tracking-widest block">
+                                                    Relative Search (Last X)
+                                                </span>
+                                                <div className="flex flex-row gap-2">
+                                                    <div className="flex-1 relative group">
+                                                        <input
+                                                            type="number"
+                                                            placeholder="Amount"
+                                                            value={waypointFilters.relativeValue}
+                                                            onChange={(e) =>
+                                                                handleFilterUpdate({
+                                                                    relativeValue: e.target.value,
+                                                                })
+                                                            }
+                                                            className="w-full bg-white/5 border border-white/10 text-white text-[10px] px-3 py-2 focus:outline-none focus:border-white/20 font-mono"
+                                                        />
+                                                    </div>
+                                                    <select
+                                                        value={waypointFilters.relativeUnit}
+                                                        onChange={(e) =>
+                                                            handleFilterUpdate({
+                                                                relativeUnit: e.target.value as
+                                                                    | 'm'
+                                                                    | 'h'
+                                                                    | 'd',
+                                                            })
+                                                        }
+                                                        className="bg-zinc-900 border border-white/10 text-zinc-500 text-[9px] px-2 py-2 focus:outline-none font-black uppercase cursor-pointer hover:text-zinc-300 transition-colors w-24"
+                                                    >
+                                                        <option value="m">MINS</option>
+                                                        <option value="h">HOURS</option>
+                                                        <option value="d">DAYS</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                            <div className="space-y-3">
+                                                <span className="text-[9px] text-zinc-600 font-black uppercase tracking-widest block">
+                                                    Absolute Search Window
+                                                </span>
+                                                <div className="grid grid-cols-2 gap-2">
+                                                    <input
+                                                        type="datetime-local"
+                                                        value={waypointFilters.customStart}
+                                                        onChange={(e) =>
+                                                            handleFilterUpdate({
+                                                                customStart: e.target.value,
+                                                            })
+                                                        }
+                                                        className="bg-zinc-900 border border-white/10 text-zinc-400 text-[10px] px-3 py-2 focus:outline-none focus:border-zinc-500 font-mono w-full appearance-none custom-datetime-picker"
+                                                    />
+                                                    <input
+                                                        type="datetime-local"
+                                                        value={waypointFilters.customEnd}
+                                                        onChange={(e) =>
+                                                            handleFilterUpdate({
+                                                                customEnd: e.target.value,
+                                                            })
+                                                        }
+                                                        className="bg-zinc-900 border border-white/10 text-zinc-400 text-[10px] px-3 py-2 focus:outline-none focus:border-zinc-500 font-mono w-full appearance-none custom-datetime-picker"
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* History Context & Information */}
+                                <div className="flex flex-col sm:flex-row sm:items-center justify-between px-1 mb-2 gap-1.5 sm:gap-0">
+                                    <div className="flex items-center gap-2">
+                                        <FaClock className="w-2.5 h-2.5 text-zinc-600" />
+                                        <span className="text-[10px] font-black text-zinc-600 uppercase tracking-widest">
+                                            Telemetry Window: {history.length} Points Captured
+                                        </span>
+                                    </div>
+                                    <span className="text-[9px] font-bold text-zinc-700 uppercase tracking-tighter">
+                                        {filteredHistory.length} Results after filtering
+                                    </span>
+                                </div>
+
+                                {/* Simplified Stats */}
+                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-px bg-white/5 border border-white/5 overflow-hidden">
+                                    <div className="bg-zinc-950/80 p-4 border-r border-white/5 space-y-1 relative overflow-hidden">
+                                        <span className="text-[9px] text-zinc-600 font-black uppercase tracking-widest block">
+                                            Average Speed
+                                        </span>
+                                        <div className="text-xl font-black text-zinc-300">
+                                            {loading.history ? (
+                                                <div className="h-7 w-12 bg-white/5 animate-pulse rounded-sm" />
+                                            ) : (
+                                                <>
+                                                    {stats.avgSpeed.toFixed(1)}
+                                                    <span className="text-[10px] text-zinc-600 ml-1">
+                                                        KN
+                                                    </span>
+                                                </>
+                                            )}
+                                        </div>
+                                    </div>
+                                    <div className="bg-zinc-950/80 p-4 border-r border-white/5 space-y-1 relative overflow-hidden">
+                                        <span className="text-[9px] text-zinc-600 font-black uppercase tracking-widest block">
+                                            Peak Speed
+                                        </span>
+                                        <div className="text-xl font-black text-zinc-300">
+                                            {loading.history ? (
+                                                <div className="h-7 w-12 bg-white/5 animate-pulse rounded-sm" />
+                                            ) : (
+                                                <>
+                                                    {stats.maxSpeed.toFixed(1)}
+                                                    <span className="text-[10px] text-zinc-600 ml-1">
+                                                        KN
+                                                    </span>
+                                                </>
+                                            )}
+                                        </div>
+                                    </div>
+                                    <div className="bg-zinc-950/80 p-4 space-y-1 col-span-2 sm:col-span-1 relative overflow-hidden">
+                                        <span className="text-[9px] text-zinc-600 font-black uppercase tracking-widest block">
+                                            Track Distance
+                                        </span>
+                                        <div className="text-xl font-black text-zinc-300">
+                                            {loading.history ? (
+                                                <div className="h-7 w-16 bg-white/5 animate-pulse rounded-sm" />
+                                            ) : (
+                                                <>
+                                                    {stats.totalDist.toFixed(1)}
+                                                    <span className="text-[10px] text-zinc-600 ml-1">
+                                                        KM
+                                                    </span>
+                                                </>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Waypoint List */}
+                                <div className="space-y-3">
+                                    <div className="flex items-center justify-between px-1 text-[9px] font-black text-zinc-600 uppercase tracking-widest">
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-1.5 h-1.5 rounded-full bg-zinc-800 animate-pulse" />
+                                            Active Dataset Analysis
+                                        </div>
+                                        <div className="flex items-center gap-4">
+                                            <span>{filteredHistory.length} Total Records</span>
+                                            {totalPages > 1 && (
+                                                <span className="text-zinc-400">
+                                                    Page {currentPage} of {totalPages}
+                                                </span>
+                                            )}
+                                        </div>
+                                    </div>
+                                    <div className="border border-white/5 bg-zinc-950 overflow-hidden shadow-sm">
+                                        {/* Desktop Table */}
+                                        <table className="hidden sm:table w-full text-left border-collapse">
+                                            <thead>
+                                                <tr className="bg-white/2 border-b border-white/5">
+                                                    <th className="px-4 py-3 text-[9px] font-black text-zinc-500 uppercase tracking-widest">
+                                                        Timestamp
+                                                    </th>
+                                                    <th className="px-4 py-3 text-[9px] font-black text-zinc-500 uppercase tracking-widest">
+                                                        Position
+                                                    </th>
+                                                    <th className="px-4 py-3 text-[9px] font-black text-zinc-500 uppercase tracking-widest text-right">
+                                                        Speed
+                                                    </th>
+                                                    <th className="px-4 py-3 text-[9px] font-black text-zinc-500 uppercase tracking-widest text-right">
+                                                        Course
+                                                    </th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-white/5">
+                                                {loading.history ? (
+                                                    Array.from({ length: 10 }).map((_, i) => (
+                                                        <tr key={i} className="animate-pulse">
+                                                            <td className="px-4 py-3">
+                                                                <div className="h-3 w-20 bg-white/5 rounded-sm" />
+                                                            </td>
+                                                            <td className="px-4 py-3">
+                                                                <div className="h-3 w-32 bg-white/5 rounded-sm" />
+                                                            </td>
+                                                            <td className="px-4 py-3">
+                                                                <div className="h-3 w-12 bg-white/5 rounded-sm ml-auto" />
+                                                            </td>
+                                                            <td className="px-4 py-3">
+                                                                <div className="h-3 w-16 bg-white/5 rounded-sm ml-auto" />
+                                                            </td>
+                                                        </tr>
+                                                    ))
+                                                ) : paginatedHistory.length === 0 ? (
+                                                    <tr>
+                                                        <td
+                                                            colSpan={4}
+                                                            className="px-4 py-12 text-center text-zinc-600 font-black uppercase tracking-widest text-[10px]"
+                                                        >
+                                                            No matching results
+                                                        </td>
+                                                    </tr>
+                                                ) : (
+                                                    paginatedHistory.map((pos, idx) => {
+                                                        const currentIdx = history.indexOf(pos);
+                                                        const prevPos = history[currentIdx + 1];
+                                                        const currentSpeed = Number(pos.speed);
+                                                        const prevSpeed = prevPos
+                                                            ? Number(prevPos.speed)
+                                                            : currentSpeed;
+                                                        const trend = currentSpeed - prevSpeed;
+
+                                                        return (
+                                                            <tr
+                                                                key={idx}
+                                                                className="hover:bg-white/2 transition-colors group"
+                                                            >
+                                                                <td className="px-4 py-3">
+                                                                    <span className="text-[10px] text-zinc-400 font-mono">
+                                                                        {new Date(
+                                                                            pos.recorded_at
+                                                                        ).toLocaleString('en-GB', {
+                                                                            day: '2-digit',
+                                                                            month: 'short',
+                                                                            hour: '2-digit',
+                                                                            minute: '2-digit',
+                                                                            timeZone:
+                                                                                'Europe/London',
+                                                                        })}
+                                                                    </span>
+                                                                </td>
+                                                                <td className="px-4 py-3">
+                                                                    <span className="text-[10px] text-zinc-500 font-mono">
+                                                                        {Number(pos.lat).toFixed(4)}
+                                                                        ,{' '}
+                                                                        {Number(pos.lng).toFixed(4)}
+                                                                    </span>
+                                                                </td>
+                                                                <td className="px-4 py-3 text-right">
+                                                                    <div className="flex items-center justify-end gap-2">
+                                                                        {trend !== 0 && (
+                                                                            <FaArrowTrendUp
+                                                                                className={`w-2 h-2 ${trend > 0 ? 'text-zinc-500' : 'text-zinc-700 rotate-180'}`}
+                                                                            />
+                                                                        )}
+                                                                        <span className="text-[10px] font-black text-zinc-300">
+                                                                            {currentSpeed.toFixed(
+                                                                                1
+                                                                            )}
+                                                                            <span className="text-[8px] text-zinc-600 ml-1 font-normal">
+                                                                                KN
+                                                                            </span>
+                                                                        </span>
+                                                                    </div>
+                                                                </td>
+                                                                <td className="px-4 py-3 text-right">
+                                                                    <div className="flex items-center justify-end gap-2">
+                                                                        <span className="text-[10px] text-zinc-400 font-mono">
+                                                                            {Number(
+                                                                                pos.course
+                                                                            ).toFixed(0)}
+                                                                            °
+                                                                        </span>
+                                                                        <FaCompass className="w-2.5 h-2.5 text-zinc-700" />
+                                                                    </div>
+                                                                </td>
+                                                            </tr>
+                                                        );
+                                                    })
+                                                )}
+                                            </tbody>
+                                        </table>
+
+                                        {/* Mobile Card List */}
+                                        <div className="sm:hidden divide-y divide-white/5">
+                                            {loading.history ? (
+                                                Array.from({ length: 5 }).map((_, i) => (
+                                                    <div
+                                                        key={i}
+                                                        className="p-4 space-y-3 animate-pulse"
+                                                    >
+                                                        <div className="flex justify-between">
+                                                            <div className="h-3 w-24 bg-white/5 rounded-sm" />
+                                                            <div className="h-3 w-12 bg-white/5 rounded-sm" />
+                                                        </div>
+                                                        <div className="h-3 w-32 bg-white/5 rounded-sm" />
+                                                    </div>
+                                                ))
+                                            ) : paginatedHistory.length === 0 ? (
+                                                <div className="px-4 py-12 text-center text-zinc-600 font-black uppercase tracking-widest text-[10px]">
+                                                    No matching results
+                                                </div>
+                                            ) : (
+                                                paginatedHistory.map((pos, idx) => {
+                                                    const currentIdx = history.indexOf(pos);
+                                                    const prevPos = history[currentIdx + 1];
+                                                    const currentSpeed = Number(pos.speed);
+                                                    const prevSpeed = prevPos
+                                                        ? Number(prevPos.speed)
+                                                        : currentSpeed;
+                                                    const trend = currentSpeed - prevSpeed;
+
+                                                    return (
+                                                        <div
+                                                            key={idx}
+                                                            className="p-4 space-y-3 hover:bg-white/2 transition-colors"
+                                                        >
+                                                            <div className="flex justify-between items-start">
+                                                                <span className="text-[10px] text-zinc-400 font-mono">
+                                                                    {new Date(
+                                                                        pos.recorded_at
+                                                                    ).toLocaleString('en-GB', {
+                                                                        day: '2-digit',
+                                                                        month: 'short',
+                                                                        hour: '2-digit',
+                                                                        minute: '2-digit',
+                                                                        timeZone: 'Europe/London',
+                                                                    })}
+                                                                </span>
+                                                                <div className="flex items-center gap-2">
+                                                                    {trend !== 0 && (
+                                                                        <FaArrowTrendUp
+                                                                            className={`w-2 h-2 ${trend > 0 ? 'text-zinc-500' : 'text-zinc-700 rotate-180'}`}
+                                                                        />
+                                                                    )}
+                                                                    <span className="text-[10px] font-black text-zinc-300">
+                                                                        {currentSpeed.toFixed(1)}
+                                                                        <span className="text-[8px] text-zinc-600 ml-0.5 font-normal">
+                                                                            KN
+                                                                        </span>
+                                                                    </span>
+                                                                </div>
+                                                            </div>
+                                                            <div className="flex justify-between items-center text-[9px]">
+                                                                <span className="text-zinc-500 font-mono">
+                                                                    {Number(pos.lat).toFixed(4)},{' '}
+                                                                    {Number(pos.lng).toFixed(4)}
+                                                                </span>
+                                                                <div className="flex items-center gap-1.5">
+                                                                    <span className="text-zinc-400 font-mono">
+                                                                        {Number(pos.course).toFixed(
+                                                                            0
+                                                                        )}
+                                                                        °
+                                                                    </span>
+                                                                    <FaCompass className="w-2.5 h-2.5 text-zinc-700" />
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    {/* Pagination Controls - Always show to indicate system exists */}
+                                    <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2 border-t border-white/5 mt-4">
+                                        <div className="flex items-center justify-between w-full sm:w-auto gap-2">
+                                            <button
+                                                onClick={() =>
+                                                    setCurrentPage((p) => Math.max(1, p - 1))
+                                                }
+                                                disabled={currentPage === 1 || totalPages <= 1}
+                                                className="flex items-center gap-2 px-3 py-1.5 bg-white/5 border border-white/10 text-[9px] font-black text-zinc-500 uppercase tracking-widest hover:bg-white/10 disabled:opacity-20 disabled:cursor-not-allowed transition-colors"
+                                            >
+                                                <FaChevronLeft className="w-2 h-2" />
+                                                Prev
+                                            </button>
+                                            <button
+                                                onClick={() =>
+                                                    setCurrentPage((p) =>
+                                                        Math.min(totalPages, p + 1)
+                                                    )
+                                                }
+                                                disabled={
+                                                    currentPage === totalPages || totalPages <= 1
+                                                }
+                                                className="flex items-center gap-2 px-3 py-1.5 bg-white/5 border border-white/10 text-[9px] font-black text-zinc-500 uppercase tracking-widest hover:bg-white/10 disabled:opacity-20 disabled:cursor-not-allowed transition-colors"
+                                            >
+                                                Next
+                                                <FaChevronRight className="w-2 h-2" />
+                                            </button>
+                                        </div>
+                                        <div className="flex items-center gap-3 order-first sm:order-0">
+                                            <span className="text-[9px] font-black text-zinc-600 uppercase tracking-widest">
+                                                Page {currentPage} of {Math.max(1, totalPages)}
+                                            </span>
+                                            <span className="hidden sm:block w-1 h-1 bg-zinc-800 rounded-full" />
+                                            <span className="hidden sm:block text-[9px] font-black text-zinc-500 uppercase tracking-widest">
+                                                {filteredHistory.length} Total Records
+                                            </span>
+                                        </div>
                                     </div>
                                 </div>
                             </div>

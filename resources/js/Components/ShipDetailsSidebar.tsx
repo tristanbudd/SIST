@@ -536,37 +536,24 @@ export default function ShipDetailsSidebar({
                     >
                         {details?.name || vessel.name || 'Unknown Vessel'}
                     </h2>
-                    <div className="flex items-center gap-4 mt-2">
-                        <div className="flex flex-col">
-                            <span className="text-[10px] text-zinc-500 uppercase font-bold">
-                                MMSI
-                            </span>
-                            <span className="text-sm font-mono text-zinc-300">{vessel.mmsi}</span>
-                        </div>
-                        <div className="w-px h-6 bg-white/10" />
-                        <div className="flex flex-col">
-                            <span className="text-[10px] text-zinc-500 uppercase font-bold">
-                                IMO
-                            </span>
-                            <span className="text-sm font-mono text-zinc-300">
-                                {details?.imo || vessel.imo || 'N/A'}
-                            </span>
-                        </div>
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 mt-2 text-[11px] text-zinc-400 font-mono">
+                        <span>MMSI: {vessel.mmsi}</span>
+                        {!!(details?.imo || vessel.imo) && (
+                            <>
+                                <span className="hidden sm:block w-1 h-1 bg-zinc-600 rounded-full" />
+                                <span>IMO: {details?.imo || vessel.imo}</span>
+                            </>
+                        )}
                         {details?.flying_flag && (
                             <>
-                                <div className="w-px h-6 bg-white/10" />
-                                <div className="flex flex-col">
-                                    <span className="text-[10px] text-zinc-500 uppercase font-bold">
-                                        Flag
+                                <span className="hidden sm:block w-1 h-1 bg-zinc-600 rounded-full" />
+                                <div className="flex items-center gap-1.5">
+                                    <span className="font-bold text-zinc-300">
+                                        {details.flying_flag}
                                     </span>
-                                    <div className="flex items-center gap-1.5">
-                                        <span className="text-sm font-bold text-zinc-300">
-                                            {details.flying_flag}
-                                        </span>
-                                        <span className="text-[10px] text-zinc-500 truncate max-w-[80px]">
-                                            {details.flying_flag_country}
-                                        </span>
-                                    </div>
+                                    <span className="text-[10px] text-zinc-500 truncate max-w-[80px]">
+                                        {details.flying_flag_country}
+                                    </span>
                                 </div>
                             </>
                         )}
@@ -1529,7 +1516,9 @@ export default function ShipDetailsSidebar({
                 sanctions={sanctions}
                 weather={weather}
                 tides={tides}
+                history={history}
                 isOffline={isOffline}
+                loading={loading}
             />
         </>
     );
