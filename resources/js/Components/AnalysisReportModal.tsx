@@ -30,6 +30,10 @@ import {
     TideData,
     HistoryPosition,
 } from './ShipDetailsSidebar';
+import { SANCTIONER_MAPPING, WEATHER_CODES, NAV_STATUS_MAP } from '../constants';
+import { formatPositionAge, getDistance, generateExternalLinks, formatShortDate } from '../utils';
+import ExternalProviderIcon from './shared/ExternalProviderIcon';
+import LoadingSpinner from './shared/LoadingSpinner';
 
 interface AnalysisReportModalProps {
     isOpen: boolean;
@@ -49,24 +53,6 @@ interface AnalysisReportModalProps {
         history: boolean;
     };
 }
-
-const SANCTIONER_MAPPING: Record<string, { name: string; body: string }> = {
-    us: { name: 'United States (US)', body: 'OFAC SDN / BIS List' },
-    eu: { name: 'European Union (EU)', body: 'EEAS Consolidated List' },
-    un: { name: 'United Nations (UN)', body: 'UNSC Sanctions Regimes' },
-    uk: { name: 'United Kingdom (UK)', body: 'HM Treasury (OFSI)' },
-    ca: { name: 'Canada (CA)', body: 'Special Economic Measures (SARA)' },
-    au: { name: 'Australia (AU)', body: 'DFAT Consolidated List' },
-    jp: { name: 'Japan (JP)', body: 'METI Asset Freeze List' },
-    ch: { name: 'Switzerland (CH)', body: 'SECO Sanctions' },
-    fr: { name: 'France (FR)', body: 'National Asset Freeze List' },
-    no: { name: 'Norway (NO)', body: 'MFA Sanctions List' },
-    ru: { name: 'Russia (RU)', body: 'Rosfinmonitoring Watchlist' },
-    ua: { name: 'Ukraine (UA)', body: 'NSDC Sanctions' },
-    ina: { name: 'Indonesia (INA)', body: 'National Authority (BAPETEN)' },
-    kr: { name: 'South Korea (KR)', body: 'Financial Services Commission' },
-    sg: { name: 'Singapore (SG)', body: 'MAS Sanctions List' },
-};
 
 const SanctionRecordCard = ({
     record,
@@ -164,58 +150,6 @@ const SanctionRecordCard = ({
 
 type TabType = 'overview' | 'particulars' | 'sanctions' | 'environment' | 'waypoints' | 'activity';
 
-function formatPositionAge(seconds: number | undefined): string {
-    if (seconds === undefined) return 'N/A';
-    const absSec = Math.round(Math.abs(seconds));
-
-    if (absSec < 60) return `${absSec} second${absSec !== 1 ? 's' : ''} ago`;
-    if (absSec < 3600) {
-        const mins = Math.floor(absSec / 60);
-        return `${mins} minute${mins !== 1 ? 's' : ''} ago`;
-    }
-    if (absSec < 86400) {
-        const hours = Math.floor(absSec / 3600);
-        return `${hours} hour${hours !== 1 ? 's' : ''} ago`;
-    }
-    if (absSec < 604800) {
-        const days = Math.floor(absSec / 86400);
-        return `${days} day${days !== 1 ? 's' : ''} ago`;
-    }
-    if (absSec < 2592000) {
-        const weeks = Math.floor(absSec / 604800);
-        return `${weeks} week${weeks !== 1 ? 's' : ''} ago`;
-    }
-    const months = Math.floor(absSec / 2592000);
-    return `${months} month${months !== 1 ? 's' : ''} ago`;
-}
-
-function ExternalProviderIcon({ name, className = '' }: { name: string; className?: string }) {
-    const iconMap: Record<string, string> = {
-        'marinetraffic (com)': '/images/external/vesseltrackercom.png',
-        'marinetraffic (org)': '/images/external/marinetrafficorg.png',
-        vesselfinder: '/images/external/vesselfinder.png',
-        vesseltracker: '/images/external/vesseltracker.png',
-        shipspotting: '/images/external/shipspotting.png',
-        myshiptracking: '/images/external/myshiptracking.png',
-    };
-
-    const iconPath = iconMap[name.toLowerCase()];
-
-    if (iconPath) {
-        return (
-            <img
-                src={iconPath}
-                alt={`${name} logo`}
-                className={className}
-                onError={(e) => {
-                    (e.target as HTMLImageElement).style.display = 'none';
-                }}
-            />
-        );
-    }
-    return null;
-}
-
 const DataRow = ({
     label,
     value,
@@ -245,20 +179,6 @@ const DataRow = ({
         </div>
     </div>
 );
-
-function getDistance(lat1: number, lon1: number, lat2: number, lon2: number) {
-    const R = 6371; // Radius of the earth in km
-    const dLat = (lat2 - lat1) * (Math.PI / 180);
-    const dLon = (lon2 - lon1) * (Math.PI / 180);
-    const a =
-        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-        Math.cos(lat1 * (Math.PI / 180)) *
-            Math.cos(lat2 * (Math.PI / 180)) *
-            Math.sin(dLon / 2) *
-            Math.sin(dLon / 2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    return R * c;
-}
 
 export default function AnalysisReportModal({
     isOpen,
@@ -344,8 +264,7 @@ export default function AnalysisReportModal({
             // Search filter
             const matchesSearch =
                 waypointFilters.search === '' ||
-                new Date(pos.recorded_at)
-                    .toLocaleString('en-GB')
+                formatShortDate(pos.recorded_at)
                     .toLowerCase()
                     .includes(waypointFilters.search.toLowerCase()) ||
                 pos.lat.toString().includes(waypointFilters.search) ||
@@ -418,46 +337,10 @@ export default function AnalysisReportModal({
         }
     }, [activeTab, weather, tides]);
 
-    const generatedLinks = useMemo(() => {
-        if (!vessel) return [];
-        const mmsi = vessel.mmsi;
-        const imo = details?.imo || vessel.imo;
-
-        return [
-            {
-                source: 'MarineTraffic (COM)',
-                url: imo
-                    ? `https://www.marinetraffic.com/en/ais/details/ships/imo:${imo}`
-                    : `https://www.marinetraffic.com/en/ais/details/ships/mmsi:${mmsi}`,
-            },
-            {
-                source: 'VesselFinder',
-                url: imo
-                    ? `https://www.vesselfinder.com/vessels/details/${imo}`
-                    : `https://www.vesselfinder.com/vessels?name=${mmsi}`,
-            },
-            {
-                source: 'VesselTracker',
-                url: imo
-                    ? `https://www.vesseltracker.com/en/Ships/${imo}.html`
-                    : `https://www.vesseltracker.com/en/vessels.html?search=${mmsi}`,
-            },
-            {
-                source: 'MarineTraffic (ORG)',
-                url: `https://www.marinetraffic.org/vessels?vessel=${imo || mmsi}`,
-            },
-            {
-                source: 'ShipSpotting',
-                url: imo
-                    ? `https://www.shipspotting.com/photos/gallery?imo=${imo}`
-                    : `https://www.shipspotting.com/photos/gallery?mmsi=${mmsi}`,
-            },
-            {
-                source: 'MyShipTracking',
-                url: `https://www.myshiptracking.com/vessels/mmsi-${mmsi}`,
-            },
-        ];
-    }, [vessel, details]);
+    const generatedLinks = useMemo(
+        () => (vessel ? generateExternalLinks(vessel.mmsi, details?.imo || vessel.imo) : []),
+        [vessel, details]
+    );
 
     const isCurrentTime = (timeStr: string) => {
         const itemDate = new Date(timeStr);
@@ -470,27 +353,7 @@ export default function AnalysisReportModal({
         );
     };
 
-    const getWeatherDescription = (code: number) => {
-        const codes: Record<number, string> = {
-            0: 'Clear Sky',
-            1: 'Mainly Clear',
-            2: 'Partly Cloudy',
-            3: 'Overcast',
-            45: 'Fog',
-            48: 'Depositing Rime Fog',
-            51: 'Light Drizzle',
-            53: 'Moderate Drizzle',
-            55: 'Dense Drizzle',
-            61: 'Slight Rain',
-            63: 'Moderate Rain',
-            65: 'Heavy Rain',
-            71: 'Slight Snowfall',
-            73: 'Moderate Snowfall',
-            75: 'Heavy Snowfall',
-            95: 'Thunderstorm',
-        };
-        return codes[code] || 'Unrecorded';
-    };
+    const getWeatherDescription = (code: number) => WEATHER_CODES[code] || 'Unrecorded';
 
     const tabs: { id: TabType; label: string; icon: React.ReactNode; badge?: number }[] = [
         { id: 'overview', label: 'Overview', icon: <FaFileContract /> },
@@ -623,7 +486,7 @@ export default function AnalysisReportModal({
                                         </div>
                                         <div className="flex items-center gap-2">
                                             {loading.sanctions ? (
-                                                <div className="w-6 h-6 bg-zinc-800 animate-spin rounded-full border-2 border-t-zinc-400 border-zinc-800" />
+                                                <LoadingSpinner size="md" />
                                             ) : sanctions?.is_sanctioned ? (
                                                 <FaCircleExclamation className="text-red-500 w-6 h-6" />
                                             ) : (
@@ -789,7 +652,14 @@ export default function AnalysisReportModal({
                                             />
                                             <DataRow
                                                 label="Navigational Status"
-                                                value={details?.nav_status_text || 'Unknown'}
+                                                value={
+                                                    details?.nav_status_text ||
+                                                    (details?.navigational_status !== undefined
+                                                        ? NAV_STATUS_MAP[
+                                                              details.navigational_status
+                                                          ]
+                                                        : 'Unknown')
+                                                }
                                                 subValue={`Code: ${details?.navigational_status ?? '--'}`}
                                                 isStale={isOffline}
                                             />
@@ -830,9 +700,7 @@ export default function AnalysisReportModal({
                                         <DataRow
                                             label="Estimated Arrival"
                                             value={
-                                                details?.eta
-                                                    ? new Date(details.eta).toLocaleString('en-GB')
-                                                    : 'N/A'
+                                                details?.eta ? formatShortDate(details.eta) : 'N/A'
                                             }
                                             isStale={isOffline}
                                         />
@@ -840,9 +708,7 @@ export default function AnalysisReportModal({
                                             label="Last AIS Transmission"
                                             value={
                                                 details?.last_seen_at
-                                                    ? new Date(details.last_seen_at).toLocaleString(
-                                                          'en-GB'
-                                                      )
+                                                    ? formatShortDate(details.last_seen_at)
                                                     : 'N/A'
                                             }
                                             isStale={isOffline}
@@ -866,9 +732,7 @@ export default function AnalysisReportModal({
                                         <div className="text-[11px] text-zinc-500 font-mono font-bold uppercase tracking-widest sm:text-right w-full sm:w-auto border-t border-white/5 sm:border-0 pt-2 sm:pt-0">
                                             Last Seen:{' '}
                                             {details?.last_seen_at
-                                                ? new Date(details.last_seen_at).toLocaleString(
-                                                      'en-GB'
-                                                  )
+                                                ? formatShortDate(details.last_seen_at)
                                                 : 'Unknown'}
                                         </div>
                                     </div>
@@ -1110,7 +974,7 @@ export default function AnalysisReportModal({
                                         </h4>
                                         <div
                                             ref={weatherContainerRef}
-                                            className="space-y-1.5 max-h-[300px] overflow-y-auto custom-scrollbar pr-2 scroll-smooth"
+                                            className="space-y-1.5 max-h-75 overflow-y-auto custom-scrollbar pr-2 scroll-smooth"
                                         >
                                             {!weather?.hourly || weather.hourly.length === 0 ? (
                                                 <div className="h-20 flex items-center justify-center text-zinc-500 font-black uppercase tracking-widest text-[11px]">
@@ -1170,7 +1034,7 @@ export default function AnalysisReportModal({
                                         </h4>
                                         <div
                                             ref={tideContainerRef}
-                                            className="space-y-1.5 max-h-[300px] overflow-y-auto custom-scrollbar pr-2 scroll-smooth"
+                                            className="space-y-1.5 max-h-75 overflow-y-auto custom-scrollbar pr-2 scroll-smooth"
                                         >
                                             {!tides?.predictions ||
                                             tides.predictions.length === 0 ? (
@@ -1539,16 +1403,9 @@ export default function AnalysisReportModal({
                                                             >
                                                                 <td className="px-4 py-3">
                                                                     <span className="text-[10px] text-zinc-400 font-mono">
-                                                                        {new Date(
+                                                                        {formatShortDate(
                                                                             pos.recorded_at
-                                                                        ).toLocaleString('en-GB', {
-                                                                            day: '2-digit',
-                                                                            month: 'short',
-                                                                            hour: '2-digit',
-                                                                            minute: '2-digit',
-                                                                            timeZone:
-                                                                                'Europe/London',
-                                                                        })}
+                                                                        )}
                                                                     </span>
                                                                 </td>
                                                                 <td className="px-4 py-3">
@@ -1629,15 +1486,9 @@ export default function AnalysisReportModal({
                                                         >
                                                             <div className="flex justify-between items-start">
                                                                 <span className="text-[10px] text-zinc-400 font-mono">
-                                                                    {new Date(
+                                                                    {formatShortDate(
                                                                         pos.recorded_at
-                                                                    ).toLocaleString('en-GB', {
-                                                                        day: '2-digit',
-                                                                        month: 'short',
-                                                                        hour: '2-digit',
-                                                                        minute: '2-digit',
-                                                                        timeZone: 'Europe/London',
-                                                                    })}
+                                                                    )}
                                                                 </span>
                                                                 <div className="flex items-center gap-2">
                                                                     {trend !== 0 && (

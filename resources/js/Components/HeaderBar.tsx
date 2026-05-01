@@ -6,6 +6,8 @@ import citiesJson from '../../data/cities.json';
 import { Vessel as MapVessel } from './MapDisplay';
 import { FaSearch, FaShip, FaAnchor, FaGlobe, FaCity, FaHistory, FaTrash } from 'react-icons/fa';
 
+import { API_BASE_URL, OFFLINE_THRESHOLD_MINUTES } from '../constants';
+
 interface Vessel {
     name: string;
     mmsi: string;
@@ -265,7 +267,7 @@ export default function HeaderBar({
 
         searchTimeoutRef.current = setTimeout(async () => {
             try {
-                const res = await axios.get('https://sist.tristanbudd.com/api/v1/vessels/search', {
+                const res = await axios.get(`${API_BASE_URL}/vessels/search`, {
                     params: { q: activeQuery.trim() },
                 });
 
@@ -289,7 +291,7 @@ export default function HeaderBar({
                             lat: v.lat,
                             lng: v.lng,
                             last_seen_at: v.last_seen_at,
-                            isOffline: ageMinutes > 10,
+                            isOffline: ageMinutes > OFFLINE_THRESHOLD_MINUTES,
                         };
                     }
                 );
@@ -440,8 +442,7 @@ export default function HeaderBar({
 
     const handleSelect = (item: SearchResult) => {
         setRecentSearches((prev) => {
-            // Deduplicate recent searches before prepending the new item
-            // We must explicitly check MMSI for vessels because multiple distinct vessels might share the same name
+            // Dedup by name+category (and MMSI for vessels, since names aren't unique)
             const filtered = prev.filter(
                 (r) =>
                     !(
@@ -634,7 +635,7 @@ export default function HeaderBar({
                 </div>
             </div>
 
-            <div className="relative w-full sm:px-0 sm:max-w-[400px] min-[960px]:absolute min-[960px]:left-1/2 min-[960px]:-translate-x-1/2 pointer-events-auto z-10">
+            <div className="relative w-full sm:px-0 sm:max-w-100 min-[960px]:absolute min-[960px]:left-1/2 min-[960px]:-translate-x-1/2 pointer-events-auto z-10">
                 <div className="relative flex items-center gap-3 bg-zinc-950 border border-white/20 px-4 py-3 shadow-2xl transition-all focus-within:border-white/40 focus-within:ring-1 focus-within:ring-white/10">
                     <FaSearch
                         className={`w-4 h-4 ${query ? 'text-white' : 'text-zinc-500'}`}
@@ -643,9 +644,7 @@ export default function HeaderBar({
                     <input
                         type="text"
                         value={activeQuery}
-                        // WAI-ARIA 1.2 Combobox Pattern
-                        // aria-activedescendant dynamically links the input to the currently highlighted listbox item
-                        // This allows screen readers to announce the highlighted item during keyboard navigation without moving DOM focus
+                        // ARIA combobox: activedescendant tracks the highlighted item for screen readers
                         role="combobox"
                         aria-autocomplete="list"
                         aria-expanded={showSuggestionsPanel}
@@ -732,7 +731,7 @@ export default function HeaderBar({
                                         item.category === 'vessel' && item.last_seen_at
                                             ? (now - new Date(item.last_seen_at).getTime()) /
                                                   60000 >
-                                              60
+                                              OFFLINE_THRESHOLD_MINUTES
                                             : item.category === 'vessel' && item.isOffline;
 
                                     return (
@@ -862,7 +861,7 @@ export default function HeaderBar({
                                             item.category === 'vessel' && item.last_seen_at
                                                 ? (now - new Date(item.last_seen_at).getTime()) /
                                                       60000 >
-                                                  60
+                                                  OFFLINE_THRESHOLD_MINUTES
                                                 : item.category === 'vessel' && item.isOffline;
 
                                         return (
