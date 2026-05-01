@@ -228,6 +228,8 @@ export default function HeaderBar({
         city: 5,
     });
     const [selectedIndex, setSelectedIndex] = useState(-1);
+    const [now, setNow] = useState(() => Date.now());
+
     const [recentSearches, setRecentSearches] = useState<SearchResult[]>(() => {
         if (typeof window !== 'undefined') {
             const saved = localStorage.getItem('sist_recent_searches');
@@ -278,7 +280,7 @@ export default function HeaderBar({
                         last_seen_at: string;
                     }) => {
                         const lastSeen = new Date(v.last_seen_at).getTime();
-                        const ageHours = (Date.now() - lastSeen) / 3600000;
+                        const ageMinutes = (Date.now() - lastSeen) / 60000;
                         return {
                             category: 'vessel',
                             name: v.name || 'UNKNOWN',
@@ -287,7 +289,7 @@ export default function HeaderBar({
                             lat: v.lat,
                             lng: v.lng,
                             last_seen_at: v.last_seen_at,
-                            isOffline: ageHours > 1,
+                            isOffline: ageMinutes > 10,
                         };
                     }
                 );
@@ -669,8 +671,12 @@ export default function HeaderBar({
                             });
                             setError(null);
                             setShowSuggestions(true);
+                            setNow(Date.now());
                         }}
-                        onFocus={() => setShowSuggestions(true)}
+                        onFocus={() => {
+                            setShowSuggestions(true);
+                            setNow(Date.now());
+                        }}
                         onKeyDown={handleKeyDown}
                         placeholder="Search vessels, ports, or coordinates..."
                         className="bg-transparent border-none outline-none text-white text-xs font-semibold w-full placeholder:text-zinc-500 focus:ring-0"
@@ -722,6 +728,13 @@ export default function HeaderBar({
                                                 ? FaCity
                                                 : FaGlobe;
 
+                                    const isOfflineVessel =
+                                        item.category === 'vessel' && item.last_seen_at
+                                            ? (now - new Date(item.last_seen_at).getTime()) /
+                                                  60000 >
+                                              60
+                                            : item.category === 'vessel' && item.isOffline;
+
                                     return (
                                         <button
                                             key={`recent-${idx}`}
@@ -740,11 +753,11 @@ export default function HeaderBar({
                                                 />
                                                 <div className="flex flex-col">
                                                     <span
-                                                        className={`text-[11px] font-bold ${item.category === 'vessel' && item.isOffline ? 'text-zinc-400' : 'text-white'}`}
+                                                        className={`text-[11px] font-bold ${item.category === 'vessel' && isOfflineVessel ? 'text-zinc-400' : 'text-white'}`}
                                                     >
                                                         {item.name}
                                                         {item.category === 'vessel' &&
-                                                            item.isOffline && (
+                                                            isOfflineVessel && (
                                                                 <span className="ml-2 inline-flex items-center px-1.5 py-0.5 text-[8px] font-black uppercase tracking-widest bg-zinc-800/50 border border-zinc-700/50 text-zinc-500 rounded-sm">
                                                                     Offline
                                                                 </span>
@@ -832,12 +845,12 @@ export default function HeaderBar({
                                         className={`px-4 py-2 bg-zinc-900/30 border-b border-white/5 ${cat !== 'country' ? 'mt-2' : ''}`}
                                     >
                                         <div className="flex items-center justify-between">
-                                            <span className="text-[8px] font-black text-white/40 uppercase tracking-[0.25em]">
+                                            <span className="text-[8px] font-black text-white/40 uppercase tracking-widest">
                                                 {label}
                                             </span>
-                                            <span className="text-[7px] text-zinc-600 font-bold uppercase tracking-widest">
+                                            <div className="flex items-center gap-2 text-[8px] text-zinc-500 font-bold uppercase tracking-widest">
                                                 {catItems.length.toLocaleString()} found
-                                            </span>
+                                            </div>
                                         </div>
                                     </div>
                                     {displayed.map((item, idx) => {
@@ -845,6 +858,13 @@ export default function HeaderBar({
                                             (vi) => vi.type === 'result' && vi.data === item
                                         );
                                         const isSelected = globalIdx === selectedIndex;
+                                        const isOfflineVessel =
+                                            item.category === 'vessel' && item.last_seen_at
+                                                ? (now - new Date(item.last_seen_at).getTime()) /
+                                                      60000 >
+                                                  60
+                                                : item.category === 'vessel' && item.isOffline;
+
                                         return (
                                             <button
                                                 key={`${cat}-${idx}`}
@@ -863,11 +883,11 @@ export default function HeaderBar({
                                                     />
                                                     <div className="flex flex-col">
                                                         <span
-                                                            className={`text-[11px] font-bold ${item.category === 'vessel' && item.isOffline ? 'text-zinc-400' : 'text-white'}`}
+                                                            className={`text-[11px] font-bold ${item.category === 'vessel' && isOfflineVessel ? 'text-zinc-400' : 'text-white'}`}
                                                         >
                                                             {item.name}
                                                             {item.category === 'vessel' &&
-                                                                item.isOffline && (
+                                                                isOfflineVessel && (
                                                                     <span className="ml-2 inline-flex items-center px-1.5 py-0.5 text-[8px] font-black uppercase tracking-widest bg-zinc-800/50 border border-zinc-700/50 text-zinc-500 rounded-sm">
                                                                         Offline
                                                                     </span>
