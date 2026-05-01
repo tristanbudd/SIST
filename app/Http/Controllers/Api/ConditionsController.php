@@ -81,7 +81,7 @@ class ConditionsController extends Controller
      *   "provider_status": 502
      * }
      */
-    public function weather($mmsi): JsonResponse
+    public function weather(string|int $mmsi): JsonResponse
     {
         $vessel = Vessel::where('mmsi', $mmsi)->first();
 
@@ -240,11 +240,6 @@ class ConditionsController extends Controller
      *   },
      *   "position": {
      *     "lat": 56.152,
-     * @response 502 scenario="Marine provider unavailable" {
-     *   "error": "Unable to fetch tide data right now.",
-     *   "reason": "marine_provider_unavailable",
-     *   "details": "Upstream provider unavailable"
-     * }
      *     "lng": 10.214
      *   },
      *   "current": {
@@ -272,8 +267,13 @@ class ConditionsController extends Controller
      *   },
      *   "source": "open-meteo.com"
      * }
+     * @response 502 scenario="Marine provider unavailable" {
+     *   "error": "Unable to fetch tide data right now.",
+     *   "reason": "marine_provider_unavailable",
+     *   "details": "Upstream provider unavailable"
+     * }
      */
-    public function tides($mmsi): JsonResponse
+    public function tides(string|int $mmsi): JsonResponse
     {
         $vessel = Vessel::where('mmsi', $mmsi)->first();
 

@@ -18,8 +18,9 @@ import {
 } from 'react-icons/fa6';
 import { LuAnchor, LuWaves, LuThermometer } from 'react-icons/lu';
 import axios from 'axios';
+import AnalysisReportModal from './AnalysisReportModal';
 
-interface Vessel {
+export interface Vessel {
     mmsi: number;
     imo?: number;
     name: string;
@@ -28,7 +29,7 @@ interface Vessel {
     course: number;
 }
 
-interface VesselDetails extends Vessel {
+export interface VesselDetails extends Vessel {
     call_sign?: string;
     type?: number;
     navigational_status?: number;
@@ -52,13 +53,14 @@ interface VesselDetails extends Vessel {
     position_age_seconds?: number;
 }
 
-interface WeatherData {
+export interface WeatherData {
     current: {
         time: string;
         temperature_c: number;
         apparent_temperature_c: number;
         wind_speed_kph: number;
         wind_direction_degrees: number;
+        wind_gusts_kph?: number;
         cloud_cover_percent?: number;
         weather_code: number;
         is_day: number;
@@ -72,12 +74,15 @@ interface WeatherData {
     source: string;
 }
 
-interface TideData {
+export interface TideData {
     current: {
         time: string;
         wave_height: number;
         wave_period: number;
+        wave_direction?: number;
         sea_level_height_msl: number;
+        ocean_current_velocity?: number;
+        ocean_current_direction?: number;
     };
     predictions: {
         time: string;
@@ -90,7 +95,7 @@ interface TideData {
     source: string;
 }
 
-interface SanctionRecord {
+export interface SanctionRecord {
     name: string;
     source: string;
     source_id?: string;
@@ -118,7 +123,7 @@ const SANCTIONER_MAPPING: Record<string, { name: string; body: string }> = {
     sg: { name: 'Singapore (SG)', body: 'MAS Sanctions List' },
 };
 
-interface SanctionsData {
+export interface SanctionsData {
     is_sanctioned: boolean;
     risk_level: 'clear' | 'low' | 'medium' | 'high';
     sanctions_count: number;
@@ -126,7 +131,7 @@ interface SanctionsData {
     sanctions: SanctionRecord[];
 }
 
-interface HistoryPosition {
+export interface HistoryPosition {
     lat: number;
     lng: number;
     speed: number;
@@ -202,6 +207,7 @@ export default function ShipDetailsSidebar({
     });
 
     const [isOffline, setIsOffline] = useState(false);
+    const [isReportOpen, setIsReportOpen] = useState(false);
 
     useEffect(() => {
         const timer = setTimeout(() => {
@@ -210,8 +216,8 @@ export default function ShipDetailsSidebar({
                 return;
             }
             const lastSeen = new Date(details.last_seen_at).getTime();
-            const ageHours = (Date.now() - lastSeen) / 3600000;
-            setIsOffline(ageHours > 1);
+            const ageMinutes = (Date.now() - lastSeen) / 60000;
+            setIsOffline(ageMinutes > 10);
         }, 0);
         return () => clearTimeout(timer);
     }, [details]);
@@ -1491,9 +1497,8 @@ export default function ShipDetailsSidebar({
                 </div>
 
                 <div className="p-6 border-t border-white/10 shrink-0 bg-zinc-950">
-                    {/* TODO: Implement full intelligence analysis report generator */}
                     <button
-                        onClick={() => alert('Full Intelligence Analysis Reports are coming soon.')}
+                        onClick={() => setIsReportOpen(true)}
                         className="w-full py-3 bg-zinc-100 hover:bg-white text-black font-black uppercase text-xs tracking-widest transition-all active:scale-[0.98] flex items-center justify-center gap-2 group"
                     >
                         View Full Analysis Report
@@ -1515,6 +1520,17 @@ export default function ShipDetailsSidebar({
                     </span>
                 </button>
             )}
+
+            <AnalysisReportModal
+                isOpen={isReportOpen}
+                onClose={() => setIsReportOpen(false)}
+                vessel={vessel}
+                details={details}
+                sanctions={sanctions}
+                weather={weather}
+                tides={tides}
+                isOffline={isOffline}
+            />
         </>
     );
 }
