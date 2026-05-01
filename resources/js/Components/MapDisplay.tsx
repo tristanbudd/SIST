@@ -26,9 +26,14 @@ import portsData from '../../data/ports.json';
 import countriesData from '../../data/countries.json';
 import citiesData from '../../data/cities.json';
 import { HistoryPosition } from '../Pages/Index';
+import { API_BASE_URL, OFFLINE_THRESHOLD_MINUTES } from '../constants';
+import { formatShortDate } from '../utils';
 
-// @ts-expect-error - Leaflet icon fix
-delete L.Icon.Default.prototype._getIconUrl;
+const defaultIconPrototype = L.Icon.Default.prototype as L.Icon.Default & {
+    _getIconUrl?: () => string;
+};
+
+delete defaultIconPrototype._getIconUrl;
 L.Icon.Default.mergeOptions({
     iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
     iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
@@ -74,9 +79,7 @@ interface ClusteredVessel extends Vessel {
 const IGNORED_VESSEL_NAMES = ['--'];
 
 function normalizeVessels(raw: Vessel[]): Vessel[] {
-    // Deduplicates raw vessel data by MMSI.
-    // AIS data frequently contains overlapping or malformed broadcasts (e.g., ships named "--").
-    // This logic ensures that if multiple records exist for the same MMSI, the one with a "useful" name is kept.
+    // Deduplicate by MMSI, preferring records with a usable name over placeholder names like "--"
     const byMmsi = new Map<number, Vessel>();
 
     for (const vessel of raw) {
@@ -165,17 +168,14 @@ function FleetLayer({
             const currentZoom = map.getZoom();
 
             try {
-                // Fetch only vessels within the current viewport bounds to optimize rendering and database queries
-                // age_minutes limits results to recently active vessels for performance
-                // TODO: Change to relative path once finished with dev
-                const response = await axios.get('https://sist.tristanbudd.com/api/v1/vessels', {
+                const response = await axios.get(`${API_BASE_URL}/vessels`, {
                     signal: controller.signal,
                     params: {
                         sw_lat: bounds.getSouthWest().lat,
                         sw_lng: bounds.getSouthWest().lng,
                         ne_lat: bounds.getNorthEast().lat,
                         ne_lng: bounds.getNorthEast().lng,
-                        age_minutes: 60,
+                        age_minutes: OFFLINE_THRESHOLD_MINUTES,
                     },
                 });
                 setZoom(currentZoom);
@@ -208,10 +208,9 @@ function FleetLayer({
 
         try {
             while (hasMore) {
-                // TODO: Change to relative path once finished with dev
-                const response = await axios.get('https://sist.tristanbudd.com/api/v1/vessels', {
+                const response = await axios.get(`${API_BASE_URL}/vessels`, {
                     params: {
-                        age_minutes: 60,
+                        age_minutes: OFFLINE_THRESHOLD_MINUTES,
                         offset: offset,
                     },
                 });
@@ -244,7 +243,7 @@ function FleetLayer({
     }, [isIdle]);
 
     const debouncedFetch = useCallback(() => {
-        // Debounce map movement events to prevent spamming the API while the user is actively panning or zooming
+        // 400ms debounce to batch rapid pan/zoom events
         if (fetchTimer.current) {
             clearTimeout(fetchTimer.current);
         }
@@ -340,7 +339,7 @@ function FleetLayer({
         }
 
         windowVessels.forEach((vessel) => {
-            // Selected vessels bypass clustering to remain interactive
+            // Skip clustering for the selected vessel so it stays clickable
             if (vessel.mmsi === selectedMmsi) {
                 filtered.push({
                     ...vessel,
@@ -352,7 +351,7 @@ function FleetLayer({
                 return;
             }
 
-            // Convert geographical coordinates to screen pixels for distance comparison
+            // Project to screen pixels for proximity check
             const pos = map.latLngToLayerPoint([vessel.lat, vessel.lng]);
             const clusterIndex = filtered.findIndex((f) => {
                 const fPos = map.latLngToLayerPoint([f.lat, f.lng]);
@@ -570,7 +569,7 @@ function FleetLayer({
         <>
             {isIdle && (
                 <div
-                    className={`fixed inset-0 z-2000 flex items-center justify-center bg-zinc-950/40 backdrop-blur-sm animate-in fade-in cursor-pointer p-4 transition-all duration-500 ${sidebarOpen ? 'sm:right-[400px]' : ''}`}
+                    className={`fixed inset-0 z-2000 flex items-center justify-center bg-zinc-950/40 backdrop-blur-sm animate-in fade-in cursor-pointer p-4 transition-all duration-500 ${sidebarOpen ? 'sm:right-100' : ''}`}
                     onClick={recordActivity}
                 >
                     <div className="bg-zinc-950/90 border border-amber-500/50 p-6 shadow-2xl flex flex-col items-center gap-4 text-center max-w-xs w-full animate-in zoom-in-95 duration-300">
@@ -735,7 +734,7 @@ function PortLayer() {
                     icon={portIcon}
                 >
                     <Popup closeButton={false} minWidth={200}>
-                        <div className="bg-zinc-950 border border-white/20 shadow-2xl p-4 min-w-[200px]">
+                        <div className="bg-zinc-950 border border-white/20 shadow-2xl p-4 min-w-50">
                             <div className="flex items-center justify-between gap-4 border-b border-white/10 pb-2 mb-2">
                                 <span className="font-bold text-xs uppercase tracking-wider text-cyan-400 truncate">
                                     {port.name}
@@ -854,7 +853,7 @@ function CityLayer() {
                     icon={cityIcon}
                 >
                     <Popup closeButton={false} minWidth={150}>
-                        <div className="bg-zinc-950 border border-white/20 shadow-2xl p-4 min-w-[150px]">
+                        <div className="bg-zinc-950 border border-white/20 shadow-2xl p-4 min-w-37.5">
                             <div className="flex items-center justify-between gap-4 border-b border-white/10 pb-2 mb-2">
                                 <span className="font-bold text-xs uppercase tracking-wider text-green-400 truncate">
                                     {city.name}
@@ -904,7 +903,7 @@ function LayerControl({
     return (
         <div className="absolute left-4 bottom-12 z-1000 flex flex-col items-start gap-2 pointer-events-auto">
             {isOpen && (
-                <div className="bg-zinc-950 border border-white/20 p-4 shadow-2xl flex flex-col gap-4 min-w-[200px] animate-in slide-in-from-bottom-2 duration-200">
+                <div className="bg-zinc-950 border border-white/20 p-4 shadow-2xl flex flex-col gap-4 min-w-50 animate-in slide-in-from-bottom-2 duration-200">
                     <div className="flex flex-col gap-3">
                         <div className="flex items-center justify-between border-b border-white/10 pb-2">
                             <span className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em]">
@@ -1278,7 +1277,7 @@ function TrajectoryLayer({
                             createWaypointIcon={createWaypointIcon}
                         >
                             <Popup closeButton={false} minWidth={220} className="sist-popup">
-                                <div className="bg-zinc-950 border border-white/20 shadow-2xl p-4 min-w-[220px]">
+                                <div className="bg-zinc-950 border border-white/20 shadow-2xl p-4 min-w-55">
                                     <div className="flex flex-col gap-1 border-b border-white/10 pb-2 mb-2">
                                         <span className="font-bold text-[10px] uppercase tracking-[0.2em] text-zinc-200">
                                             {p.mergedCount > 1
@@ -1286,13 +1285,7 @@ function TrajectoryLayer({
                                                 : 'Waypoint Detail'}
                                         </span>
                                         <span className="text-[10px] font-mono text-zinc-500">
-                                            {new Date(p.recorded_at).toLocaleTimeString('en-GB', {
-                                                hour: '2-digit',
-                                                minute: '2-digit',
-                                                day: '2-digit',
-                                                month: 'short',
-                                                timeZone: 'Europe/London',
-                                            })}
+                                            {formatShortDate(p.recorded_at)}
                                         </span>
                                     </div>
                                     {p.mergedCount > 1 && (

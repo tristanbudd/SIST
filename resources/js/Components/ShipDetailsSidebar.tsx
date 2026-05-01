@@ -14,11 +14,24 @@ import {
     FaArrowRight,
     FaCircleExclamation,
     FaChevronDown,
-    FaImage,
 } from 'react-icons/fa6';
 import { LuAnchor, LuWaves, LuThermometer } from 'react-icons/lu';
 import axios from 'axios';
 import AnalysisReportModal from './AnalysisReportModal';
+import {
+    SANCTIONER_MAPPING,
+    NAV_STATUS_MAP,
+    API_BASE_URL,
+    OFFLINE_THRESHOLD_MINUTES,
+} from '../constants';
+import {
+    formatPositionAge,
+    generateExternalLinks,
+    formatLondonTime,
+    formatShortDate,
+} from '../utils';
+import ExternalProviderIcon from './shared/ExternalProviderIcon';
+import LoadingSpinner from './shared/LoadingSpinner';
 
 export interface Vessel {
     mmsi: number;
@@ -105,24 +118,6 @@ export interface SanctionRecord {
     match_type?: 'exact' | 'fuzzy';
 }
 
-const SANCTIONER_MAPPING: Record<string, { name: string; body: string }> = {
-    us: { name: 'United States (US)', body: 'OFAC SDN / BIS List' },
-    eu: { name: 'European Union (EU)', body: 'EEAS Consolidated List' },
-    un: { name: 'United Nations (UN)', body: 'UNSC Sanctions Regimes' },
-    uk: { name: 'United Kingdom (UK)', body: 'HM Treasury (OFSI)' },
-    ca: { name: 'Canada (CA)', body: 'Special Economic Measures (SARA)' },
-    au: { name: 'Australia (AU)', body: 'DFAT Consolidated List' },
-    jp: { name: 'Japan (JP)', body: 'METI Asset Freeze List' },
-    ch: { name: 'Switzerland (CH)', body: 'SECO Sanctions' },
-    fr: { name: 'France (FR)', body: 'National Asset Freeze List' },
-    no: { name: 'Norway (NO)', body: 'MFA Sanctions List' },
-    ru: { name: 'Russia (RU)', body: 'Rosfinmonitoring Watchlist' },
-    ua: { name: 'Ukraine (UA)', body: 'NSDC Sanctions' },
-    ina: { name: 'Indonesia (INA)', body: 'National Authority (BAPETEN)' },
-    kr: { name: 'South Korea (KR)', body: 'Financial Services Commission' },
-    sg: { name: 'Singapore (SG)', body: 'MAS Sanctions List' },
-};
-
 export interface SanctionsData {
     is_sanctioned: boolean;
     risk_level: 'clear' | 'low' | 'medium' | 'high';
@@ -138,12 +133,6 @@ export interface HistoryPosition {
     course: number;
     recorded_at: string;
     isLatest?: boolean;
-}
-
-interface ExternalLink {
-    source: string;
-    url: string;
-    icon: string;
 }
 
 interface ShipDetailsSidebarProps {
@@ -217,7 +206,7 @@ export default function ShipDetailsSidebar({
             }
             const lastSeen = new Date(details.last_seen_at).getTime();
             const ageMinutes = (Date.now() - lastSeen) / 60000;
-            setIsOffline(ageMinutes > 10);
+            setIsOffline(ageMinutes > OFFLINE_THRESHOLD_MINUTES);
         }, 0);
         return () => clearTimeout(timer);
     }, [details]);
@@ -270,11 +259,10 @@ export default function ShipDetailsSidebar({
 
     const fetchAllData = useCallback(
         async (mmsi: number, signal?: AbortSignal) => {
-            // Executes multiple API requests concurrently to populate the sidebar panels
-            // Relies on AbortSignal to cancel pending requests if the user quickly selects another vessel, preventing state race conditions
+            // Fetch all sidebar data, abortable to avoid stale state on rapid vessel switches
             let detailsData: VesselDetails | null = null;
             try {
-                const res = await axios.get(`https://sist.tristanbudd.com/api/v1/vessels/${mmsi}`, {
+                const res = await axios.get(`${API_BASE_URL}/vessels/${mmsi}`, {
                     signal,
                 });
                 detailsData = res.data;
@@ -288,10 +276,9 @@ export default function ShipDetailsSidebar({
             }
 
             try {
-                const res = await axios.get(
-                    `https://sist.tristanbudd.com/api/v1/conditions/weather/${mmsi}`,
-                    { signal }
-                );
+                const res = await axios.get(`${API_BASE_URL}/conditions/weather/${mmsi}`, {
+                    signal,
+                });
                 setWeather(res.data);
             } catch (err) {
                 console.error('Failed to fetch weather:', err);
@@ -303,10 +290,7 @@ export default function ShipDetailsSidebar({
             }
 
             try {
-                const res = await axios.get(
-                    `https://sist.tristanbudd.com/api/v1/conditions/tides/${mmsi}`,
-                    { signal }
-                );
+                const res = await axios.get(`${API_BASE_URL}/conditions/tides/${mmsi}`, { signal });
                 setTides(res.data);
             } catch (err) {
                 console.error('Failed to fetch tides:', err);
@@ -318,10 +302,9 @@ export default function ShipDetailsSidebar({
             }
 
             try {
-                const res = await axios.get(
-                    `https://sist.tristanbudd.com/api/v1/vessels/${mmsi}/sanctions`,
-                    { signal }
-                );
+                const res = await axios.get(`${API_BASE_URL}/vessels/${mmsi}/sanctions`, {
+                    signal,
+                });
                 const sanctionsData = res.data;
 
                 const officialSanctions =
@@ -345,7 +328,7 @@ export default function ShipDetailsSidebar({
             }
 
             try {
-                let url = `https://sist.tristanbudd.com/api/v1/vessels/${mmsi}/history`;
+                let url = `${API_BASE_URL}/vessels/${mmsi}/history`;
                 if (historyMode === 'window' && historyStart && historyEnd) {
                     const startUtc = new Date(historyStart).toISOString();
                     const endUtc = new Date(historyEnd).toISOString();
@@ -356,9 +339,7 @@ export default function ShipDetailsSidebar({
                 const res = await axios.get(url, { signal });
                 let data = res.data.history || [];
 
-                // Synchronizes the historical breadcrumb trail with the live vessel details
-                // The history endpoint might lag slightly behind the live status endpoint.
-                // If the live status has a newer, geographically distinct position, we manually inject it at the head of the trail.
+                // Inject the live position at the head of the trail if the history endpoint hasn't caught up yet
                 if (detailsData) {
                     const latestHistory = data.length > 0 ? data[0] : null;
                     const detailsTime = new Date(detailsData.last_seen_at || Date.now()).getTime();
@@ -401,61 +382,17 @@ export default function ShipDetailsSidebar({
         [historyMode, historyHours, historyStart, historyEnd, onHistoryUpdate]
     );
 
-    const generatedLinks = useMemo<ExternalLink[]>(() => {
+    const generatedLinks = useMemo(() => {
         if (!vessel) return [];
-        const mmsi = vessel.mmsi;
-        // The IMO number is a permanent hull identifier that never changes during a ship's lifetime
-        // MMSI numbers can change if the vessel changes its registration flag, making IMO much more reliable for external database lookups
         const imo = details?.imo || vessel.imo;
-
-        return [
-            {
-                source: 'MarineTraffic (COM)',
-                url: imo
-                    ? `https://www.marinetraffic.com/en/ais/details/ships/imo:${imo}`
-                    : `https://www.marinetraffic.com/en/ais/details/ships/mmsi:${mmsi}`,
-                icon: 'marinetraffic',
-            },
-            {
-                source: 'VesselFinder',
-                url: imo
-                    ? `https://www.vesselfinder.com/vessels/details/${imo}`
-                    : `https://www.vesselfinder.com/vessels?name=${mmsi}`,
-                icon: 'vesselfinder',
-            },
-            {
-                source: 'VesselTracker',
-                url: imo
-                    ? `https://www.vesseltracker.com/en/Ships/${imo}.html`
-                    : `https://www.vesseltracker.com/en/vessels.html?search=${mmsi}`,
-                icon: 'vesseltracker',
-            },
-            {
-                source: 'MarineTraffic (ORG)',
-                url: `https://www.marinetraffic.org/vessels?vessel=${imo || mmsi}`,
-                icon: 'marinetraffic_org',
-            },
-            {
-                source: 'ShipSpotting',
-                url: imo
-                    ? `https://www.shipspotting.com/photos/gallery?imo=${imo}`
-                    : `https://www.shipspotting.com/photos/gallery?mmsi=${mmsi}`,
-                icon: 'shipspotting',
-            },
-            {
-                source: 'MyShipTracking',
-                url: `https://www.myshiptracking.com/vessels/mmsi-${mmsi}`,
-                icon: 'myshiptracking',
-            },
-        ];
+        return generateExternalLinks(vessel.mmsi, imo);
     }, [vessel, details]);
 
     const mergedHistory = useMemo(() => {
         if (history.length === 0) return [];
         const result: (HistoryPosition & { mergedCount: number })[] = [];
 
-        // Optimizes map rendering performance by filtering out redundant historical waypoints
-        // Sequential points that fall within a tiny geographical radius (0.0005 degrees) are merged into a single node
+        // Merge nearby sequential points (< 0.0005°) into single nodes to reduce clutter
         history.forEach((pos) => {
             if (result.length === 0) {
                 result.push({ ...pos, mergedCount: 1 });
@@ -508,7 +445,7 @@ export default function ShipDetailsSidebar({
             <aside
                 role="complementary"
                 aria-labelledby="vessel-details-title"
-                className={`fixed top-0 right-0 h-[calc(100%-32px)] w-full sm:w-[400px] bg-zinc-950/95 backdrop-blur-xl border-l border-white/10 z-2000 shadow-2xl transition-transform duration-500 ease-in-out transform ${isOpen && !isMinimized ? 'translate-x-0' : 'translate-x-full'} flex flex-col`}
+                className={`fixed top-0 right-0 h-[calc(100%-32px)] w-full sm:w-100 bg-zinc-950/95 backdrop-blur-xl border-l border-white/10 z-2000 shadow-2xl transition-transform duration-500 ease-in-out transform ${isOpen && !isMinimized ? 'translate-x-0' : 'translate-x-full'} flex flex-col`}
             >
                 <div className="p-6 border-b border-white/10 shrink-0">
                     <div className="flex items-center justify-end mb-2 gap-2">
@@ -551,7 +488,7 @@ export default function ShipDetailsSidebar({
                                     <span className="font-bold text-zinc-300">
                                         {details.flying_flag}
                                     </span>
-                                    <span className="text-[10px] text-zinc-500 truncate max-w-[80px]">
+                                    <span className="text-[10px] text-zinc-500 truncate max-w-20">
                                         {details.flying_flag_country}
                                     </span>
                                 </div>
@@ -589,43 +526,8 @@ export default function ShipDetailsSidebar({
                                 value={
                                     loading.details
                                         ? '...'
-                                        : (() => {
-                                              const s = details?.navigational_status;
-                                              switch (s) {
-                                                  case 0:
-                                                      return 'Underway';
-                                                  case 1:
-                                                      return 'Anchored';
-                                                  case 2:
-                                                      return 'NUC';
-                                                  case 3:
-                                                      return 'Restricted';
-                                                  case 4:
-                                                      return 'Constrained';
-                                                  case 5:
-                                                      return 'Moored';
-                                                  case 6:
-                                                      return 'Aground';
-                                                  case 7:
-                                                      return 'Fishing';
-                                                  case 8:
-                                                      return 'Sailing';
-                                                  case 9:
-                                                      return 'HSC';
-                                                  case 10:
-                                                      return 'WIG';
-                                                  case 11:
-                                                      return 'Towing';
-                                                  case 12:
-                                                      return 'Pushing';
-                                                  case 13:
-                                                      return 'Reserved';
-                                                  case 14:
-                                                      return 'SART Active';
-                                                  default:
-                                                      return 'Not Defined';
-                                              }
-                                          })()
+                                        : NAV_STATUS_MAP[details?.navigational_status ?? -1] ||
+                                          'Not Defined'
                                 }
                                 icon={<LuAnchor className="text-zinc-500" />}
                             />
@@ -670,12 +572,7 @@ export default function ShipDetailsSidebar({
                                         {loading.details
                                             ? '...'
                                             : details?.eta
-                                              ? new Date(details.eta).toLocaleDateString('en-GB', {
-                                                    day: '2-digit',
-                                                    month: 'short',
-                                                    hour: '2-digit',
-                                                    minute: '2-digit',
-                                                })
+                                              ? formatShortDate(details.eta)
                                               : 'N/A'}
                                     </span>
                                 </div>
@@ -723,7 +620,7 @@ export default function ShipDetailsSidebar({
                                     >
                                         <div className="flex items-center gap-3 min-w-0">
                                             {loading.sanctions ? (
-                                                <div className="w-8 h-8 bg-zinc-800 animate-spin rounded-full border-2 border-t-zinc-400 border-zinc-800" />
+                                                <LoadingSpinner size="lg" />
                                             ) : hasSanctionsError ? (
                                                 <FaCircleExclamation className="text-amber-500 w-8 h-8 shrink-0" />
                                             ) : isOfficiallySanctioned ? (
@@ -1056,7 +953,7 @@ export default function ShipDetailsSidebar({
                                                 <div className="text-[9px] font-black text-zinc-600 uppercase tracking-[0.2em] mb-1">
                                                     Recent Waypoints
                                                 </div>
-                                                <div className="max-h-[300px] overflow-y-auto custom-scrollbar space-y-1">
+                                                <div className="max-h-75 overflow-y-auto custom-scrollbar space-y-1">
                                                     {mergedHistory.slice(0, waypointsLimit).map(
                                                         (
                                                             pos: HistoryPosition & {
@@ -1096,18 +993,8 @@ export default function ShipDetailsSidebar({
                                                                     </div>
                                                                     <div className="flex items-center gap-2">
                                                                         <span className="text-[10px] font-mono text-zinc-500">
-                                                                            {new Date(
+                                                                            {formatShortDate(
                                                                                 pos.recorded_at
-                                                                            ).toLocaleTimeString(
-                                                                                'en-GB',
-                                                                                {
-                                                                                    hour: '2-digit',
-                                                                                    minute: '2-digit',
-                                                                                    day: '2-digit',
-                                                                                    month: 'short',
-                                                                                    timeZone:
-                                                                                        'Europe/London',
-                                                                                }
                                                                             )}
                                                                         </span>
                                                                         {pos.mergedCount > 1 && (
@@ -1169,16 +1056,7 @@ export default function ShipDetailsSidebar({
                                                         <FaClock className="w-2.5 h-2.5" />
                                                         Server Time (London)
                                                         <span className="text-zinc-400">
-                                                            (
-                                                            {new Date().toLocaleTimeString(
-                                                                'en-GB',
-                                                                {
-                                                                    hour: '2-digit',
-                                                                    minute: '2-digit',
-                                                                    timeZone: 'Europe/London',
-                                                                }
-                                                            )}
-                                                            )
+                                                            ({formatLondonTime()})
                                                         </span>
                                                     </div>
                                                     <div className="text-[9px] text-zinc-600 font-mono">
@@ -1316,13 +1194,7 @@ export default function ShipDetailsSidebar({
                                         <FaClock className="w-2.5 h-2.5" />
                                         Server Time (London)
                                         <span className="text-zinc-400">
-                                            (
-                                            {new Date().toLocaleTimeString('en-GB', {
-                                                hour: '2-digit',
-                                                minute: '2-digit',
-                                                timeZone: 'Europe/London',
-                                            })}
-                                            )
+                                            ({formatLondonTime()})
                                         </span>
                                     </div>
                                     <div className="text-[8px] text-zinc-600 uppercase font-black tracking-widest">
@@ -1419,32 +1291,7 @@ export default function ShipDetailsSidebar({
                                 <span className="text-xs text-zinc-200 mt-1">
                                     {loading.details
                                         ? '...'
-                                        : details?.position_age_seconds !== undefined
-                                          ? (() => {
-                                                const absSec = Math.round(
-                                                    Math.abs(details.position_age_seconds)
-                                                );
-                                                if (absSec < 60) return `${absSec} seconds ago`;
-                                                if (absSec < 3600) {
-                                                    const mins = Math.floor(absSec / 60);
-                                                    return `${mins} minute${mins !== 1 ? 's' : ''} ago`;
-                                                }
-                                                if (absSec < 86400) {
-                                                    const hours = Math.floor(absSec / 3600);
-                                                    return `${hours} hour${hours !== 1 ? 's' : ''} ago`;
-                                                }
-                                                if (absSec < 604800) {
-                                                    const days = Math.floor(absSec / 86400);
-                                                    return `${days} day${days !== 1 ? 's' : ''} ago`;
-                                                }
-                                                if (absSec < 2592000) {
-                                                    const weeks = Math.floor(absSec / 604800);
-                                                    return `${weeks} week${weeks !== 1 ? 's' : ''} ago`;
-                                                }
-                                                const months = Math.floor(absSec / 2592000);
-                                                return `${months} month${months !== 1 ? 's' : ''} ago`;
-                                            })()
-                                          : 'N/A'}
+                                        : formatPositionAge(details?.position_age_seconds)}
                                 </span>
                             </div>
                         </div>
@@ -1554,44 +1401,4 @@ function InfoRow({ label, value }: { label: string; value: string }) {
             <span className="text-[11px] text-zinc-200 font-mono">{value}</span>
         </div>
     );
-}
-
-function ExternalProviderIcon({ name, className = '' }: { name: string; className?: string }) {
-    const iconMap: Record<string, string> = {
-        'marinetraffic (com)': '/images/external/vesseltrackercom.png',
-        'marinetraffic (org)': '/images/external/marinetrafficorg.png',
-        vesselfinder: '/images/external/vesselfinder.png',
-        vesseltracker: '/images/external/vesseltracker.png',
-        shipspotting: '/images/external/shipspotting.png',
-        myshiptracking: '/images/external/myshiptracking.png',
-    };
-
-    const iconPath = iconMap[name.toLowerCase()];
-
-    if (iconPath) {
-        return (
-            <img
-                src={iconPath}
-                alt={`${name} logo`}
-                className={className}
-                onError={(e) => {
-                    const domain = name.toLowerCase().includes('marinetraffic')
-                        ? name.toLowerCase().includes('org')
-                            ? 'marinetraffic.org'
-                            : 'marinetraffic.com'
-                        : name.toLowerCase();
-                    (e.target as HTMLImageElement).src =
-                        `https://www.google.com/s2/favicons?domain=${domain}&sz=128`;
-                }}
-            />
-        );
-    }
-
-    switch (name.toLowerCase()) {
-        case 'sanctions_network':
-        case 'fleetleaks':
-            return <FaShieldHalved className={className} />;
-        default:
-            return <FaImage className={className} />;
-    }
 }
