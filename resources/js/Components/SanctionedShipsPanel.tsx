@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
     FaBan,
     FaXmark,
@@ -49,7 +49,6 @@ export default function SanctionedShipsPanel({
     const [isOpen, setIsOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [sanctionedVessels, setSanctionedVessels] = useState<SanctionedVessel[]>([]);
-    const [filteredVessels, setFilteredVessels] = useState<SanctionedVessel[]>([]);
     const [loading, setLoading] = useState(false);
 
     const [statusFilter, setStatusFilter] = useState<'all' | 'online' | 'offline'>('all');
@@ -75,6 +74,8 @@ export default function SanctionedShipsPanel({
     }, [isOpen]);
 
     const fetchSanctionedVessels = useCallback(async (search: string = '') => {
+        // Defer to avoid synchronous setState warning in useEffect
+        await Promise.resolve();
         setLoading(true);
         try {
             const response = await axios.get(`${API_BASE_URL}/vessels/sanctioned/list`, {
@@ -101,7 +102,10 @@ export default function SanctionedShipsPanel({
 
     useEffect(() => {
         if (isOpen && sanctionedVessels.length === 0) {
-            fetchSanctionedVessels();
+            const timer = setTimeout(() => {
+                fetchSanctionedVessels();
+            }, 0);
+            return () => clearTimeout(timer);
         }
     }, [isOpen, sanctionedVessels.length, fetchSanctionedVessels]);
 
@@ -121,24 +125,30 @@ export default function SanctionedShipsPanel({
         };
     }, [searchQuery, isOpen, fetchSanctionedVessels]);
 
+    const [now, setNow] = useState(() => Date.now());
+
     useEffect(() => {
+        const timer = setInterval(() => setNow(Date.now()), 60000);
+        return () => clearInterval(timer);
+    }, []);
+
+    const filteredVessels = useMemo(() => {
         let filtered = sanctionedVessels;
 
         if (statusFilter !== 'all') {
             filtered = filtered.filter((v) => {
-                const diffMins = (Date.now() - new Date(v.last_seen_at).getTime()) / 60000;
+                const diffMins = (now - new Date(v.last_seen_at).getTime()) / 60000;
                 const isOffline = diffMins > OFFLINE_THRESHOLD_MINUTES;
                 return statusFilter === 'offline' ? isOffline : !isOffline;
             });
         }
 
-        setFilteredVessels(filtered);
-        setCurrentPage(1);
-    }, [sanctionedVessels, statusFilter]);
+        return filtered;
+    }, [sanctionedVessels, statusFilter, now]);
 
-    const isVesselOffline = (lastSeen: string): boolean => {
+    const isVesselOffline = (lastSeen: string, time: number): boolean => {
         const lastSeenTime = new Date(lastSeen).getTime();
-        const ageMinutes = (Date.now() - lastSeenTime) / 60000;
+        const ageMinutes = (time - lastSeenTime) / 60000;
         return ageMinutes > OFFLINE_THRESHOLD_MINUTES;
     };
 
@@ -283,7 +293,10 @@ export default function SanctionedShipsPanel({
                                     type="text"
                                     placeholder="Search API by name, IMO, MMSI..."
                                     value={searchQuery}
-                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    onChange={(e) => {
+                                        setSearchQuery(e.target.value);
+                                        setCurrentPage(1);
+                                    }}
                                     className="bg-transparent border-none outline-none text-white text-xs font-semibold w-full placeholder:text-zinc-500 focus:ring-0 pl-7"
                                 />
                             </div>
@@ -294,7 +307,10 @@ export default function SanctionedShipsPanel({
                                     {(['all', 'online', 'offline'] as const).map((status) => (
                                         <button
                                             key={status}
-                                            onClick={() => setStatusFilter(status)}
+                                            onClick={() => {
+                                                setStatusFilter(status);
+                                                setCurrentPage(1);
+                                            }}
                                             className={`flex-1 text-[9px] font-bold uppercase tracking-widest px-2 py-2 transition-all ${
                                                 statusFilter === status
                                                     ? 'bg-zinc-800 text-white'
@@ -339,8 +355,8 @@ export default function SanctionedShipsPanel({
                         )}
 
                         <div className="space-y-1">
-                            {paginatedVessels.map((vessel) => {
-                                const offline = isVesselOffline(vessel.last_seen_at);
+                            {paginatedVessels.map((vessel: SanctionedVessel) => {
+                                const offline = isVesselOffline(vessel.last_seen_at, now);
                                 return (
                                     <button
                                         key={vessel.id || vessel.mmsi}
