@@ -4,6 +4,7 @@ import MainLayout from '../Layouts/MainLayout';
 import HeaderBar from '../Components/HeaderBar';
 import MapDisplay, { Vessel } from '../Components/MapDisplay';
 import ShipDetailsSidebar from '../Components/ShipDetailsSidebar';
+import SanctionedShipsPanel from '../Components/SanctionedShipsPanel';
 
 interface FleetStats {
     renderedIcons: number;
@@ -132,6 +133,7 @@ export default function Index() {
                     setTimeout(() => setSelectedWaypointKey(pos.recorded_at), 0);
                 }}
             />
+            <SanctionedShipsPanel onNavigate={handleNavigate} onVesselSelect={handleSelectVessel} />
         </MainLayout>
     );
 }

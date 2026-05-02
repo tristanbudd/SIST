@@ -497,7 +497,7 @@ export default function ShipDetailsSidebar({
                     </div>
                 </div>
 
-                <div className="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-8">
+                <div className="flex-1 overflow-y-auto p-6 space-y-8">
                     {isOffline && (
                         <div className="bg-red-500/10 border border-red-500/50 p-4 mb-4">
                             <h3 className="text-red-400 font-bold uppercase tracking-widest text-xs mb-1">
@@ -953,7 +953,7 @@ export default function ShipDetailsSidebar({
                                                 <div className="text-[9px] font-black text-zinc-600 uppercase tracking-[0.2em] mb-1">
                                                     Recent Waypoints
                                                 </div>
-                                                <div className="max-h-75 overflow-y-auto custom-scrollbar space-y-1">
+                                                <div className="max-h-75 overflow-y-auto space-y-1">
                                                     {mergedHistory.slice(0, waypointsLimit).map(
                                                         (
                                                             pos: HistoryPosition & {
