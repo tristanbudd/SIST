@@ -1103,7 +1103,7 @@ export default function MapDisplay({
     const [showCities, setShowCities] = useState(false);
 
     return (
-        <div className="fixed inset-0 z-0 bg-zinc-950">
+        <div className="fixed inset-0 bg-zinc-950">
             <MapContainer
                 center={center}
                 zoom={zoom}

@@ -8,6 +8,8 @@ use App\Models\VesselPosition;
 use App\Services\SanctionsService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Http;
 
 /**
  * @group Vessel Intelligence
@@ -439,5 +441,89 @@ class VesselController extends Controller
             'checked_at' => $result['checked_at'],
             'sources' => $result['sources'],
         ]);
+    }
+
+    /**
+     * List Sanctioned Vessels
+     *
+     * Fetch known sanctioned vessels from FleetLeaks API.
+     *
+     * @response 200 scenario="Sanctioned vessels" {
+     * "data": [
+     * {
+     * "mmsi": 273251810,
+     * "imo": 9256066,
+     * "name": "LIGOVSKY PROSPECT",
+     * "lat": 42.1234,
+     * "lng": 51.5678,
+     * "last_seen_at": "2026-05-02T12:20:07.000000Z",
+     * "is_sanctioned": true,
+     * "risk_level": "high"
+     * }
+     * ]
+     * }
+     */
+    public function sanctionedList(Request $request): JsonResponse
+    {
+        $cacheKey = 'fleetleaks_sanctioned_map_data';
+
+        $vessels = Cache::remember($cacheKey, 3600, function () {
+            $response = Http::withHeaders([
+                'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36',
+            ])->get('https://fleetleaks.com/wp-json/fleetleaks/v1/vessels/map-data');
+
+            if (! $response->successful()) {
+                return [];
+            }
+
+            return $response->json() ?? [];
+        });
+
+        $search = strtolower($request->input('search', ''));
+        $limit = min((int) $request->input('limit', 100), 500);
+
+        $sanctioned = [];
+        $count = 0;
+
+        foreach ($vessels as $vessel) {
+            $name = $vessel['name'] ?? '';
+
+            if ($search && strpos(strtolower($name), $search) === false) {
+                continue;
+            }
+
+            $sanctioners = $vessel['sanctioners'] ?? [];
+            $sanctions_count = is_array($sanctioners) ? count($sanctioners) : 0;
+
+            $risk_level = 'medium';
+            if ($sanctions_count > 2) {
+                $risk_level = 'high';
+            } elseif ($sanctions_count == 0) {
+                $risk_level = 'low';
+            }
+
+            // Using fleetleaks data to construct standardized response
+            $sanctioned[] = [
+                'id' => $vessel['id'] ?? null,
+                'mmsi' => isset($vessel['mmsi']) ? (int) $vessel['mmsi'] : (int) ($vessel['imo'] ?? 0), // fallback for matching
+                'imo' => isset($vessel['imo']) ? (int) $vessel['imo'] : null,
+                'name' => $name,
+                'lat' => (float) ($vessel['latitude'] ?? 0),
+                'lng' => (float) ($vessel['longitude'] ?? 0),
+                'course' => (float) ($vessel['course_degrees'] ?? 0),
+                'last_seen_at' => $vessel['location_last_updated'] ?? now()->toIso8601String(),
+                'is_sanctioned' => true,
+                'risk_level' => $risk_level,
+                'sanctions_count' => $sanctions_count,
+                'sanctioners' => $sanctioners,
+            ];
+
+            $count++;
+            if ($count >= $limit) {
+                break;
+            }
+        }
+
+        return response()->json(['data' => $sanctioned]);
     }
 }

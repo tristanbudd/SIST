@@ -450,7 +450,7 @@ export default function AnalysisReportModal({
                     </div>
 
                     {/* Main Content Area */}
-                    <div className="flex-1 overflow-y-auto custom-scrollbar p-6 bg-zinc-950 relative">
+                    <div className="flex-1 overflow-y-auto p-6 bg-zinc-950 relative">
                         {/* Global Loading Overlay */}
                         {loading.details && activeTab === 'overview' && (
                             <div className="absolute inset-0 bg-zinc-950/50 backdrop-blur-[2px] z-50 flex items-center justify-center">
@@ -974,7 +974,7 @@ export default function AnalysisReportModal({
                                         </h4>
                                         <div
                                             ref={weatherContainerRef}
-                                            className="space-y-1.5 max-h-75 overflow-y-auto custom-scrollbar pr-2 scroll-smooth"
+                                            className="space-y-1.5 max-h-75 overflow-y-auto pr-2 scroll-smooth"
                                         >
                                             {!weather?.hourly || weather.hourly.length === 0 ? (
                                                 <div className="h-20 flex items-center justify-center text-zinc-500 font-black uppercase tracking-widest text-[11px]">
@@ -1034,7 +1034,7 @@ export default function AnalysisReportModal({
                                         </h4>
                                         <div
                                             ref={tideContainerRef}
-                                            className="space-y-1.5 max-h-75 overflow-y-auto custom-scrollbar pr-2 scroll-smooth"
+                                            className="space-y-1.5 max-h-75 overflow-y-auto pr-2 scroll-smooth"
                                         >
                                             {!tides?.predictions ||
                                             tides.predictions.length === 0 ? (
