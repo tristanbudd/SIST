@@ -139,6 +139,9 @@ export default function Index() {
         });
     }, []);
 
+    const [isIdle, setIsIdle] = useState(false);
+    const [activePanel, setActivePanel] = useState<'sanctioned' | 'tools' | null>(null);
+
     return (
         <MainLayout
             header={
@@ -186,6 +189,9 @@ export default function Index() {
                         return prev.map((existing, i) => (i === index ? point : existing));
                     })
                 }
+                isIdle={isIdle}
+                onIdleChange={setIsIdle}
+                isToolsOpen={activePanel === 'tools'}
             />
             <ShipDetailsSidebar
                 vessel={selectedVessel}
@@ -214,6 +220,8 @@ export default function Index() {
                 canRedo={measurementRedoStack.length > 0}
                 measurementMode={measurementMode}
                 measurementPoints={measurementPoints}
+                isIdle={isIdle}
+                onOpenPanelChange={setActivePanel}
             />
         </MainLayout>
     );

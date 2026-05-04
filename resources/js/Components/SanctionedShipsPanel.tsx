@@ -60,6 +60,8 @@ interface SanctionedShipsPanelWithToolsProps {
     canRedo?: boolean;
     measurementMode?: 'distance' | 'area' | null;
     measurementPoints?: { lat: number; lng: number }[];
+    isIdle?: boolean;
+    onOpenPanelChange?: (panel: 'sanctioned' | 'tools' | null) => void;
 }
 
 export default function SanctionedShipsPanel({
@@ -538,13 +540,25 @@ export function SanctionedShipsPanelWithTools({
     canRedo,
     measurementMode,
     measurementPoints,
+    isIdle = false,
+    onOpenPanelChange,
 }: SanctionedShipsPanelWithToolsProps) {
-    const [openPanel, setOpenPanel] = useState<'sanctioned' | 'tools' | null>(null);
+    const [openPanel, setOpenPanelInternal] = useState<'sanctioned' | 'tools' | null>(null);
+    const setOpenPanel = useCallback(
+        (panel: 'sanctioned' | 'tools' | null) => {
+            setOpenPanelInternal(panel);
+            onOpenPanelChange?.(panel);
+        },
+        [onOpenPanelChange]
+    );
     const hideTriggers = openPanel !== null;
+
+    if (isIdle && openPanel === null) return null;
 
     return (
         <div
             className={`
+                ${isIdle ? 'sm:hidden' : ''}
                 ${
                     openPanel
                         ? 'pointer-events-auto'

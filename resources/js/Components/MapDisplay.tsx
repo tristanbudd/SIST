@@ -119,6 +119,8 @@ function FleetLayer({
     onClusterZoomNotice,
     showAll,
     sidebarOpen,
+    onIdleChange,
+    isToolsOpen = false,
 }: {
     onUpdate?: (stats: {
         renderedIcons: number;
@@ -133,6 +135,8 @@ function FleetLayer({
     onClusterZoomNotice?: () => void;
     showAll?: boolean;
     sidebarOpen?: boolean;
+    onIdleChange?: (isIdle: boolean) => void;
+    isToolsOpen?: boolean;
 }) {
     const map = useMap();
     const [windowVessels, setWindowVessels] = useState<Vessel[]>([]);
@@ -151,8 +155,11 @@ function FleetLayer({
 
     const recordActivity = useCallback(() => {
         setLastActivity(() => Date.now());
-        if (isIdle) setIsIdle(false);
-    }, [isIdle]);
+        if (isIdle) {
+            setIsIdle(false);
+            onIdleChange?.(false);
+        }
+    }, [isIdle, onIdleChange]);
 
     const fetchWindowVessels = useCallback(
         async (force = false) => {
@@ -291,19 +298,22 @@ function FleetLayer({
 
     useEffect(() => {
         const handleGlobalClick = () => recordActivity();
-        window.addEventListener('click', handleGlobalClick);
+        window.addEventListener('click', handleGlobalClick, { capture: true });
 
         const interval = setInterval(() => {
             if (Date.now() - lastActivity > IDLE_THRESHOLD) {
-                setIsIdle(true);
+                if (!isIdle) {
+                    setIsIdle(true);
+                    onIdleChange?.(true);
+                }
             }
         }, 5000);
 
         return () => {
-            window.removeEventListener('click', handleGlobalClick);
+            window.removeEventListener('click', handleGlobalClick, { capture: true });
             clearInterval(interval);
         };
-    }, [lastActivity, recordActivity]);
+    }, [lastActivity, recordActivity, isIdle, onIdleChange]);
 
     useEffect(() => {
         const initializeMapData = async () => {
@@ -570,7 +580,7 @@ function FleetLayer({
         <>
             {isIdle && (
                 <div
-                    className={`fixed inset-0 z-2000 flex items-center justify-center bg-zinc-950/40 backdrop-blur-sm animate-in fade-in cursor-pointer p-4 transition-all duration-500 ${sidebarOpen ? 'sm:right-100' : ''}`}
+                    className={`fixed inset-0 z-1400 sm:z-4000 flex items-center justify-center bg-zinc-950/40 backdrop-blur-sm animate-in fade-in cursor-pointer p-4 transition-all duration-500 ${sidebarOpen ? 'sm:right-100' : ''} ${isToolsOpen ? 'pb-64 sm:pb-0' : ''}`}
                     onClick={recordActivity}
                 >
                     <div className="bg-zinc-950/90 border border-amber-500/50 p-6 shadow-2xl flex flex-col items-center gap-4 text-center max-w-xs w-full animate-in zoom-in-95 duration-300">
@@ -1087,6 +1097,9 @@ interface MapDisplayProps {
     measurementPoints?: { lat: number; lng: number }[];
     onMeasurementPointAdd?: (point: { lat: number; lng: number }) => void;
     onMeasurementPointUpdate?: (index: number, point: { lat: number; lng: number }) => void;
+    isIdle?: boolean;
+    onIdleChange?: (isIdle: boolean) => void;
+    isToolsOpen?: boolean;
 }
 
 export default function MapDisplay({
@@ -1106,6 +1119,9 @@ export default function MapDisplay({
     measurementPoints = [],
     onMeasurementPointAdd,
     onMeasurementPointUpdate,
+    isIdle = false,
+    onIdleChange,
+    isToolsOpen = false,
 }: MapDisplayProps) {
     const [showVessels, setShowVessels] = useState(true);
     const [showPorts, setShowPorts] = useState(false);
@@ -1139,6 +1155,8 @@ export default function MapDisplay({
                     onClusterZoomNotice={onClusterZoomNotice}
                     showAll={showVessels}
                     sidebarOpen={sidebarOpen}
+                    onIdleChange={onIdleChange}
+                    isToolsOpen={isToolsOpen}
                 />
                 <TrajectoryLayer
                     positions={historyPositions}
@@ -1153,15 +1171,19 @@ export default function MapDisplay({
                     onPointUpdate={onMeasurementPointUpdate}
                 />
                 <MapViewHandler center={center} zoom={zoom} />
-                <ZoomControls />
-                <LayerControl
-                    showVessels={showVessels}
-                    setShowVessels={setShowVessels}
-                    showPorts={showPorts}
-                    setShowPorts={setShowPorts}
-                    showCities={showCities}
-                    setShowCities={setShowCities}
-                />
+                {!isIdle && (
+                    <>
+                        <ZoomControls />
+                        <LayerControl
+                            showVessels={showVessels}
+                            setShowVessels={setShowVessels}
+                            showPorts={showPorts}
+                            setShowPorts={setShowPorts}
+                            showCities={showCities}
+                            setShowCities={setShowCities}
+                        />
+                    </>
+                )}
             </MapContainer>
             <div className="pointer-events-none absolute inset-0 z-1 shadow-[inset_0_0_150px_rgba(0,0,0,0.8)]" />
         </div>
