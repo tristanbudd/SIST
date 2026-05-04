@@ -588,7 +588,7 @@ export default function HeaderBar({
     return (
         <header
             role="banner"
-            className="fixed top-0 left-0 right-0 z-50 p-2 sm:p-4 flex flex-col sm:flex-row items-center sm:items-start justify-between gap-2 sm:gap-0 pointer-events-none"
+            className="fixed top-0 left-0 right-0 z-50 p-4 sm:p-4 flex flex-col sm:flex-row items-center sm:items-start justify-between gap-2 sm:gap-0 pointer-events-none"
         >
             {showSuggestionsPanel && (
                 <div

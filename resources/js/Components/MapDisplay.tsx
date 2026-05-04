@@ -29,6 +29,7 @@ import citiesData from '../../data/cities.json';
 import { HistoryPosition } from '../Pages/Index';
 import { API_BASE_URL, OFFLINE_THRESHOLD_MINUTES } from '../constants';
 import { formatShortDate } from '../utils';
+import LayerControl from './LayerControl';
 
 const defaultIconPrototype = L.Icon.Default.prototype as L.Icon.Default & {
     _getIconUrl?: () => string;
@@ -894,150 +895,6 @@ function CityLayer() {
     );
 }
 
-function LayerControl({
-    showVessels,
-    setShowVessels,
-    showPorts,
-    setShowPorts,
-    showCities,
-    setShowCities,
-}: {
-    showVessels: boolean;
-    setShowVessels: (v: boolean) => void;
-    showPorts: boolean;
-    setShowPorts: (v: boolean) => void;
-    showCities: boolean;
-    setShowCities: (v: boolean) => void;
-}) {
-    const [isOpen, setIsOpen] = useState(false);
-
-    return (
-        <div className="absolute left-4 bottom-12 z-3000 flex flex-col items-start gap-2 pointer-events-auto">
-            {isOpen && (
-                <div className="bg-zinc-950 border border-white/20 p-4 shadow-2xl flex flex-col gap-4 min-w-50 animate-in slide-in-from-bottom-2 duration-200">
-                    <div className="flex flex-col gap-3">
-                        <div className="flex items-center justify-between border-b border-white/10 pb-2">
-                            <span className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em]">
-                                Map Layers
-                            </span>
-                            <button
-                                onClick={() => setIsOpen(false)}
-                                className="text-zinc-500 hover:text-white transition-colors w-5 h-5 flex items-center justify-center rounded hover:bg-white/10"
-                                title="Close"
-                            >
-                                <FaXmark className="w-3 h-3" />
-                            </button>
-                        </div>
-                        <div className="flex flex-col gap-2">
-                            <button
-                                onClick={() => setShowVessels(!showVessels)}
-                                className="flex items-center justify-between group cursor-pointer"
-                            >
-                                <span
-                                    className={`text-[11px] font-bold uppercase tracking-wider transition-colors ${showVessels ? 'text-white' : 'text-zinc-600'}`}
-                                >
-                                    Vessels
-                                </span>
-                                <div
-                                    className={`w-8 h-4 border transition-colors relative ${showVessels ? 'bg-white border-white' : 'border-zinc-800 bg-transparent'}`}
-                                >
-                                    <div
-                                        className={`absolute top-0.5 bottom-0.5 w-3 transition-all ${showVessels ? 'right-0.5 bg-black' : 'left-0.5 bg-zinc-800'}`}
-                                    />
-                                </div>
-                            </button>
-
-                            <button
-                                onClick={() => setShowPorts(!showPorts)}
-                                className="flex items-center justify-between group cursor-pointer"
-                            >
-                                <span
-                                    className={`text-[11px] font-bold uppercase tracking-wider transition-colors ${showPorts ? 'text-white' : 'text-zinc-600'}`}
-                                >
-                                    Ports
-                                </span>
-                                <div
-                                    className={`w-8 h-4 border transition-colors relative ${showPorts ? 'bg-white border-white' : 'border-zinc-800 bg-transparent'}`}
-                                >
-                                    <div
-                                        className={`absolute top-0.5 bottom-0.5 w-3 transition-all ${showPorts ? 'right-0.5 bg-black' : 'left-0.5 bg-zinc-800'}`}
-                                    />
-                                </div>
-                            </button>
-
-                            <button
-                                onClick={() => setShowCities(!showCities)}
-                                className="flex items-center justify-between group cursor-pointer"
-                            >
-                                <span
-                                    className={`text-[11px] font-bold uppercase tracking-wider transition-colors ${showCities ? 'text-white' : 'text-zinc-600'}`}
-                                >
-                                    Cities / Towns
-                                </span>
-                                <div
-                                    className={`w-8 h-4 border transition-colors relative ${showCities ? 'bg-white border-white' : 'border-zinc-800 bg-transparent'}`}
-                                >
-                                    <div
-                                        className={`absolute top-0.5 bottom-0.5 w-3 transition-all ${showCities ? 'right-0.5 bg-black' : 'left-0.5 bg-zinc-800'}`}
-                                    />
-                                </div>
-                            </button>
-                        </div>
-                    </div>
-
-                    <div className="flex flex-col gap-3">
-                        <span className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em] border-b border-white/10 pb-2">
-                            Legend
-                        </span>
-                        <div className="flex flex-col gap-2.5">
-                            <div className="flex items-center gap-3">
-                                <div className="w-5 h-5 bg-zinc-900 border border-white/10 flex items-center justify-center">
-                                    <FaLocationArrow className="w-2.5 h-2.5 text-white -rotate-45" />
-                                </div>
-                                <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-tight">
-                                    Tracked Vessel
-                                </span>
-                            </div>
-                            <div className="flex items-center gap-3">
-                                <div className="w-5 h-5 bg-zinc-900 border border-white/10 flex items-center justify-center relative">
-                                    <FaLocationArrow className="w-2.5 h-2.5 text-white -rotate-45" />
-                                    <FaLocationArrow className="w-2.5 h-2.5 text-white/40 -rotate-45 absolute translate-x-1 translate-y-1" />
-                                </div>
-                                <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-tight">
-                                    Vessel Cluster
-                                </span>
-                            </div>
-                            <div className="flex items-center gap-3">
-                                <div className="w-5 h-5 bg-zinc-900 border border-white/10 flex items-center justify-center">
-                                    <FaAnchor className="w-2.5 h-2.5 text-cyan-400" />
-                                </div>
-                                <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-tight">
-                                    International Port
-                                </span>
-                            </div>
-                            <div className="flex items-center gap-3">
-                                <div className="w-5 h-5 bg-zinc-900 border border-white/10 flex items-center justify-center">
-                                    <FaCity className="w-2.5 h-2.5 text-green-500" />
-                                </div>
-                                <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-tight">
-                                    City / Town
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
-            <button
-                onClick={() => setIsOpen(!isOpen)}
-                className={`w-10 h-10 border flex items-center justify-center transition-all shadow-2xl active:scale-95 ${isOpen ? 'bg-white text-black border-white' : 'bg-zinc-950 text-white border-white/20 hover:bg-zinc-900'}`}
-                title="Map Layers & Legend"
-            >
-                <FaLayerGroup className="w-4 h-4" />
-            </button>
-        </div>
-    );
-}
-
 function ZoomControls() {
     const map = useMap();
 
@@ -1100,6 +957,16 @@ interface MapDisplayProps {
     isIdle?: boolean;
     onIdleChange?: (isIdle: boolean) => void;
     isToolsOpen?: boolean;
+    activePanel?: 'sanctioned' | 'tools' | null;
+    onOpenPanelChange?: (panel: 'sanctioned' | 'tools' | null) => void;
+    isLayersOpen: boolean;
+    onLayersOpenChange: (open: boolean) => void;
+    showVessels: boolean;
+    setShowVessels: (v: boolean) => void;
+    showPorts: boolean;
+    setShowPorts: (v: boolean) => void;
+    showCities: boolean;
+    setShowCities: (v: boolean) => void;
 }
 
 export default function MapDisplay({
@@ -1122,10 +989,28 @@ export default function MapDisplay({
     isIdle = false,
     onIdleChange,
     isToolsOpen = false,
+    activePanel,
+    isLayersOpen,
+    onLayersOpenChange,
+    showVessels,
+    setShowVessels,
+    showPorts,
+    setShowPorts,
+    showCities,
+    setShowCities,
 }: MapDisplayProps) {
-    const [showVessels, setShowVessels] = useState(true);
-    const [showPorts, setShowPorts] = useState(false);
-    const [showCities, setShowCities] = useState(false);
+    const [isCompact, setIsCompact] = useState(
+        typeof window !== 'undefined' ? window.innerWidth < 640 || window.innerHeight < 800 : false
+    );
+
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+        const handleResize = () =>
+            setIsCompact(window.innerWidth < 640 || window.innerHeight < 800);
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
+
     const activeMeasurementMode = measurementMode;
 
     return (
@@ -1174,14 +1059,27 @@ export default function MapDisplay({
                 {!isIdle && (
                     <>
                         <ZoomControls />
-                        <LayerControl
-                            showVessels={showVessels}
-                            setShowVessels={setShowVessels}
-                            showPorts={showPorts}
-                            setShowPorts={setShowPorts}
-                            showCities={showCities}
-                            setShowCities={setShowCities}
-                        />
+                        <div className="absolute left-4 bottom-12 z-3000 flex flex-col items-start gap-2 pointer-events-auto">
+                            <LayerControl
+                                showVessels={showVessels}
+                                setShowVessels={setShowVessels}
+                                showPorts={showPorts}
+                                setShowPorts={setShowPorts}
+                                showCities={showCities}
+                                setShowCities={setShowCities}
+                                isOpen={isLayersOpen}
+                                onClose={() => onLayersOpenChange(false)}
+                            />
+                            {!isLayersOpen && !(isCompact && activePanel !== null) && (
+                                <button
+                                    onClick={() => onLayersOpenChange(true)}
+                                    className="w-10 h-10 border flex items-center justify-center transition-all shadow-2xl active:scale-95 bg-zinc-950 text-white border-white/20 hover:bg-zinc-900"
+                                    title="Map Layers & Legend"
+                                >
+                                    <FaLayerGroup className="w-4 h-4" />
+                                </button>
+                            )}
+                        </div>
                     </>
                 )}
             </MapContainer>

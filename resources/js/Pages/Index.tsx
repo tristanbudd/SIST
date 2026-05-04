@@ -141,6 +141,10 @@ export default function Index() {
 
     const [isIdle, setIsIdle] = useState(false);
     const [activePanel, setActivePanel] = useState<'sanctioned' | 'tools' | null>(null);
+    const [isLayersOpen, setIsLayersOpen] = useState(false);
+    const [showVessels, setShowVessels] = useState(true);
+    const [showPorts, setShowPorts] = useState(false);
+    const [showCities, setShowCities] = useState(false);
 
     return (
         <MainLayout
@@ -192,6 +196,32 @@ export default function Index() {
                 isIdle={isIdle}
                 onIdleChange={setIsIdle}
                 isToolsOpen={activePanel === 'tools'}
+                activePanel={activePanel}
+                onOpenPanelChange={(panel) => {
+                    setActivePanel(panel);
+                    const isCompact =
+                        typeof window !== 'undefined' &&
+                        (window.innerWidth < 640 || window.innerHeight < 800);
+                    if (panel && isCompact) {
+                        setIsLayersOpen(false);
+                    }
+                }}
+                isLayersOpen={isLayersOpen}
+                onLayersOpenChange={(open) => {
+                    setIsLayersOpen(open);
+                    const isCompact =
+                        typeof window !== 'undefined' &&
+                        (window.innerWidth < 640 || window.innerHeight < 800);
+                    if (open && isCompact) {
+                        setActivePanel(null);
+                    }
+                }}
+                showVessels={showVessels}
+                setShowVessels={setShowVessels}
+                showPorts={showPorts}
+                setShowPorts={setShowPorts}
+                showCities={showCities}
+                setShowCities={setShowCities}
             />
             <ShipDetailsSidebar
                 vessel={selectedVessel}
@@ -221,7 +251,15 @@ export default function Index() {
                 measurementMode={measurementMode}
                 measurementPoints={measurementPoints}
                 isIdle={isIdle}
+                activePanel={activePanel}
                 onOpenPanelChange={setActivePanel}
+                isLayersOpen={isLayersOpen}
+                showVessels={showVessels}
+                setShowVessels={setShowVessels}
+                showPorts={showPorts}
+                setShowPorts={setShowPorts}
+                showCities={showCities}
+                setShowCities={setShowCities}
             />
         </MainLayout>
     );
