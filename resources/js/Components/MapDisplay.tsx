@@ -9,6 +9,7 @@ import {
     useMapEvents,
     Polyline,
     CircleMarker,
+    Polygon,
 } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import {
@@ -118,6 +119,8 @@ function FleetLayer({
     onClusterZoomNotice,
     showAll,
     sidebarOpen,
+    onIdleChange,
+    isToolsOpen = false,
 }: {
     onUpdate?: (stats: {
         renderedIcons: number;
@@ -132,6 +135,8 @@ function FleetLayer({
     onClusterZoomNotice?: () => void;
     showAll?: boolean;
     sidebarOpen?: boolean;
+    onIdleChange?: (isIdle: boolean) => void;
+    isToolsOpen?: boolean;
 }) {
     const map = useMap();
     const [windowVessels, setWindowVessels] = useState<Vessel[]>([]);
@@ -150,8 +155,11 @@ function FleetLayer({
 
     const recordActivity = useCallback(() => {
         setLastActivity(() => Date.now());
-        if (isIdle) setIsIdle(false);
-    }, [isIdle]);
+        if (isIdle) {
+            setIsIdle(false);
+            onIdleChange?.(false);
+        }
+    }, [isIdle, onIdleChange]);
 
     const fetchWindowVessels = useCallback(
         async (force = false) => {
@@ -290,19 +298,22 @@ function FleetLayer({
 
     useEffect(() => {
         const handleGlobalClick = () => recordActivity();
-        window.addEventListener('click', handleGlobalClick);
+        window.addEventListener('click', handleGlobalClick, { capture: true });
 
         const interval = setInterval(() => {
             if (Date.now() - lastActivity > IDLE_THRESHOLD) {
-                setIsIdle(true);
+                if (!isIdle) {
+                    setIsIdle(true);
+                    onIdleChange?.(true);
+                }
             }
         }, 5000);
 
         return () => {
-            window.removeEventListener('click', handleGlobalClick);
+            window.removeEventListener('click', handleGlobalClick, { capture: true });
             clearInterval(interval);
         };
-    }, [lastActivity, recordActivity]);
+    }, [lastActivity, recordActivity, isIdle, onIdleChange]);
 
     useEffect(() => {
         const initializeMapData = async () => {
@@ -569,7 +580,7 @@ function FleetLayer({
         <>
             {isIdle && (
                 <div
-                    className={`fixed inset-0 z-2000 flex items-center justify-center bg-zinc-950/40 backdrop-blur-sm animate-in fade-in cursor-pointer p-4 transition-all duration-500 ${sidebarOpen ? 'sm:right-100' : ''}`}
+                    className={`fixed inset-0 z-1400 sm:z-4000 flex items-center justify-center bg-zinc-950/40 backdrop-blur-sm animate-in fade-in cursor-pointer p-4 transition-all duration-500 ${sidebarOpen ? 'sm:right-100' : ''} ${isToolsOpen ? 'pb-64 sm:pb-0' : ''}`}
                     onClick={recordActivity}
                 >
                     <div className="bg-zinc-950/90 border border-amber-500/50 p-6 shadow-2xl flex flex-col items-center gap-4 text-center max-w-xs w-full animate-in zoom-in-95 duration-300">
@@ -901,7 +912,7 @@ function LayerControl({
     const [isOpen, setIsOpen] = useState(false);
 
     return (
-        <div className="absolute left-4 bottom-12 z-1000 flex flex-col items-start gap-2 pointer-events-auto">
+        <div className="absolute left-4 bottom-12 z-3000 flex flex-col items-start gap-2 pointer-events-auto">
             {isOpen && (
                 <div className="bg-zinc-950 border border-white/20 p-4 shadow-2xl flex flex-col gap-4 min-w-50 animate-in slide-in-from-bottom-2 duration-200">
                     <div className="flex flex-col gap-3">
@@ -1031,7 +1042,7 @@ function ZoomControls() {
     const map = useMap();
 
     return (
-        <div className="absolute right-4 bottom-12 z-1000 flex flex-col gap-1 pointer-events-auto">
+        <div className="absolute right-4 bottom-12 z-3000 flex flex-col gap-1 pointer-events-auto">
             <button
                 onClick={() => map.zoomIn()}
                 className="w-10 h-10 bg-zinc-950 border border-white/20 flex items-center justify-center text-white hover:bg-zinc-900 transition-colors shadow-2xl active:scale-95"
@@ -1082,6 +1093,13 @@ interface MapDisplayProps {
     showWaypoints?: boolean;
     selectedWaypointKey?: string | null;
     sidebarOpen?: boolean;
+    measurementMode?: 'distance' | 'area' | null;
+    measurementPoints?: { lat: number; lng: number }[];
+    onMeasurementPointAdd?: (point: { lat: number; lng: number }) => void;
+    onMeasurementPointUpdate?: (index: number, point: { lat: number; lng: number }) => void;
+    isIdle?: boolean;
+    onIdleChange?: (isIdle: boolean) => void;
+    isToolsOpen?: boolean;
 }
 
 export default function MapDisplay({
@@ -1097,10 +1115,18 @@ export default function MapDisplay({
     showWaypoints = true,
     selectedWaypointKey = null,
     sidebarOpen = false,
+    measurementMode = null,
+    measurementPoints = [],
+    onMeasurementPointAdd,
+    onMeasurementPointUpdate,
+    isIdle = false,
+    onIdleChange,
+    isToolsOpen = false,
 }: MapDisplayProps) {
     const [showVessels, setShowVessels] = useState(true);
     const [showPorts, setShowPorts] = useState(false);
     const [showCities, setShowCities] = useState(false);
+    const activeMeasurementMode = measurementMode;
 
     return (
         <div className="fixed inset-0 bg-zinc-950">
@@ -1129,6 +1155,8 @@ export default function MapDisplay({
                     onClusterZoomNotice={onClusterZoomNotice}
                     showAll={showVessels}
                     sidebarOpen={sidebarOpen}
+                    onIdleChange={onIdleChange}
+                    isToolsOpen={isToolsOpen}
                 />
                 <TrajectoryLayer
                     positions={historyPositions}
@@ -1136,21 +1164,250 @@ export default function MapDisplay({
                     showWaypoints={showWaypoints}
                     selectedWaypointKey={selectedWaypointKey}
                 />
-                <MapViewHandler center={center} zoom={zoom} />
-                <ZoomControls />
-                <LayerControl
-                    showVessels={showVessels}
-                    setShowVessels={setShowVessels}
-                    showPorts={showPorts}
-                    setShowPorts={setShowPorts}
-                    showCities={showCities}
-                    setShowCities={setShowCities}
+                <MeasurementLayer
+                    mode={activeMeasurementMode}
+                    points={measurementPoints}
+                    onPointAdd={onMeasurementPointAdd}
+                    onPointUpdate={onMeasurementPointUpdate}
                 />
+                <MapViewHandler center={center} zoom={zoom} />
+                {!isIdle && (
+                    <>
+                        <ZoomControls />
+                        <LayerControl
+                            showVessels={showVessels}
+                            setShowVessels={setShowVessels}
+                            showPorts={showPorts}
+                            setShowPorts={setShowPorts}
+                            showCities={showCities}
+                            setShowCities={setShowCities}
+                        />
+                    </>
+                )}
             </MapContainer>
-
             <div className="pointer-events-none absolute inset-0 z-1 shadow-[inset_0_0_150px_rgba(0,0,0,0.8)]" />
         </div>
     );
+}
+
+function MeasurementLayer({
+    mode,
+    points,
+    onPointAdd,
+    onPointUpdate,
+}: {
+    mode: 'distance' | 'area' | null;
+    points: L.LatLngLiteral[];
+    onPointAdd?: (point: L.LatLngLiteral) => void;
+    onPointUpdate?: (index: number, point: L.LatLngLiteral) => void;
+}) {
+    const map = useMap();
+    const draggingIndexRef = useRef<number | null>(null);
+    const didDragRef = useRef(false);
+
+    const updatePoint = (index: number, nextPoint: L.LatLngLiteral) => {
+        if (!onPointUpdate) return;
+        if (mode === 'area' && !canMovePolygonPoint(points, index, nextPoint)) {
+            return;
+        }
+        onPointUpdate(index, nextPoint);
+    };
+
+    useMapEvents({
+        click: (event) => {
+            if (!mode) return;
+            if (draggingIndexRef.current !== null || didDragRef.current) {
+                didDragRef.current = false;
+                return;
+            }
+            const nextPoint = { lat: event.latlng.lat, lng: event.latlng.lng };
+            if (mode === 'area' && !canAddPolygonPoint(points, nextPoint)) {
+                return;
+            }
+            onPointAdd?.(nextPoint);
+        },
+        mousemove: (event) => {
+            if (draggingIndexRef.current === null) return;
+            didDragRef.current = true;
+            updatePoint(draggingIndexRef.current, {
+                lat: event.latlng.lat,
+                lng: event.latlng.lng,
+            });
+        },
+        mouseup: () => {
+            if (draggingIndexRef.current !== null) {
+                draggingIndexRef.current = null;
+                didDragRef.current = false;
+                map.dragging.enable();
+            }
+        },
+    });
+
+    if (!mode || points.length === 0) return null;
+
+    const positions = points.map((point) => [point.lat, point.lng] as [number, number]);
+
+    return (
+        <>
+            {mode === 'distance' && positions.length > 1 && (
+                <Polyline
+                    positions={positions}
+                    pathOptions={{
+                        color: '#f4f4f5',
+                        weight: 2,
+                        dashArray: '6, 8',
+                        opacity: 0.8,
+                    }}
+                />
+            )}
+            {mode === 'area' && positions.length > 2 && (
+                <Polygon
+                    positions={positions}
+                    pathOptions={{
+                        color: '#f4f4f5',
+                        weight: 2,
+                        fillColor: '#f4f4f5',
+                        fillOpacity: 0.12,
+                    }}
+                />
+            )}
+            {points.map((point, index) => (
+                <CircleMarker
+                    key={`${point.lat}-${point.lng}-${index}`}
+                    center={[point.lat, point.lng]}
+                    radius={4}
+                    pathOptions={{
+                        fillColor: '#f4f4f5',
+                        fillOpacity: 0.9,
+                        color: '#09090b',
+                        weight: 1,
+                    }}
+                    eventHandlers={{
+                        mousedown: (event) => {
+                            if (!mode) return;
+                            draggingIndexRef.current = index;
+                            didDragRef.current = false;
+                            if (event.originalEvent) {
+                                L.DomEvent.stop(event.originalEvent);
+                            }
+                            map.dragging.disable();
+                        },
+                        click: (event) => {
+                            if (mode !== 'distance') return;
+                            if (event.originalEvent) {
+                                L.DomEvent.stop(event.originalEvent);
+                            }
+                            onPointAdd?.({ lat: point.lat, lng: point.lng });
+                        },
+                    }}
+                />
+            ))}
+        </>
+    );
+}
+
+function canMovePolygonPoint(
+    points: L.LatLngLiteral[],
+    index: number,
+    next: L.LatLngLiteral
+): boolean {
+    if (points.length < 4) return true;
+    const nextPoints = points.map((point, i) => (i === index ? next : point));
+    return isSimplePolygon(nextPoints);
+}
+
+function isSimplePolygon(points: L.LatLngLiteral[]): boolean {
+    if (points.length < 4) return true;
+    const n = points.length;
+    for (let i = 0; i < n; i++) {
+        const a1 = points[i];
+        const a2 = points[(i + 1) % n];
+        for (let j = i + 1; j < n; j++) {
+            const b1 = points[j];
+            const b2 = points[(j + 1) % n];
+            if (i === j) continue;
+            if ((i + 1) % n === j) continue;
+            if (i === (j + 1) % n) continue;
+            if (segmentsIntersect(a1, a2, b1, b2)) {
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
+function canAddPolygonPoint(points: L.LatLngLiteral[], next: L.LatLngLiteral): boolean {
+    if (points.length < 2) return true;
+
+    const last = points[points.length - 1];
+    const newSegmentStart = last;
+    const newSegmentEnd = next;
+
+    for (let i = 0; i < points.length - 2; i++) {
+        const segmentStart = points[i];
+        const segmentEnd = points[i + 1];
+        if (segmentsIntersect(newSegmentStart, newSegmentEnd, segmentStart, segmentEnd)) {
+            return false;
+        }
+    }
+
+    if (points.length >= 3) {
+        const closingStart = next;
+        const closingEnd = points[0];
+        for (let i = 1; i < points.length - 1; i++) {
+            const segmentStart = points[i];
+            const segmentEnd = points[i + 1];
+            if (segmentsIntersect(closingStart, closingEnd, segmentStart, segmentEnd)) {
+                return false;
+            }
+        }
+    }
+
+    return true;
+}
+
+function segmentsIntersect(
+    a: L.LatLngLiteral,
+    b: L.LatLngLiteral,
+    c: L.LatLngLiteral,
+    d: L.LatLngLiteral
+): boolean {
+    if (pointsEqual(a, c) || pointsEqual(a, d) || pointsEqual(b, c) || pointsEqual(b, d)) {
+        return false;
+    }
+
+    const orientation = (p: L.LatLngLiteral, q: L.LatLngLiteral, r: L.LatLngLiteral) => {
+        const value = (q.lng - p.lng) * (r.lat - q.lat) - (q.lat - p.lat) * (r.lng - q.lng);
+        if (Math.abs(value) < 1e-12) return 0;
+        return value > 0 ? 1 : 2;
+    };
+
+    const onSegment = (p: L.LatLngLiteral, q: L.LatLngLiteral, r: L.LatLngLiteral) => {
+        return (
+            q.lng <= Math.max(p.lng, r.lng) + 1e-12 &&
+            q.lng >= Math.min(p.lng, r.lng) - 1e-12 &&
+            q.lat <= Math.max(p.lat, r.lat) + 1e-12 &&
+            q.lat >= Math.min(p.lat, r.lat) - 1e-12
+        );
+    };
+
+    const o1 = orientation(a, b, c);
+    const o2 = orientation(a, b, d);
+    const o3 = orientation(c, d, a);
+    const o4 = orientation(c, d, b);
+
+    if (o1 !== o2 && o3 !== o4) return true;
+
+    if (o1 === 0 && onSegment(a, c, b)) return true;
+    if (o2 === 0 && onSegment(a, d, b)) return true;
+    if (o3 === 0 && onSegment(c, a, d)) return true;
+    if (o4 === 0 && onSegment(c, b, d)) return true;
+
+    return false;
+}
+
+function pointsEqual(a: L.LatLngLiteral, b: L.LatLngLiteral): boolean {
+    return Math.abs(a.lat - b.lat) < 1e-12 && Math.abs(a.lng - b.lng) < 1e-12;
 }
 function WaypointMarker({
     p,

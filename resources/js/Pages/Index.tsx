@@ -4,7 +4,7 @@ import MainLayout from '../Layouts/MainLayout';
 import HeaderBar from '../Components/HeaderBar';
 import MapDisplay, { Vessel } from '../Components/MapDisplay';
 import ShipDetailsSidebar from '../Components/ShipDetailsSidebar';
-import SanctionedShipsPanel from '../Components/SanctionedShipsPanel';
+import { SanctionedShipsPanelWithTools } from '../Components/SanctionedShipsPanel';
 
 interface FleetStats {
     renderedIcons: number;
@@ -28,6 +28,14 @@ export default function Index() {
         center: [20, 0],
         zoom: 3,
     });
+    const [measurementMode, setMeasurementMode] = useState<'distance' | 'area' | null>(null);
+    const [measurementPoints, setMeasurementPoints] = useState<{ lat: number; lng: number }[]>([]);
+    const [measurementUndoStack, setMeasurementUndoStack] = useState<
+        { lat: number; lng: number }[][]
+    >([]);
+    const [measurementRedoStack, setMeasurementRedoStack] = useState<
+        { lat: number; lng: number }[][]
+    >([]);
 
     const [fleetStats, setFleetStats] = useState({
         renderedIcons: 0,
@@ -86,6 +94,54 @@ export default function Index() {
         }, 5000);
     }, []);
 
+    const handleMeasureDistance = useCallback(() => {
+        setMeasurementMode('distance');
+        setMeasurementPoints([]);
+        setMeasurementUndoStack([]);
+        setMeasurementRedoStack([]);
+    }, []);
+
+    const handleMeasureArea = useCallback(() => {
+        setMeasurementMode('area');
+        setMeasurementPoints([]);
+        setMeasurementUndoStack([]);
+        setMeasurementRedoStack([]);
+    }, []);
+
+    const handleClearMeasurements = useCallback(() => {
+        setMeasurementMode(null);
+        setMeasurementPoints([]);
+        setMeasurementUndoStack([]);
+        setMeasurementRedoStack([]);
+    }, []);
+
+    const handleMeasurementUndo = useCallback(() => {
+        setMeasurementUndoStack((stack) => {
+            if (stack.length === 0) return stack;
+            const previous = stack[stack.length - 1];
+            setMeasurementPoints((current) => {
+                setMeasurementRedoStack((redo) => [...redo, current]);
+                return previous;
+            });
+            return stack.slice(0, -1);
+        });
+    }, []);
+
+    const handleMeasurementRedo = useCallback(() => {
+        setMeasurementRedoStack((stack) => {
+            if (stack.length === 0) return stack;
+            const next = stack[stack.length - 1];
+            setMeasurementPoints((current) => {
+                setMeasurementUndoStack((undo) => [...undo, current]);
+                return next;
+            });
+            return stack.slice(0, -1);
+        });
+    }, []);
+
+    const [isIdle, setIsIdle] = useState(false);
+    const [activePanel, setActivePanel] = useState<'sanctioned' | 'tools' | null>(null);
+
     return (
         <MainLayout
             header={
@@ -117,6 +173,25 @@ export default function Index() {
                 showWaypoints={showWaypoints}
                 selectedWaypointKey={selectedWaypointKey}
                 sidebarOpen={!!selectedVessel}
+                measurementMode={measurementMode}
+                measurementPoints={measurementPoints}
+                onMeasurementPointAdd={(point) =>
+                    setMeasurementPoints((prev) => {
+                        setMeasurementUndoStack((stack) => [...stack, prev]);
+                        setMeasurementRedoStack([]);
+                        return [...prev, point];
+                    })
+                }
+                onMeasurementPointUpdate={(index, point) =>
+                    setMeasurementPoints((prev) => {
+                        setMeasurementUndoStack((stack) => [...stack, prev]);
+                        setMeasurementRedoStack([]);
+                        return prev.map((existing, i) => (i === index ? point : existing));
+                    })
+                }
+                isIdle={isIdle}
+                onIdleChange={setIsIdle}
+                isToolsOpen={activePanel === 'tools'}
             />
             <ShipDetailsSidebar
                 vessel={selectedVessel}
@@ -133,7 +208,21 @@ export default function Index() {
                     setTimeout(() => setSelectedWaypointKey(pos.recorded_at), 0);
                 }}
             />
-            <SanctionedShipsPanel onNavigate={handleNavigate} onVesselSelect={handleSelectVessel} />
+            <SanctionedShipsPanelWithTools
+                onNavigate={handleNavigate}
+                onVesselSelect={handleSelectVessel}
+                onMeasureDistance={handleMeasureDistance}
+                onMeasureArea={handleMeasureArea}
+                onExitTool={handleClearMeasurements}
+                onUndo={handleMeasurementUndo}
+                onRedo={handleMeasurementRedo}
+                canUndo={measurementUndoStack.length > 0}
+                canRedo={measurementRedoStack.length > 0}
+                measurementMode={measurementMode}
+                measurementPoints={measurementPoints}
+                isIdle={isIdle}
+                onOpenPanelChange={setActivePanel}
+            />
         </MainLayout>
     );
 }

@@ -387,11 +387,17 @@ export default function AnalysisReportModal({
                 {/* Header */}
                 <div className="flex items-center justify-between p-5 border-b border-white/10 bg-zinc-900/80">
                     <div className="flex items-center gap-4">
-                        <img
-                            src="/images/logo.png"
-                            alt="SIST Logo"
-                            className="h-10 object-contain opacity-90"
-                        />
+                        <picture>
+                            <source
+                                type="image/webp"
+                                srcSet="/images/logo-1x.webp 1x, /images/logo-2x.webp 2x, /images/logo-3x.webp 3x"
+                            />
+                            <img
+                                src="/images/logo.png"
+                                alt="SIST Logo"
+                                className="h-10 object-contain opacity-90"
+                            />
+                        </picture>
                         <div className="w-px h-8 bg-white/20 mx-2" />
                         <div>
                             <h2
