@@ -10,7 +10,7 @@ import {
 } from 'react-icons/fa6';
 import axios from 'axios';
 import L from 'leaflet';
-import { OFFLINE_THRESHOLD_MINUTES, API_BASE_URL } from '../constants';
+import { API_BASE_URL } from '../constants';
 import { Vessel as MapVessel } from './MapDisplay';
 import MapToolsPanel from './MapToolsPanel';
 
@@ -46,6 +46,7 @@ interface SanctionedShipsPanelProps {
     onOpen?: () => void;
     onClose?: () => void;
     hideTrigger?: boolean;
+    trackedVessels?: MapVessel[];
 }
 
 interface SanctionedShipsPanelWithToolsProps {
@@ -71,6 +72,7 @@ interface SanctionedShipsPanelWithToolsProps {
     showCities?: boolean;
     setShowCities?: (v: boolean) => void;
     isSearchActive?: boolean;
+    trackedVessels?: MapVessel[];
 }
 
 export default function SanctionedShipsPanel({
@@ -81,6 +83,7 @@ export default function SanctionedShipsPanel({
     onOpen,
     onClose,
     hideTrigger = false,
+    trackedVessels = [],
 }: SanctionedShipsPanelProps) {
     const [isOpenInternal, setIsOpenInternal] = useState(false);
     const isOpen = isOpenProp ?? isOpenInternal;
@@ -164,31 +167,43 @@ export default function SanctionedShipsPanel({
         };
     }, [searchQuery, isOpen, fetchSanctionedVessels]);
 
-    const [now, setNow] = useState(() => Date.now());
+    const onlineMmsis = useMemo(() => {
+        const set = new Set<number>();
+        trackedVessels.forEach((v) => {
+            const val = Number(v.mmsi);
+            if (!isNaN(val)) set.add(val);
+        });
+        return set;
+    }, [trackedVessels]);
 
-    useEffect(() => {
-        const timer = setInterval(() => setNow(Date.now()), 60000);
-        return () => clearInterval(timer);
-    }, []);
+    const onlineImos = useMemo(() => {
+        const set = new Set<string>();
+        trackedVessels.forEach((v) => {
+            if (v.imo) set.add(String(v.imo).trim());
+        });
+        return set;
+    }, [trackedVessels]);
 
     const filteredVessels = useMemo(() => {
         let filtered = sanctionedVessels;
 
         if (statusFilter !== 'all') {
             filtered = filtered.filter((v) => {
-                const diffMins = (now - new Date(v.last_seen_at).getTime()) / 60000;
-                const isOffline = diffMins > OFFLINE_THRESHOLD_MINUTES;
-                return statusFilter === 'offline' ? isOffline : !isOffline;
+                const mmsi = Number(v.mmsi);
+                const imo = v.imo ? String(v.imo).trim() : null;
+                const isOnline = onlineMmsis.has(mmsi) || (imo && onlineImos.has(imo));
+                return statusFilter === 'offline' ? !isOnline : isOnline;
             });
         }
 
         return filtered;
-    }, [sanctionedVessels, statusFilter, now]);
+    }, [sanctionedVessels, statusFilter, onlineMmsis, onlineImos]);
 
-    const isVesselOffline = (lastSeen: string, time: number): boolean => {
-        const lastSeenTime = new Date(lastSeen).getTime();
-        const ageMinutes = (time - lastSeenTime) / 60000;
-        return ageMinutes > OFFLINE_THRESHOLD_MINUTES;
+    const isVesselOffline = (vessel: SanctionedVessel): boolean => {
+        const mmsi = Number(vessel.mmsi);
+        const imo = vessel.imo ? String(vessel.imo).trim() : null;
+        const isOnline = onlineMmsis.has(mmsi) || (imo && onlineImos.has(imo));
+        return !isOnline;
     };
 
     const handleVesselClick = async (vessel: SanctionedVessel) => {
@@ -404,7 +419,7 @@ export default function SanctionedShipsPanel({
 
                         <div className="space-y-1">
                             {paginatedVessels.map((vessel: SanctionedVessel) => {
-                                const offline = isVesselOffline(vessel.last_seen_at, now);
+                                const offline = isVesselOffline(vessel);
                                 return (
                                     <button
                                         key={vessel.id || vessel.mmsi}
@@ -416,9 +431,13 @@ export default function SanctionedShipsPanel({
                                                 <span className="text-xs font-bold text-white truncate">
                                                     {vessel.name}
                                                 </span>
-                                                {offline && (
+                                                {offline ? (
                                                     <span className="text-[8px] bg-zinc-800 text-zinc-400 px-1.5 py-0.5 whitespace-nowrap font-semibold tracking-wider">
                                                         OFFLINE
+                                                    </span>
+                                                ) : (
+                                                    <span className="text-[8px] bg-emerald-500/10 text-emerald-500 px-1.5 py-0.5 whitespace-nowrap font-semibold tracking-wider border border-emerald-500/20">
+                                                        ONLINE
                                                     </span>
                                                 )}
                                                 {checkingVesselMmsi ===
@@ -554,6 +573,7 @@ export function SanctionedShipsPanelWithTools({
     onOpenPanelChange,
     isLayersOpen = false,
     isSearchActive = false,
+    trackedVessels = [],
 }: SanctionedShipsPanelWithToolsProps) {
     const [openPanelInternal, setOpenPanelInternal] = useState<'sanctioned' | 'tools' | null>(null);
     const openPanel = activePanelProp !== undefined ? activePanelProp : openPanelInternal;
@@ -605,6 +625,7 @@ export function SanctionedShipsPanelWithTools({
                 onOpen={() => setOpenPanel('sanctioned')}
                 onClose={() => setOpenPanel(null)}
                 hideTrigger={hideTriggers}
+                trackedVessels={trackedVessels}
             />
             <MapToolsPanel
                 onMeasureDistance={onMeasureDistance}

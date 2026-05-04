@@ -265,6 +265,7 @@ export default function Index() {
                 showCities={showCities}
                 setShowCities={setShowCities}
                 isSearchActive={isSearchActive}
+                trackedVessels={trackedVessels}
             />
         </MainLayout>
     );

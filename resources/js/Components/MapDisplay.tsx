@@ -85,15 +85,16 @@ function normalizeVessels(raw: Vessel[]): Vessel[] {
     const byMmsi = new Map<number, Vessel>();
 
     for (const vessel of raw) {
+        const mmsi = Number(vessel.mmsi);
         const trimmedName = (vessel.name || '').trim().toUpperCase();
 
         if (!trimmedName || IGNORED_VESSEL_NAMES.includes(trimmedName)) {
             continue;
         }
 
-        const existing = byMmsi.get(vessel.mmsi);
+        const existing = byMmsi.get(mmsi);
         if (!existing) {
-            byMmsi.set(vessel.mmsi, vessel);
+            byMmsi.set(mmsi, { ...vessel, mmsi });
             continue;
         }
 
@@ -105,7 +106,7 @@ function normalizeVessels(raw: Vessel[]): Vessel[] {
             currentName.length > 2 && !IGNORED_VESSEL_NAMES.includes(currentName);
 
         if (currentHasUsefulName && !existingHasUsefulName) {
-            byMmsi.set(vessel.mmsi, vessel);
+            byMmsi.set(mmsi, { ...vessel, mmsi });
         }
     }
 
@@ -472,19 +473,31 @@ function FleetLayer({
         return 'WORLD OVERVIEW';
     }, []);
 
+    const mergedVessels = useMemo(() => {
+        const knownMmsis = new Set(trackedSearchVessels.map((v) => v.mmsi));
+        const merged = [...trackedSearchVessels];
+        windowVessels.forEach((v) => {
+            if (!knownMmsis.has(v.mmsi)) {
+                merged.push(v);
+            }
+        });
+        return merged;
+    }, [trackedSearchVessels, windowVessels]);
+
     useEffect(() => {
         if (onUpdate) {
             const totalRenderedShips = visibleVessels.reduce((acc, v) => acc + v.clusterCount, 0);
             const center = map.getCenter();
+
             onUpdate({
                 renderedIcons: visibleVessels.length,
                 totalRenderedShips,
-                trackedShips: trackedCount,
-                trackedVessels: trackedSearchVessels,
+                trackedShips: Math.max(trackedCount, mergedVessels.length),
+                trackedVessels: mergedVessels,
                 currentArea: getAreaName(center.lat, center.lng, zoom),
             });
         }
-    }, [visibleVessels, trackedCount, trackedSearchVessels, onUpdate, map, zoom, getAreaName]);
+    }, [visibleVessels, trackedCount, mergedVessels, onUpdate, map, zoom, getAreaName]);
 
     const createVesselIcon = (course: number, isCluster: boolean, isSelected: boolean) => {
         const color = isSelected ? '#ef4444' : 'white';
