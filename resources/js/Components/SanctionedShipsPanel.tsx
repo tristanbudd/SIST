@@ -12,6 +12,7 @@ import axios from 'axios';
 import L from 'leaflet';
 import { OFFLINE_THRESHOLD_MINUTES, API_BASE_URL } from '../constants';
 import { Vessel as MapVessel } from './MapDisplay';
+import MapToolsPanel from './MapToolsPanel';
 
 interface SanctionedVessel {
     id?: string;
@@ -40,13 +41,40 @@ interface SISTSearchVessel {
 interface SanctionedShipsPanelProps {
     onNavigate?: (lat: number, lng: number, zoom: number) => void;
     onVesselSelect?: (vessel: MapVessel | null) => void;
+    isGrouped?: boolean;
+    isOpen?: boolean;
+    onOpen?: () => void;
+    onClose?: () => void;
+    hideTrigger?: boolean;
+}
+
+interface SanctionedShipsPanelWithToolsProps {
+    onNavigate?: (lat: number, lng: number, zoom: number) => void;
+    onVesselSelect?: (vessel: MapVessel | null) => void;
+    onMeasureDistance?: () => void;
+    onMeasureArea?: () => void;
+    onExitTool?: () => void;
+    onUndo?: () => void;
+    onRedo?: () => void;
+    canUndo?: boolean;
+    canRedo?: boolean;
+    measurementMode?: 'distance' | 'area' | null;
+    measurementPoints?: { lat: number; lng: number }[];
 }
 
 export default function SanctionedShipsPanel({
     onNavigate,
     onVesselSelect,
+    isGrouped = false,
+    isOpen: isOpenProp,
+    onOpen,
+    onClose,
+    hideTrigger = false,
 }: SanctionedShipsPanelProps) {
-    const [isOpen, setIsOpen] = useState(false);
+    const [isOpenInternal, setIsOpenInternal] = useState(false);
+    const isOpen = isOpenProp ?? isOpenInternal;
+    const openPanel = onOpen ?? (() => setIsOpenInternal(true));
+    const closePanel = onClose ?? (() => setIsOpenInternal(false));
     const [searchQuery, setSearchQuery] = useState('');
     const [sanctionedVessels, setSanctionedVessels] = useState<SanctionedVessel[]>([]);
     const [loading, setLoading] = useState(false);
@@ -253,8 +281,17 @@ export default function SanctionedShipsPanel({
         <div
             ref={panelRef}
             className={`
-                ${isOpen ? 'fixed inset-0 sm:absolute sm:inset-auto sm:top-1/2 sm:-translate-y-1/2 sm:left-4' : 'absolute top-1/2 -translate-y-1/2 left-4'}
-                z-1500 flex flex-col items-start gap-2 pointer-events-auto
+                ${
+                    isOpen
+                        ? `fixed inset-0 sm:absolute sm:inset-auto sm:top-1/2 sm:-translate-y-1/2 ${
+                              isGrouped ? 'sm:left-0' : 'sm:left-4'
+                          }`
+                        : isGrouped
+                          ? ''
+                          : 'absolute top-1/2 -translate-y-1/2 left-4'
+                }
+                ${isOpen ? 'z-1500' : !isGrouped ? 'z-1500' : ''}
+                flex flex-col items-start gap-2 pointer-events-auto
             `}
             onWheel={(e) => e.stopPropagation()}
             onMouseEnter={(e) => {
@@ -277,7 +314,7 @@ export default function SanctionedShipsPanel({
                             </span>
                         </div>
                         <button
-                            onClick={() => setIsOpen(false)}
+                            onClick={closePanel}
                             className="text-zinc-500 hover:text-white transition-colors p-2 hover:bg-white/5"
                             title="Close"
                         >
@@ -475,15 +512,74 @@ export default function SanctionedShipsPanel({
                 </div>
             )}
 
-            {!isOpen && (
+            {!isOpen && !hideTrigger && (
                 <button
-                    onClick={() => setIsOpen(true)}
+                    onClick={openPanel}
                     title="Sanctioned Vessels"
                     className="bg-zinc-950 border border-white/20 w-10 h-10 shadow-2xl hover:bg-zinc-900 active:scale-95 transition-all flex items-center justify-center pointer-events-auto z-1000"
                 >
                     <FaShip className="w-4 h-4 text-white" />
                 </button>
             )}
+        </div>
+    );
+}
+
+// Wrapper component that includes both sanctioned ships panel and map tools
+export function SanctionedShipsPanelWithTools({
+    onNavigate,
+    onVesselSelect,
+    onMeasureDistance,
+    onMeasureArea,
+    onExitTool,
+    onUndo,
+    onRedo,
+    canUndo,
+    canRedo,
+    measurementMode,
+    measurementPoints,
+}: SanctionedShipsPanelWithToolsProps) {
+    const [openPanel, setOpenPanel] = useState<'sanctioned' | 'tools' | null>(null);
+    const hideTriggers = openPanel !== null;
+
+    return (
+        <div
+            className={`
+                ${
+                    openPanel
+                        ? 'pointer-events-auto'
+                        : 'absolute top-1/2 -translate-y-1/2 left-4 pointer-events-auto'
+                }
+                sm:absolute sm:top-1/2 sm:-translate-y-1/2 sm:left-4 z-1500 flex flex-col items-start gap-2
+            `}
+        >
+            <SanctionedShipsPanel
+                onNavigate={onNavigate}
+                onVesselSelect={onVesselSelect}
+                isGrouped={true}
+                isOpen={openPanel === 'sanctioned'}
+                onOpen={() => setOpenPanel('sanctioned')}
+                onClose={() => setOpenPanel(null)}
+                hideTrigger={hideTriggers}
+            />
+            <MapToolsPanel
+                onMeasureDistance={onMeasureDistance}
+                onMeasureArea={onMeasureArea}
+                onExitTool={onExitTool}
+                onUndo={onUndo}
+                onRedo={onRedo}
+                canUndo={canUndo}
+                canRedo={canRedo}
+                measurementMode={measurementMode}
+                measurementPoints={measurementPoints}
+                isOpen={openPanel === 'tools'}
+                onOpen={() => setOpenPanel('tools')}
+                onClose={() => {
+                    onExitTool?.();
+                    setOpenPanel(null);
+                }}
+                hideTrigger={hideTriggers}
+            />
         </div>
     );
 }
