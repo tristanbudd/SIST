@@ -66,10 +66,10 @@ export const WEATHER_CODES: Record<number, string> = {
 
 /** Maps external provider names to their local icon paths */
 export const EXTERNAL_ICON_MAP: Record<string, string> = {
-    'marinetraffic (com)': '/images/external/vesseltrackercom.png',
-    'marinetraffic (org)': '/images/external/marinetrafficorg.png',
-    vesselfinder: '/images/external/vesselfinder.png',
-    vesseltracker: '/images/external/vesseltracker.png',
-    shipspotting: '/images/external/shipspotting.png',
-    myshiptracking: '/images/external/myshiptracking.png',
+    'marinetraffic (com)': '/images/external/vesseltrackercom.webp',
+    'marinetraffic (org)': '/images/external/marinetrafficorg.webp',
+    vesselfinder: '/images/external/vesselfinder.webp',
+    vesseltracker: '/images/external/vesseltracker.webp',
+    shipspotting: '/images/external/shipspotting.webp',
+    myshiptracking: '/images/external/myshiptracking.webp',
 };

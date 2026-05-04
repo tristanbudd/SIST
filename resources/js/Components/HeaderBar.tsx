@@ -615,13 +615,21 @@ export default function HeaderBar({
                         <span className="sr-only">Refreshing...</span>
                     </div>
                 ) : (
-                    <img
-                        src="/images/logo.png"
-                        alt=""
-                        width="112"
-                        height="28"
-                        className="h-5 sm:h-7 w-auto"
-                    />
+                    <picture>
+                        <source
+                            type="image/webp"
+                            srcSet="/images/logo-1x.webp 1x, /images/logo-2x.webp 2x, /images/logo-3x.webp 3x"
+                        />
+                        <img
+                            src="/images/logo.png"
+                            alt="SIST Logo"
+                            width="112"
+                            height="28"
+                            className="h-5 sm:h-7 w-auto"
+                            loading="eager"
+                            fetchPriority="high"
+                        />
+                    </picture>
                 )}
                 <div className="flex flex-col justify-center leading-none">
                     <span className="text-white text-xs sm:text-sm font-bold tracking-wider">

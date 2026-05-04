@@ -16,20 +16,23 @@ export default function ExternalProviderIcon({ name, className = '' }: ExternalP
 
     if (iconPath) {
         return (
-            <img
-                src={iconPath}
-                alt={`${name} logo`}
-                className={className}
-                onError={(e) => {
-                    const domain = name.toLowerCase().includes('marinetraffic')
-                        ? name.toLowerCase().includes('org')
-                            ? 'marinetraffic.org'
-                            : 'marinetraffic.com'
-                        : name.toLowerCase();
-                    (e.target as HTMLImageElement).src =
-                        `https://www.google.com/s2/favicons?domain=${domain}&sz=128`;
-                }}
-            />
+            <picture className={className}>
+                <source srcSet={iconPath} type="image/webp" />
+                <img
+                    src={iconPath.replace('.webp', '.png')}
+                    alt={`${name} logo`}
+                    className="w-full h-full object-contain"
+                    onError={(e) => {
+                        const domain = name.toLowerCase().includes('marinetraffic')
+                            ? name.toLowerCase().includes('org')
+                                ? 'marinetraffic.org'
+                                : 'marinetraffic.com'
+                            : name.toLowerCase();
+                        (e.target as HTMLImageElement).src =
+                            `https://www.google.com/s2/favicons?domain=${domain}&sz=128`;
+                    }}
+                />
+            </picture>
         );
     }
 
