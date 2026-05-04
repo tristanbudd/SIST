@@ -92,6 +92,7 @@ interface HeaderBarProps {
     onVesselSelect?: (vessel: MapVessel | null) => void;
     selectedVesselName?: string;
     showClusterZoomNotice?: boolean;
+    onSearchActiveChange?: (isActive: boolean) => void;
 }
 
 interface PortData {
@@ -217,6 +218,7 @@ export default function HeaderBar({
     onVesselSelect,
     selectedVesselName,
     showClusterZoomNotice = false,
+    onSearchActiveChange,
 }: HeaderBarProps) {
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [query, setQuery] = useState('');
@@ -439,6 +441,10 @@ export default function HeaderBar({
 
     const showSuggestionsPanel =
         showSuggestions && !error && (suggestions.length > 0 || hasRecents);
+
+    useEffect(() => {
+        onSearchActiveChange?.(showSuggestionsPanel);
+    }, [showSuggestionsPanel, onSearchActiveChange]);
 
     const handleSelect = (item: SearchResult) => {
         setRecentSearches((prev) => {
