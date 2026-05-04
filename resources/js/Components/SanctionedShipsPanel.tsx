@@ -61,7 +61,15 @@ interface SanctionedShipsPanelWithToolsProps {
     measurementMode?: 'distance' | 'area' | null;
     measurementPoints?: { lat: number; lng: number }[];
     isIdle?: boolean;
+    activePanel?: 'sanctioned' | 'tools' | null;
     onOpenPanelChange?: (panel: 'sanctioned' | 'tools' | null) => void;
+    isLayersOpen?: boolean;
+    showVessels?: boolean;
+    setShowVessels?: (v: boolean) => void;
+    showPorts?: boolean;
+    setShowPorts?: (v: boolean) => void;
+    showCities?: boolean;
+    setShowCities?: (v: boolean) => void;
 }
 
 export default function SanctionedShipsPanel({
@@ -541,17 +549,36 @@ export function SanctionedShipsPanelWithTools({
     measurementMode,
     measurementPoints,
     isIdle = false,
+    activePanel: activePanelProp,
     onOpenPanelChange,
+    isLayersOpen = false,
 }: SanctionedShipsPanelWithToolsProps) {
-    const [openPanel, setOpenPanelInternal] = useState<'sanctioned' | 'tools' | null>(null);
+    const [openPanelInternal, setOpenPanelInternal] = useState<'sanctioned' | 'tools' | null>(null);
+    const openPanel = activePanelProp !== undefined ? activePanelProp : openPanelInternal;
+
     const setOpenPanel = useCallback(
         (panel: 'sanctioned' | 'tools' | null) => {
-            setOpenPanelInternal(panel);
+            if (activePanelProp === undefined) {
+                setOpenPanelInternal(panel);
+            }
             onOpenPanelChange?.(panel);
         },
-        [onOpenPanelChange]
+        [onOpenPanelChange, activePanelProp]
     );
-    const hideTriggers = openPanel !== null;
+
+    const [isCompact, setIsCompact] = useState(
+        typeof window !== 'undefined' ? window.innerWidth < 640 || window.innerHeight < 800 : false
+    );
+
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+        const handleResize = () =>
+            setIsCompact(window.innerWidth < 640 || window.innerHeight < 800);
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
+
+    const hideTriggers = openPanel !== null || (isCompact && isLayersOpen);
 
     if (isIdle && openPanel === null) return null;
 
