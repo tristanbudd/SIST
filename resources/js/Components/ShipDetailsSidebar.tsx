@@ -212,6 +212,14 @@ export default function ShipDetailsSidebar({
     }, [details]);
 
     const [lastMmsi, setLastMmsi] = useState<number | null>(null);
+    const [lastVessel, setLastVessel] = useState<Vessel | null>(null);
+
+    if (vessel !== lastVessel) {
+        setLastVessel(vessel);
+        if (vessel) {
+            setIsMinimized(false);
+        }
+    }
 
     const currentMmsi = vessel?.mmsi ?? null;
     if (currentMmsi !== lastMmsi) {
