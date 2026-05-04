@@ -70,6 +70,7 @@ interface SanctionedShipsPanelWithToolsProps {
     setShowPorts?: (v: boolean) => void;
     showCities?: boolean;
     setShowCities?: (v: boolean) => void;
+    isSearchActive?: boolean;
 }
 
 export default function SanctionedShipsPanel({
@@ -552,6 +553,7 @@ export function SanctionedShipsPanelWithTools({
     activePanel: activePanelProp,
     onOpenPanelChange,
     isLayersOpen = false,
+    isSearchActive = false,
 }: SanctionedShipsPanelWithToolsProps) {
     const [openPanelInternal, setOpenPanelInternal] = useState<'sanctioned' | 'tools' | null>(null);
     const openPanel = activePanelProp !== undefined ? activePanelProp : openPanelInternal;
@@ -580,6 +582,7 @@ export function SanctionedShipsPanelWithTools({
 
     const hideTriggers = openPanel !== null || (isCompact && isLayersOpen);
 
+    if (isSearchActive) return null;
     if (isIdle && openPanel === null) return null;
 
     return (

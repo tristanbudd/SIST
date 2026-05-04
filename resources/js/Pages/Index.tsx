@@ -145,6 +145,7 @@ export default function Index() {
     const [showVessels, setShowVessels] = useState(true);
     const [showPorts, setShowPorts] = useState(false);
     const [showCities, setShowCities] = useState(false);
+    const [isSearchActive, setIsSearchActive] = useState(false);
 
     return (
         <MainLayout
@@ -159,6 +160,7 @@ export default function Index() {
                             : undefined
                     }
                     showClusterZoomNotice={showClusterZoomNotice}
+                    onSearchActiveChange={setIsSearchActive}
                 />
             }
             fleetStats={fleetStats}
@@ -260,6 +262,7 @@ export default function Index() {
                 setShowPorts={setShowPorts}
                 showCities={showCities}
                 setShowCities={setShowCities}
+                isSearchActive={isSearchActive}
             />
         </MainLayout>
     );
