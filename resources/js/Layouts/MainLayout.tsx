@@ -26,10 +26,10 @@ export default function MainLayout({
 
     return (
         <>
-            {/* Unsupported screen notice - shown below 350px */}
+            {/* Unsupported screen notice - shown below 350px width or 450px height */}
             <div
                 role="alert"
-                className="hidden max-[349px]:flex fixed inset-0 z-9999 bg-zinc-950 items-center justify-center p-6"
+                className="hidden max-[349px]:flex [@media(max-height:449px)]:flex fixed inset-0 z-9999 bg-zinc-950 items-center justify-center p-6"
             >
                 <div className="flex flex-col items-center gap-3 text-center max-w-[280px]">
                     <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-500 mb-1">
@@ -39,13 +39,14 @@ export default function MainLayout({
                         Screen Too Small
                     </p>
                     <p className="text-[11px] leading-relaxed text-zinc-600">
-                        This application requires a minimum width of 350px to function correctly.
+                        This application requires a minimum screen size of 350x450px to function
+                        correctly.
                     </p>
                 </div>
             </div>
 
-            {/* Main content - hidden below 350px */}
-            <main className="max-[349px]:hidden min-h-screen bg-zinc-950">
+            {/* Main content - hidden below 350px width or 450px height */}
+            <main className="max-[349px]:hidden [@media(max-height:449px)]:hidden min-h-screen bg-zinc-950">
                 {!hasAccepted ? (
                     <DisclaimerNotice onAccept={() => setHasAccepted(true)} />
                 ) : (
