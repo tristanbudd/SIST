@@ -147,6 +147,7 @@ interface ShipDetailsSidebarProps {
     onWaypointSelect?: (pos: HistoryPosition) => void;
     selectedWaypointKey?: string | null;
     isLayersOpen?: boolean;
+    activePanel?: 'sanctioned' | 'tools' | null;
 }
 
 export default function ShipDetailsSidebar({
@@ -161,6 +162,7 @@ export default function ShipDetailsSidebar({
     onWaypointSelect,
     selectedWaypointKey,
     isLayersOpen = false,
+    activePanel = null,
 }: ShipDetailsSidebarProps) {
     const abortControllerRef = useRef<AbortController | null>(null);
     const [details, setDetails] = useState<VesselDetails | null>(null);
@@ -1350,7 +1352,7 @@ export default function ShipDetailsSidebar({
                     </button>
                 </div>
             </aside>
-            {isMinimized && !isLayersOpen && (
+            {isMinimized && !isLayersOpen && !activePanel && (
                 <button
                     onClick={() => setIsMinimized(false)}
                     className="sm:hidden fixed bottom-12 left-1/2 -translate-x-1/2 z-1000 bg-zinc-950/90 backdrop-blur-xl border border-white/20 px-6 py-3 shadow-2xl animate-in slide-in-from-bottom-4 duration-300 flex items-center gap-3 active:scale-95 transition-all"

@@ -240,6 +240,7 @@ export default function Index() {
                     setTimeout(() => setSelectedWaypointKey(pos.recorded_at), 0);
                 }}
                 isLayersOpen={isLayersOpen}
+                activePanel={activePanel}
             />
             <SanctionedShipsPanelWithTools
                 onNavigate={handleNavigate}
