@@ -239,6 +239,8 @@ export default function Index() {
                     setSelectedWaypointKey(null);
                     setTimeout(() => setSelectedWaypointKey(pos.recorded_at), 0);
                 }}
+                isLayersOpen={isLayersOpen}
+                activePanel={activePanel}
             />
             <SanctionedShipsPanelWithTools
                 onNavigate={handleNavigate}
@@ -263,6 +265,7 @@ export default function Index() {
                 showCities={showCities}
                 setShowCities={setShowCities}
                 isSearchActive={isSearchActive}
+                trackedVessels={trackedVessels}
             />
         </MainLayout>
     );
