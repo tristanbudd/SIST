@@ -15,6 +15,7 @@ import {
     FaCircleExclamation,
     FaChevronDown,
     FaEye,
+    FaArrowUpRightFromSquare,
 } from 'react-icons/fa6';
 import { LuAnchor, LuWaves, LuThermometer } from 'react-icons/lu';
 import axios from 'axios';
@@ -238,6 +239,9 @@ export default function ShipDetailsSidebar({
 
     const [isOffline, setIsOffline] = useState(false);
     const [isReportOpen, setIsReportOpen] = useState(false);
+    const [reportTab, setReportTab] = useState<
+        'overview' | 'particulars' | 'sanctions' | 'environment' | 'waypoints' | 'activity'
+    >('overview');
 
     const activityStats = useMemo(() => {
         return calculateActivityStats(activities);
@@ -669,10 +673,6 @@ export default function ShipDetailsSidebar({
                                     (s) => s.source === 'fleetleaks' && s.match_type === 'exact'
                                 ) || [];
                             const isOfficiallySanctioned = officialSanctions.length > 0;
-                            const networkMatches =
-                                sanctions?.sanctions.filter(
-                                    (s) => s.match_type === 'fuzzy' || s.source !== 'fleetleaks'
-                                ) || [];
 
                             return (
                                 <>
@@ -728,6 +728,16 @@ export default function ShipDetailsSidebar({
                                                 </div>
                                             </div>
                                         </div>
+                                        <button
+                                            onClick={() => {
+                                                setReportTab('sanctions');
+                                                setIsReportOpen(true);
+                                            }}
+                                            className="px-3 py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 text-[8px] text-zinc-500 hover:text-zinc-300 font-black uppercase tracking-widest transition-all rounded-sm flex items-center gap-1.5 group shrink-0"
+                                        >
+                                            Details
+                                            <FaArrowUpRightFromSquare className="w-2 h-2 text-zinc-600 group-hover:text-zinc-300 transition-colors" />
+                                        </button>
                                     </div>
 
                                     {sanctions && !loading.sanctions && (
@@ -804,63 +814,6 @@ export default function ShipDetailsSidebar({
                                                     </div>
                                                 </div>
                                             )}
-
-                                            {/* Network Analysis Section */}
-                                            {networkMatches.length > 0 && (
-                                                <div className="space-y-2">
-                                                    <div className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">
-                                                        Network Analysis
-                                                    </div>
-                                                    <div className="space-y-1">
-                                                        {networkMatches.map((s, i) => (
-                                                            <div
-                                                                key={i}
-                                                                className="p-3 border border-white/10 bg-white/5 flex flex-col gap-1"
-                                                            >
-                                                                <div className="flex items-start justify-between gap-4">
-                                                                    <div className="flex flex-col gap-0.5 min-w-0">
-                                                                        <span className="text-[11px] font-black uppercase tracking-tight leading-tight truncate text-zinc-300">
-                                                                            {s.name}
-                                                                        </span>
-                                                                        <div className="text-[8px] text-zinc-500 font-bold uppercase tracking-widest mt-0.5">
-                                                                            Matched on name
-                                                                            similarity
-                                                                        </div>
-                                                                    </div>
-                                                                    <a
-                                                                        href={
-                                                                            s.link ||
-                                                                            (s.source ===
-                                                                            'fleetleaks'
-                                                                                ? 'https://fleetleaks.com/'
-                                                                                : 'https://sanctions.network/')
-                                                                        }
-                                                                        target="_blank"
-                                                                        rel="noopener noreferrer"
-                                                                        className="flex items-center gap-1.5 text-[9px] text-zinc-500 font-bold uppercase hover:text-zinc-300 transition-colors underline decoration-zinc-800 underline-offset-2 shrink-0 self-start mt-0.5"
-                                                                    >
-                                                                        <ExternalProviderIcon
-                                                                            name={s.source}
-                                                                            className="w-3 h-3 opacity-50"
-                                                                        />
-                                                                        {s.source === 'fleetleaks'
-                                                                            ? 'FleetLeaks'
-                                                                            : 'Sanctions Network'}
-                                                                    </a>
-                                                                </div>
-                                                                {s.matched_name && (
-                                                                    <div className="text-[9px] text-zinc-600 mt-0.5">
-                                                                        Match:{' '}
-                                                                        <span className="text-zinc-400">
-                                                                            {s.matched_name}
-                                                                        </span>
-                                                                    </div>
-                                                                )}
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                </div>
-                                            )}
                                         </div>
                                     )}
                                 </>
@@ -887,26 +840,28 @@ export default function ShipDetailsSidebar({
                                 loading.activities
                                     ? 'bg-zinc-900 border-zinc-800'
                                     : activityStats.score > 70
-                                      ? 'bg-red-500/5 border-red-500/10'
+                                      ? 'bg-red-500/5 border-red-500/20'
                                       : activityStats.score > 30
                                         ? 'bg-amber-500/5 border-amber-500/10'
                                         : 'bg-emerald-500/5 border-emerald-500/10'
                             }`}
                         >
                             <div className="flex items-center gap-3 min-w-0">
-                                <div
-                                    className={`w-8 h-8 rounded-full border-2 flex items-center justify-center text-[10px] font-black ${
-                                        loading.activities
-                                            ? 'border-zinc-800 text-zinc-500'
-                                            : activityStats.score > 70
-                                              ? 'border-red-500 text-red-500'
-                                              : activityStats.score > 30
-                                                ? 'border-amber-500 text-amber-500'
-                                                : 'border-emerald-500 text-emerald-500'
-                                    }`}
-                                >
-                                    {loading.activities ? '--' : activityStats.score}
-                                </div>
+                                {loading.activities ? (
+                                    <LoadingSpinner size="lg" />
+                                ) : (
+                                    <div
+                                        className={`w-8 h-8 rounded-full border-2 flex items-center justify-center text-[10px] font-black ${
+                                            activityStats.score > 70
+                                                ? 'border-red-500 text-red-500'
+                                                : activityStats.score > 30
+                                                  ? 'border-amber-500 text-amber-500'
+                                                  : 'border-emerald-500 text-emerald-500'
+                                        }`}
+                                    >
+                                        {activityStats.score}
+                                    </div>
+                                )}
                                 <div className="min-w-0">
                                     <div
                                         className={`text-sm font-black uppercase tracking-tight ${
@@ -934,6 +889,16 @@ export default function ShipDetailsSidebar({
                                     </div>
                                 </div>
                             </div>
+                            <button
+                                onClick={() => {
+                                    setReportTab('activity');
+                                    setIsReportOpen(true);
+                                }}
+                                className="px-3 py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 text-[8px] text-zinc-500 hover:text-zinc-300 font-black uppercase tracking-widest transition-all rounded-sm flex items-center gap-1.5 group shrink-0"
+                            >
+                                Details
+                                <FaArrowUpRightFromSquare className="w-2 h-2 text-zinc-600 group-hover:text-zinc-300 transition-colors" />
+                            </button>
                         </div>
                     </section>
 
@@ -1470,7 +1435,10 @@ export default function ShipDetailsSidebar({
 
                 <div className="p-6 border-t border-white/10 shrink-0 bg-zinc-950">
                     <button
-                        onClick={() => setIsReportOpen(true)}
+                        onClick={() => {
+                            setReportTab('overview');
+                            setIsReportOpen(true);
+                        }}
                         className="w-full py-3 bg-zinc-100 hover:bg-white text-black font-black uppercase text-xs tracking-widest transition-all active:scale-[0.98] flex items-center justify-center gap-2 group"
                     >
                         View Full Analysis Report
@@ -1504,6 +1472,7 @@ export default function ShipDetailsSidebar({
                 history={history}
                 activities={activities}
                 isOffline={isOffline}
+                initialTab={reportTab}
                 loading={loading}
             />
         </>

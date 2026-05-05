@@ -47,6 +47,7 @@ interface AnalysisReportModalProps {
     history: HistoryPosition[];
     activities: VesselActivity[];
     isOffline: boolean;
+    initialTab?: TabType;
     loading?: {
         details: boolean;
         weather: boolean;
@@ -195,6 +196,7 @@ export default function AnalysisReportModal({
     history = [],
     activities = [],
     isOffline = false,
+    initialTab,
     loading = {
         details: false,
         weather: false,
@@ -204,7 +206,24 @@ export default function AnalysisReportModal({
         activities: false,
     },
 }: AnalysisReportModalProps) {
-    const [activeTab, setActiveTab] = useState<TabType>('overview');
+    const [activeTab, setActiveTab] = useState<TabType>(initialTab || 'overview');
+    const [prevInitialTab, setPrevInitialTab] = useState(initialTab);
+
+    if (initialTab !== prevInitialTab) {
+        setPrevInitialTab(initialTab);
+        if (initialTab) {
+            setActiveTab(initialTab);
+        }
+    }
+
+    const [prevIsOpen, setPrevIsOpen] = useState(isOpen);
+    if (isOpen !== prevIsOpen) {
+        setPrevIsOpen(isOpen);
+        if (isOpen) {
+            setActiveTab(initialTab || 'overview');
+        }
+    }
+
     const [now] = useState(() => Date.now());
     const [animateIn, setAnimateIn] = useState(false);
     const [waypointFilters, setWaypointFilters] = useState({
@@ -332,7 +351,6 @@ export default function AnalysisReportModal({
         if (isOpen) {
             const timer = setTimeout(() => {
                 setAnimateIn(true);
-                setActiveTab('overview');
             }, 10);
             document.body.style.overflow = 'hidden';
             return () => {
