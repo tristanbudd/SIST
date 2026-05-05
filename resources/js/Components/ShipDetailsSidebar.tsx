@@ -17,13 +17,13 @@ import {
     FaEye,
     FaArrowUpRightFromSquare,
 } from 'react-icons/fa6';
-import { LuWaves, LuThermometer } from 'react-icons/lu';
+import { LuAnchor, LuWaves, LuThermometer } from 'react-icons/lu';
 import axios from 'axios';
 import AnalysisReportModal from './AnalysisReportModal';
 import {
     API_BASE_URL,
     OFFLINE_THRESHOLD_MINUTES,
-    WEATHER_CODES,
+    NAV_STATUS_MAP,
     SANCTIONER_MAPPING,
 } from '../constants';
 import {
@@ -246,6 +246,37 @@ export default function ShipDetailsSidebar({
     const activityStats = useMemo(() => {
         return calculateActivityStats(activities);
     }, [activities]);
+
+    const isCurrentTime = useCallback((timeStr: string) => {
+        const itemDate = new Date(timeStr);
+        const now = new Date();
+        return (
+            itemDate.getUTCFullYear() === now.getUTCFullYear() &&
+            itemDate.getUTCMonth() === now.getUTCMonth() &&
+            itemDate.getUTCDate() === now.getUTCDate() &&
+            itemDate.getUTCHours() === now.getUTCHours()
+        );
+    }, []);
+
+    const getFilteredEnvData = useCallback(<T extends { time: string }>(data: T[] | undefined) => {
+        if (!data) return [];
+        const now = new Date();
+        const currentHourIndex = data.findIndex((h) => {
+            const d = new Date(h.time);
+            return (
+                d.getUTCFullYear() === now.getUTCFullYear() &&
+                d.getUTCMonth() === now.getUTCMonth() &&
+                d.getUTCDate() === now.getUTCDate() &&
+                d.getUTCHours() === now.getUTCHours()
+            );
+        });
+
+        if (currentHourIndex === -1) return data.slice(0, 7);
+
+        const start = Math.max(0, currentHourIndex - 3);
+        const end = Math.min(data.length, currentHourIndex + 4);
+        return data.slice(start, end);
+    }, []);
 
     useEffect(() => {
         const timer = setTimeout(() => {
@@ -597,29 +628,14 @@ export default function ShipDetailsSidebar({
                         />
                         <div className="grid grid-cols-2 gap-4 mt-4">
                             <StatusCard
-                                label="Activity"
+                                label="Nav Status"
                                 value={
-                                    loading.activities
+                                    loading.details
                                         ? '...'
-                                        : activityStats.score > 70
-                                          ? 'High Risk'
-                                          : activityStats.score > 30
-                                            ? 'Med Risk'
-                                            : 'Low Risk'
+                                        : NAV_STATUS_MAP[details?.navigational_status ?? -1] ||
+                                          'Not Defined'
                                 }
-                                icon={
-                                    <FaEye
-                                        className={
-                                            loading.activities
-                                                ? 'text-zinc-500'
-                                                : activityStats.score > 70
-                                                  ? 'text-red-500'
-                                                  : activityStats.score > 30
-                                                    ? 'text-amber-500'
-                                                    : 'text-emerald-500'
-                                        }
-                                    />
-                                }
+                                icon={<LuAnchor className="text-zinc-500" />}
                             />
                             <StatusCard
                                 label="Speed"
@@ -1252,7 +1268,7 @@ export default function ShipDetailsSidebar({
                                         Outlook
                                     </div>
                                     {loading.weather || !weather
-                                        ? Array(5)
+                                        ? Array(7)
                                               .fill(0)
                                               .map((_, i) => (
                                                   <div
@@ -1260,19 +1276,28 @@ export default function ShipDetailsSidebar({
                                                       className="bg-white/5 border border-white/10 p-2 h-10 animate-pulse"
                                                   />
                                               ))
-                                        : weather.hourly.slice(1, 6).map((h, i) => (
-                                              <div
-                                                  key={i}
-                                                  className="bg-white/5 border border-white/5 p-2 flex items-center justify-between"
-                                              >
-                                                  <span className="text-[10px] font-mono text-zinc-500">
-                                                      {h.time.split('T')[1]}
-                                                  </span>
-                                                  <span className="text-[11px] font-black text-zinc-200">
-                                                      {Number(h.temperature_c).toFixed(1)}°C
-                                                  </span>
-                                              </div>
-                                          ))}
+                                        : getFilteredEnvData(weather.hourly).map((h, i) => {
+                                              const current = isCurrentTime(h.time);
+                                              return (
+                                                  <div
+                                                      key={i}
+                                                      className={`border p-2 flex items-center justify-between transition-all ${current ? 'bg-white/10 border-white/20' : 'bg-white/5 border-white/5'}`}
+                                                  >
+                                                      <div className="flex flex-col">
+                                                          <span
+                                                              className={`text-[9px] font-mono ${current ? 'text-zinc-200' : 'text-zinc-500'}`}
+                                                          >
+                                                              {h.time.split('T')[1]}
+                                                          </span>
+                                                      </div>
+                                                      <span
+                                                          className={`text-[10px] font-black ${current ? 'text-white' : 'text-zinc-300'}`}
+                                                      >
+                                                          {Number(h.temperature_c).toFixed(1)}°C
+                                                      </span>
+                                                  </div>
+                                              );
+                                          })}
                                 </div>
                             )}
 
@@ -1282,7 +1307,7 @@ export default function ShipDetailsSidebar({
                                         Predictions
                                     </div>
                                     {loading.tides || !tides
-                                        ? Array(5)
+                                        ? Array(7)
                                               .fill(0)
                                               .map((_, i) => (
                                                   <div
@@ -1290,19 +1315,28 @@ export default function ShipDetailsSidebar({
                                                       className="bg-white/5 border border-white/10 p-2 h-10 animate-pulse"
                                                   />
                                               ))
-                                        : tides.predictions.slice(1, 6).map((p, i) => (
-                                              <div
-                                                  key={i}
-                                                  className="bg-white/5 border border-white/5 p-2 flex items-center justify-between"
-                                              >
-                                                  <span className="text-[10px] font-mono text-zinc-500">
-                                                      {p.time.split('T')[1]}
-                                                  </span>
-                                                  <span className="text-[11px] font-black text-cyan-500/80">
-                                                      {Number(p.wave_height).toFixed(1)}m
-                                                  </span>
-                                              </div>
-                                          ))}
+                                        : getFilteredEnvData(tides.predictions).map((p, i) => {
+                                              const current = isCurrentTime(p.time);
+                                              return (
+                                                  <div
+                                                      key={i}
+                                                      className={`border p-2 flex items-center justify-between transition-all ${current ? 'bg-white/10 border-white/20' : 'bg-white/5 border-white/5'}`}
+                                                  >
+                                                      <div className="flex flex-col">
+                                                          <span
+                                                              className={`text-[9px] font-mono ${current ? 'text-zinc-200' : 'text-zinc-500'}`}
+                                                          >
+                                                              {p.time.split('T')[1]}
+                                                          </span>
+                                                      </div>
+                                                      <span
+                                                          className={`text-[10px] font-black ${current ? 'text-cyan-400' : 'text-cyan-500/80'}`}
+                                                      >
+                                                          {Number(p.wave_height).toFixed(1)}m
+                                                      </span>
+                                                  </div>
+                                              );
+                                          })}
                                 </div>
                             )}
                         </div>

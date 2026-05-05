@@ -1105,11 +1105,6 @@ export default function AnalysisReportModal({
                                                                         day: '2-digit',
                                                                         month: 'short',
                                                                     })}
-                                                                    {current && (
-                                                                        <span className="ml-2 px-1 py-0.5 bg-zinc-100 text-black text-[7px] font-black uppercase rounded-sm">
-                                                                            Current
-                                                                        </span>
-                                                                    )}
                                                                 </span>
                                                                 <span className="text-[8px] text-zinc-500 uppercase font-bold mt-0.5">
                                                                     Wind:{' '}
@@ -1166,11 +1161,6 @@ export default function AnalysisReportModal({
                                                                         day: '2-digit',
                                                                         month: 'short',
                                                                     })}
-                                                                    {current && (
-                                                                        <span className="ml-2 px-1 py-0.5 bg-cyan-500 text-black text-[7px] font-black uppercase rounded-sm">
-                                                                            Current
-                                                                        </span>
-                                                                    )}
                                                                 </span>
                                                                 <span className="text-[8px] text-zinc-500 uppercase font-bold mt-0.5">
                                                                     MSL:{' '}
