@@ -883,24 +883,28 @@ export default function ShipDetailsSidebar({
                         </div>
                         <div
                             className={`mt-4 p-4 border flex items-center justify-between gap-4 ${
-                                activityStats.score > 70
-                                    ? 'bg-red-500/5 border-red-500/10'
-                                    : activityStats.score > 30
-                                      ? 'bg-amber-500/5 border-amber-500/10'
-                                      : 'bg-emerald-500/5 border-emerald-500/10'
+                                loading.activities
+                                    ? 'bg-zinc-900 border-zinc-800'
+                                    : activityStats.score > 70
+                                      ? 'bg-red-500/5 border-red-500/10'
+                                      : activityStats.score > 30
+                                        ? 'bg-amber-500/5 border-amber-500/10'
+                                        : 'bg-emerald-500/5 border-emerald-500/10'
                             }`}
                         >
                             <div className="flex items-center gap-3 min-w-0">
                                 <div
                                     className={`w-8 h-8 rounded-full border-2 flex items-center justify-center text-[10px] font-black ${
-                                        activityStats.score > 70
-                                            ? 'border-red-500 text-red-500'
-                                            : activityStats.score > 30
-                                              ? 'border-amber-500 text-amber-500'
-                                              : 'border-emerald-500 text-emerald-500'
+                                        loading.activities
+                                            ? 'border-zinc-800 text-zinc-800'
+                                            : activityStats.score > 70
+                                              ? 'border-red-500 text-red-500'
+                                              : activityStats.score > 30
+                                                ? 'border-amber-500 text-amber-500'
+                                                : 'border-emerald-500 text-emerald-500'
                                     }`}
                                 >
-                                    {activityStats.score}
+                                    {loading.activities ? '--' : activityStats.score}
                                 </div>
                                 <div className="min-w-0">
                                     <div
@@ -912,14 +916,18 @@ export default function ShipDetailsSidebar({
                                                   : 'text-emerald-500'
                                         }`}
                                     >
-                                        {activityStats.score > 70
-                                            ? 'High Risk'
-                                            : activityStats.score > 30
-                                              ? 'Medium Risk'
-                                              : 'Low Risk'}
+                                        {loading.activities
+                                            ? 'Analyzing...'
+                                            : activityStats.score > 70
+                                              ? 'High Risk'
+                                              : activityStats.score > 30
+                                                ? 'Medium Risk'
+                                                : 'Low Risk'}
                                     </div>
                                     <div className="text-[10px] text-zinc-500 font-bold uppercase tracking-tight">
-                                        {activityStats.total} anomalies detected
+                                        {loading.activities
+                                            ? 'Evaluating profile'
+                                            : `${activityStats.total} anomalies detected`}
                                     </div>
                                 </div>
                             </div>
