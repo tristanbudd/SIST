@@ -168,6 +168,8 @@ class VesselAnalysisService
             'ended_at' => $end,
             'is_active' => $end ? $end->diffInMinutes(now()) < 30 : true,
         ]);
+
+        Log::info("SIST | BEHAVIOR: Detected {$type} ({$severity}) for MMSI {$vessel->mmsi} (".($vessel->name ?? 'Unknown').')');
     }
 
     /**
