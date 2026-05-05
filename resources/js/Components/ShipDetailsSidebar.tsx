@@ -14,6 +14,7 @@ import {
     FaArrowRight,
     FaCircleExclamation,
     FaChevronDown,
+    FaEye,
 } from 'react-icons/fa6';
 import { LuAnchor, LuWaves, LuThermometer } from 'react-icons/lu';
 import axios from 'axios';
@@ -135,6 +136,38 @@ export interface HistoryPosition {
     isLatest?: boolean;
 }
 
+export interface VesselActivity {
+    id: number;
+    type: string;
+    severity: 'low' | 'medium' | 'high';
+    description: string;
+    details: Record<string, unknown>;
+    started_at: string;
+    ended_at: string | null;
+}
+
+export function calculateActivityStats(activities: VesselActivity[]) {
+    const days = 30;
+    const cutoff = Date.now() - days * 24 * 60 * 60 * 1000;
+    const displayActivities = activities.filter((a) => {
+        const started = new Date(a.started_at).getTime();
+        return started >= cutoff;
+    });
+
+    const total = displayActivities.length;
+    const highRisk = displayActivities.filter((a) => a.severity === 'high').length;
+
+    const totalWeight = displayActivities.reduce((acc, a) => {
+        if (a.severity === 'high') return acc + 30;
+        if (a.severity === 'medium') return acc + 15;
+        return acc + 5;
+    }, 0);
+
+    const score = total > 0 ? Math.min(100, Math.round(totalWeight / (total * 0.4))) : 0;
+
+    return { total, highRisk, score };
+}
+
 interface ShipDetailsSidebarProps {
     vessel: Vessel | null;
     onClose: () => void;
@@ -170,6 +203,7 @@ export default function ShipDetailsSidebar({
     const [tides, setTides] = useState<TideData | null>(null);
     const [sanctions, setSanctions] = useState<SanctionsData | null>(null);
     const [history, setHistory] = useState<HistoryPosition[]>([]);
+    const [activities, setActivities] = useState<VesselActivity[]>([]);
     const [historyHours, setHistoryHours] = useState(1);
     const [historyMode, setHistoryMode] = useState<'hours' | 'window'>('hours');
     const [historyStart, setHistoryStart] = useState<string>(() => {
@@ -191,16 +225,22 @@ export default function ShipDetailsSidebar({
         tides: boolean;
         sanctions: boolean;
         history: boolean;
+        activities: boolean;
     }>({
         details: false,
         weather: false,
         tides: false,
         sanctions: false,
         history: false,
+        activities: false,
     });
 
     const [isOffline, setIsOffline] = useState(false);
     const [isReportOpen, setIsReportOpen] = useState(false);
+
+    const activityStats = useMemo(() => {
+        return calculateActivityStats(activities);
+    }, [activities]);
 
     useEffect(() => {
         const timer = setTimeout(() => {
@@ -233,6 +273,7 @@ export default function ShipDetailsSidebar({
         setTides(null);
         setSanctions(null);
         setHistory([]);
+        setActivities([]);
         setWaypointsLimit(10);
         setHasEnvError(false);
         setHasSanctionsError(false);
@@ -244,6 +285,7 @@ export default function ShipDetailsSidebar({
                 tides: true,
                 sanctions: true,
                 history: true,
+                activities: true,
             });
         }
     }
@@ -388,6 +430,19 @@ export default function ShipDetailsSidebar({
             } finally {
                 if (!signal?.aborted) {
                     setLoading((prev) => ({ ...prev, history: false }));
+                }
+            }
+
+            try {
+                const res = await axios.get(`${API_BASE_URL}/vessels/${mmsi}/activities`, {
+                    signal,
+                });
+                setActivities(res.data.data || []);
+            } catch (err) {
+                console.error('Failed to fetch activities:', err);
+            } finally {
+                if (!signal?.aborted) {
+                    setLoading((prev) => ({ ...prev, activities: false }));
                 }
             }
         },
@@ -596,6 +651,7 @@ export default function ShipDetailsSidebar({
                             </div>
                         </div>
                     </section>
+
                     <section
                         aria-labelledby="compliance-section"
                         aria-busy={loading.sanctions}
@@ -809,6 +865,65 @@ export default function ShipDetailsSidebar({
                                 </>
                             );
                         })()}
+                    </section>
+
+                    <section
+                        aria-labelledby="behavioral-section"
+                        className={loading.activities ? 'animate-pulse opacity-50' : ''}
+                    >
+                        <div className="flex items-center justify-between">
+                            <SectionTitle
+                                id="behavioral-section"
+                                icon={<FaEye aria-hidden="true" />}
+                                title="Behavioral Profile"
+                            />
+                            <span className="text-[8px] font-black text-zinc-600 uppercase tracking-widest bg-white/5 px-1.5 py-0.5 rounded-sm border border-white/5">
+                                Last 30 Days
+                            </span>
+                        </div>
+                        <div
+                            className={`mt-4 p-4 border flex items-center justify-between gap-4 ${
+                                activityStats.score > 70
+                                    ? 'bg-red-500/5 border-red-500/10'
+                                    : activityStats.score > 30
+                                      ? 'bg-amber-500/5 border-amber-500/10'
+                                      : 'bg-emerald-500/5 border-emerald-500/10'
+                            }`}
+                        >
+                            <div className="flex items-center gap-3 min-w-0">
+                                <div
+                                    className={`w-8 h-8 rounded-full border-2 flex items-center justify-center text-[10px] font-black ${
+                                        activityStats.score > 70
+                                            ? 'border-red-500 text-red-500'
+                                            : activityStats.score > 30
+                                              ? 'border-amber-500 text-amber-500'
+                                              : 'border-emerald-500 text-emerald-500'
+                                    }`}
+                                >
+                                    {activityStats.score}
+                                </div>
+                                <div className="min-w-0">
+                                    <div
+                                        className={`text-sm font-black uppercase tracking-tight ${
+                                            activityStats.score > 70
+                                                ? 'text-red-500'
+                                                : activityStats.score > 30
+                                                  ? 'text-amber-500'
+                                                  : 'text-emerald-500'
+                                        }`}
+                                    >
+                                        {activityStats.score > 70
+                                            ? 'High Risk'
+                                            : activityStats.score > 30
+                                              ? 'Medium Risk'
+                                              : 'Low Risk'}
+                                    </div>
+                                    <div className="text-[10px] text-zinc-500 font-bold uppercase tracking-tight">
+                                        {activityStats.total} anomalies detected
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </section>
 
                     <section className={loading.history ? 'animate-pulse opacity-50' : ''}>
@@ -1376,6 +1491,7 @@ export default function ShipDetailsSidebar({
                 weather={weather}
                 tides={tides}
                 history={history}
+                activities={activities}
                 isOffline={isOffline}
                 loading={loading}
             />

@@ -526,4 +526,53 @@ class VesselController extends Controller
 
         return response()->json(['data' => $sanctioned]);
     }
+
+    /**
+     * Get Vessel Activities
+     *
+     * Retrieve a list of detected suspicious activities or anomalous behavior for a specific vessel.
+     *
+     * @urlParam mmsi integer required The MMSI of the vessel. Example: 219225000
+     *
+     * @response 200 scenario="Activities found" {
+     * "mmsi": 219225000,
+     * "data": [
+     * {
+     * "id": 1,
+     * "type": "ais_gap",
+     * "severity": "medium",
+     * "description": "Significant AIS transmission gap detected (145 minutes).",
+     * "details": {
+     * "duration_minutes": 145,
+     * "gap_start": "2026-04-02T10:00:00Z",
+     * "gap_end": "2026-04-02T12:25:00Z"
+     * },
+     * "started_at": "2026-04-02T10:00:00Z",
+     * "ended_at": "2026-04-02T12:25:00Z",
+     * "is_active": false
+     * }
+     * ]
+     * }
+     */
+    public function activities(string $mmsi): JsonResponse
+    {
+        $vessel = Vessel::where('mmsi', $mmsi)->first();
+
+        if (! $vessel) {
+            return response()->json([
+                'error' => 'Vessel not found in SIST records',
+                'mmsi' => (int) $mmsi,
+            ], 404);
+        }
+
+        $activities = $vessel->activities()
+            ->where('started_at', '>=', now()->subDays(30))
+            ->orderBy('started_at', 'desc')
+            ->get();
+
+        return response()->json([
+            'mmsi' => (int) $mmsi,
+            'data' => $activities,
+        ]);
+    }
 }
