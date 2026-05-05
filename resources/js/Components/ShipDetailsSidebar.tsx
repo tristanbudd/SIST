@@ -594,14 +594,29 @@ export default function ShipDetailsSidebar({
                         />
                         <div className="grid grid-cols-2 gap-4 mt-4">
                             <StatusCard
-                                label="Nav Status"
+                                label="Activity"
                                 value={
-                                    loading.details
+                                    loading.activities
                                         ? '...'
-                                        : NAV_STATUS_MAP[details?.navigational_status ?? -1] ||
-                                          'Not Defined'
+                                        : activityStats.score > 70
+                                          ? 'High Risk'
+                                          : activityStats.score > 30
+                                            ? 'Med Risk'
+                                            : 'Low Risk'
                                 }
-                                icon={<LuAnchor className="text-zinc-500" />}
+                                icon={
+                                    <FaEye
+                                        className={
+                                            loading.activities
+                                                ? 'text-zinc-500'
+                                                : activityStats.score > 70
+                                                  ? 'text-red-500'
+                                                  : activityStats.score > 30
+                                                    ? 'text-amber-500'
+                                                    : 'text-emerald-500'
+                                        }
+                                    />
+                                }
                             />
                             <StatusCard
                                 label="Speed"
