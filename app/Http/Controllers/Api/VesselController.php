@@ -566,6 +566,7 @@ class VesselController extends Controller
         }
 
         $activities = $vessel->activities()
+            ->where('started_at', '>=', now()->subDays(30))
             ->orderBy('started_at', 'desc')
             ->get();
 

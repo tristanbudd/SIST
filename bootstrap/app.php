@@ -3,6 +3,8 @@
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\SecurityHeaders;
 use App\Http\Middleware\TrustProxies;
+use App\Models\VesselActivity;
+use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -40,4 +42,9 @@ return Application::configure(basePath: dirname(__DIR__))
 
             return $response;
         });
+    })->withSchedule(function (Schedule $schedule) {
+        $schedule->command('sist:analyze-activity')->hourly();
+        $schedule->call(function () {
+            VesselActivity::where('started_at', '<', now()->subDays(30))->delete();
+        })->daily();
     })->create();

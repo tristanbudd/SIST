@@ -20,8 +20,6 @@ import {
     FaArrowTrendUp,
     FaChevronLeft,
     FaChevronRight,
-    FaEyeSlash,
-    FaAnchor,
 } from 'react-icons/fa6';
 import {
     Vessel,
@@ -59,6 +57,7 @@ interface AnalysisReportModalProps {
     };
 }
 
+import { calculateActivityStats } from './ShipDetailsSidebar';
 const SanctionRecordCard = ({
     record,
     variant,
@@ -206,6 +205,7 @@ export default function AnalysisReportModal({
     },
 }: AnalysisReportModalProps) {
     const [activeTab, setActiveTab] = useState<TabType>('overview');
+    const [now] = useState(() => Date.now());
     const [animateIn, setAnimateIn] = useState(false);
     const [waypointFilters, setWaypointFilters] = useState({
         search: '',
@@ -218,6 +218,8 @@ export default function AnalysisReportModal({
     });
     const [currentPage, setCurrentPage] = useState(1);
     const pageSize = 10;
+    const [activityPage, setActivityPage] = useState(1);
+    const activityPageSize = 5;
 
     const handleFilterUpdate = (update: Partial<typeof waypointFilters>) => {
         setWaypointFilters((prev) => ({ ...prev, ...update }));
@@ -281,12 +283,31 @@ export default function AnalysisReportModal({
         });
     }, [history, waypointFilters]);
 
+    const activityStats = useMemo(() => {
+        return calculateActivityStats(activities);
+    }, [activities]);
+
     const paginatedHistory = useMemo(() => {
         const start = (currentPage - 1) * pageSize;
         return filteredHistory.slice(start, start + pageSize);
     }, [filteredHistory, currentPage]);
 
     const totalPages = Math.ceil(filteredHistory.length / pageSize);
+
+    const filteredActivities = useMemo(() => {
+        const days = 30;
+        const cutoff = now - days * 24 * 60 * 60 * 1000;
+        return activities.filter((a) => {
+            return new Date(a.started_at).getTime() >= cutoff;
+        });
+    }, [activities, now]);
+
+    const paginatedActivities = useMemo(() => {
+        const start = (activityPage - 1) * activityPageSize;
+        return filteredActivities.slice(start, start + activityPageSize);
+    }, [filteredActivities, activityPage]);
+
+    const totalActivityPages = Math.ceil(filteredActivities.length / activityPageSize);
 
     const stats = useMemo(() => {
         if (history.length === 0) return { avgSpeed: 0, maxSpeed: 0, totalDist: 0 };
@@ -1594,108 +1615,207 @@ export default function AnalysisReportModal({
                                 </div>
 
                                 <div className="flex-1 overflow-y-auto">
-                                    {loading?.activities ? (
-                                        <div className="h-40 flex flex-col items-center justify-center gap-4">
-                                            <LoadingSpinner size="lg" />
-                                            <span className="text-[10px] text-zinc-500 font-black uppercase tracking-[0.2em] animate-pulse">
-                                                Running Analysis...
-                                            </span>
-                                        </div>
-                                    ) : activities.length > 0 ? (
-                                        <div className="space-y-3">
-                                            {activities.map((activity) => (
-                                                <div
-                                                    key={activity.id}
-                                                    className={`p-4 border transition-all ${
-                                                        activity.severity === 'high'
-                                                            ? 'border-red-500/20 bg-red-500/5'
-                                                            : activity.severity === 'medium'
-                                                              ? 'border-amber-500/20 bg-amber-500/5'
-                                                              : 'border-white/5 bg-white/2'
-                                                    }`}
-                                                >
-                                                    <div className="flex justify-between items-start mb-3">
-                                                        <div className="flex items-center gap-3">
-                                                            <div>
-                                                                <div className="flex items-center gap-2">
-                                                                    <span className="text-xs font-black uppercase tracking-tight text-white">
-                                                                        {activity.type
-                                                                            .replace(/_/g, ' ')
-                                                                            .toUpperCase()}
-                                                                    </span>
-                                                                    <span
-                                                                        className={`text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded-sm ${
-                                                                            activity.severity ===
-                                                                            'high'
-                                                                                ? 'bg-red-500/20 text-red-400'
-                                                                                : activity.severity ===
-                                                                                    'medium'
-                                                                                  ? 'bg-amber-500/20 text-amber-400'
-                                                                                  : 'bg-zinc-800 text-zinc-500'
-                                                                        }`}
-                                                                    >
-                                                                        {activity.severity} risk
-                                                                    </span>
-                                                                </div>
-                                                                <div className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest mt-0.5">
-                                                                    {formatShortDate(
-                                                                        activity.started_at
-                                                                    )}
-                                                                    {activity.ended_at &&
-                                                                        ` — ${formatShortDate(activity.ended_at)}`}
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                        {activity.is_active && (
-                                                            <div className="flex items-center gap-1.5 px-2 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-sm">
-                                                                <div className="w-1 h-1 bg-emerald-500 rounded-full animate-pulse" />
-                                                                <span className="text-[8px] text-emerald-400 font-black uppercase tracking-widest">
-                                                                    Active
-                                                                </span>
-                                                            </div>
-                                                        )}
-                                                    </div>
+                                    {(() => {
+                                        if (loading?.activities) {
+                                            return (
+                                                <div className="h-40 flex flex-col items-center justify-center gap-4">
+                                                    <LoadingSpinner size="lg" />
+                                                    <span className="text-[10px] text-zinc-500 font-black uppercase tracking-[0.2em] animate-pulse">
+                                                        Running Analysis...
+                                                    </span>
+                                                </div>
+                                            );
+                                        }
 
-                                                    <p className="text-[11px] text-zinc-300 font-medium leading-relaxed mb-4">
-                                                        {activity.description}
+                                        const displayActivities = activities;
+
+                                        if (displayActivities.length === 0) {
+                                            return (
+                                                <div className="p-8 border border-emerald-500/20 bg-emerald-500/5 flex flex-col items-center justify-center text-center">
+                                                    <FaCircleCheck className="w-10 h-10 text-emerald-500/50 mb-3" />
+                                                    <h4 className="text-emerald-500 font-black">
+                                                        Clear Profile
+                                                    </h4>
+                                                    <p className="text-emerald-500/70 text-[11px] mt-1 uppercase tracking-widest">
+                                                        No suspicious behavioral patterns or
+                                                        movement anomalies detected.
                                                     </p>
+                                                </div>
+                                            );
+                                        }
 
-                                                    {activity.details && (
-                                                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 pt-4 border-t border-white/5">
-                                                            {Object.entries(activity.details).map(
-                                                                ([key, value]) => (
-                                                                    <div key={key}>
-                                                                        <div className="text-[7px] text-zinc-500 font-black uppercase tracking-[0.2em] mb-0.5">
-                                                                            {key.replace(/_/g, ' ')}
+                                        return (
+                                            <div className="space-y-6">
+                                                {/* Boxed Activity Stats */}
+                                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-px bg-white/10 border border-white/10 overflow-hidden">
+                                                    <div className="bg-zinc-950 p-5 space-y-1 border-r border-white/5">
+                                                        <span className="text-[10px] text-zinc-500 uppercase font-black tracking-widest block">
+                                                            Risk Level
+                                                        </span>
+                                                        <div
+                                                            className={`text-xl font-black uppercase tracking-tight ${
+                                                                activityStats.score > 70
+                                                                    ? 'text-red-500'
+                                                                    : activityStats.score > 30
+                                                                      ? 'text-amber-500'
+                                                                      : 'text-emerald-500'
+                                                            }`}
+                                                        >
+                                                            {activityStats.score > 70
+                                                                ? 'High Risk'
+                                                                : activityStats.score > 30
+                                                                  ? 'Medium Risk'
+                                                                  : 'Low Risk'}
+                                                        </div>
+                                                        <div className="text-[9px] text-zinc-600 uppercase font-bold tracking-tight">
+                                                            Current Status
+                                                        </div>
+                                                    </div>
+                                                    <div className="bg-zinc-950 p-5 space-y-1 border-r border-white/5">
+                                                        <span className="text-[10px] text-zinc-500 uppercase font-black tracking-widest block">
+                                                            Risk Score
+                                                        </span>
+                                                        <div className="text-4xl font-black text-white">
+                                                            {activityStats.score}%
+                                                        </div>
+                                                        <div className="text-[9px] text-zinc-600 uppercase font-bold tracking-tight">
+                                                            Profile Analysis
+                                                        </div>
+                                                    </div>
+                                                    <div className="bg-zinc-950 p-5 space-y-1 border-r border-white/5">
+                                                        <span className="text-[10px] text-zinc-500 uppercase font-black tracking-widest block">
+                                                            High Risk
+                                                        </span>
+                                                        <div className="text-4xl font-black text-zinc-300">
+                                                            {activityStats.highRisk}
+                                                        </div>
+                                                        <div className="text-[9px] text-zinc-600 uppercase font-bold tracking-tight">
+                                                            Critical Alerts
+                                                        </div>
+                                                    </div>
+                                                    <div className="bg-zinc-950 p-5 space-y-1">
+                                                        <span className="text-[10px] text-zinc-500 uppercase font-black tracking-widest block">
+                                                            Records
+                                                        </span>
+                                                        <div className="text-4xl font-black text-zinc-300">
+                                                            {activityStats.total}
+                                                        </div>
+                                                        <div className="text-[9px] text-zinc-600 uppercase font-bold tracking-tight">
+                                                            Historical Log
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                {/* Simplified Activity List */}
+                                                <div className="space-y-3">
+                                                    {paginatedActivities.map((activity) => (
+                                                        <div
+                                                            key={activity.id}
+                                                            className="p-4 border border-white/5 bg-white/2 hover:bg-white/4 transition-colors"
+                                                        >
+                                                            <div className="flex justify-between items-start mb-3">
+                                                                <div className="flex items-center gap-3">
+                                                                    <div>
+                                                                        <div className="flex items-center gap-2">
+                                                                            <span className="text-[11px] font-black uppercase tracking-tight text-white">
+                                                                                {activity.type
+                                                                                    .replace(
+                                                                                        /_/g,
+                                                                                        ' '
+                                                                                    )
+                                                                                    .toUpperCase()}
+                                                                            </span>
                                                                         </div>
-                                                                        <div className="text-[10px] text-zinc-400 font-mono">
-                                                                            {typeof value ===
-                                                                            'object'
-                                                                                ? JSON.stringify(
-                                                                                      value
-                                                                                  )
-                                                                                : String(value)}
+                                                                        <div className="text-[9px] text-zinc-500 font-bold uppercase tracking-widest mt-0.5">
+                                                                            {formatShortDate(
+                                                                                activity.started_at
+                                                                            )}
+                                                                            {activity.ended_at &&
+                                                                                ` — ${formatShortDate(activity.ended_at)}`}
                                                                         </div>
                                                                     </div>
-                                                                )
+                                                                </div>
+                                                            </div>
+
+                                                            <p className="text-[11px] text-zinc-400 font-medium leading-relaxed mb-4">
+                                                                {activity.description}
+                                                            </p>
+
+                                                            {activity.details && (
+                                                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-3 pt-4 border-t border-white/5">
+                                                                    {Object.entries(
+                                                                        activity.details
+                                                                    ).map(([key, value]) => (
+                                                                        <div
+                                                                            key={key}
+                                                                            className="flex flex-col gap-0.5"
+                                                                        >
+                                                                            <span className="text-[7px] text-zinc-600 font-black uppercase tracking-widest">
+                                                                                {key.replace(
+                                                                                    /_/g,
+                                                                                    ' '
+                                                                                )}
+                                                                            </span>
+                                                                            <span className="text-[10px] text-zinc-400 font-mono">
+                                                                                {typeof value ===
+                                                                                'object'
+                                                                                    ? JSON.stringify(
+                                                                                          value
+                                                                                      )
+                                                                                    : String(value)}
+                                                                            </span>
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
                                                             )}
                                                         </div>
-                                                    )}
+                                                    ))}
                                                 </div>
-                                            ))}
-                                        </div>
-                                    ) : (
-                                        <div className="p-8 border border-emerald-500/20 bg-emerald-500/5 flex flex-col items-center justify-center text-center">
-                                            <FaCircleCheck className="w-10 h-10 text-emerald-500/50 mb-3" />
-                                            <h4 className="text-emerald-500 font-black">
-                                                Clear Profile
-                                            </h4>
-                                            <p className="text-emerald-500/70 text-[11px] mt-1 uppercase tracking-widest">
-                                                No suspicious behavioral patterns or movement
-                                                anomalies detected.
-                                            </p>
-                                        </div>
-                                    )}
+
+                                                {/* Pagination Controls */}
+                                                {totalActivityPages > 1 && (
+                                                    <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-white/5">
+                                                        <div className="flex items-center gap-2">
+                                                            <button
+                                                                onClick={() =>
+                                                                    setActivityPage((p) =>
+                                                                        Math.max(1, p - 1)
+                                                                    )
+                                                                }
+                                                                disabled={activityPage === 1}
+                                                                className="flex items-center gap-2 px-3 py-1.5 bg-white/5 border border-white/10 text-[9px] font-black text-zinc-500 uppercase tracking-widest hover:bg-white/10 disabled:opacity-20 disabled:cursor-not-allowed transition-colors"
+                                                            >
+                                                                <FaChevronLeft className="w-2 h-2" />
+                                                                Prev
+                                                            </button>
+                                                            <button
+                                                                onClick={() =>
+                                                                    setActivityPage((p) =>
+                                                                        Math.min(
+                                                                            totalActivityPages,
+                                                                            p + 1
+                                                                        )
+                                                                    )
+                                                                }
+                                                                disabled={
+                                                                    activityPage ===
+                                                                    totalActivityPages
+                                                                }
+                                                                className="flex items-center gap-2 px-3 py-1.5 bg-white/5 border border-white/10 text-[9px] font-black text-zinc-500 uppercase tracking-widest hover:bg-white/10 disabled:opacity-20 disabled:cursor-not-allowed transition-colors"
+                                                            >
+                                                                Next
+                                                                <FaChevronRight className="w-2 h-2" />
+                                                            </button>
+                                                        </div>
+                                                        <div className="text-[9px] font-black text-zinc-600 uppercase tracking-widest">
+                                                            Page {activityPage} of{' '}
+                                                            {totalActivityPages}
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        );
+                                    })()}
                                 </div>
                             </div>
                         )}
