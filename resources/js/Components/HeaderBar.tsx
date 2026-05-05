@@ -17,7 +17,6 @@ interface Vessel {
     lng: number;
     last_seen_at?: string;
     isOffline?: boolean;
-    behavioralScore?: number;
 }
 
 interface Port {
@@ -286,6 +285,7 @@ export default function HeaderBar({
                     }) => {
                         const lastSeen = new Date(v.last_seen_at).getTime();
                         const ageMinutes = (Date.now() - lastSeen) / 60000;
+
                         return {
                             category: 'vessel',
                             name: v.name || 'UNKNOWN',
@@ -295,7 +295,6 @@ export default function HeaderBar({
                             lng: v.lng,
                             last_seen_at: v.last_seen_at,
                             isOffline: ageMinutes > OFFLINE_THRESHOLD_MINUTES,
-                            behavioralScore: Math.floor(Math.random() * 80) + 10, // Mock score for demo
                         };
                     }
                 );
@@ -905,23 +904,6 @@ export default function HeaderBar({
                                                                 isOfflineVessel && (
                                                                     <span className="ml-2 inline-flex items-center px-1.5 py-0.5 text-[8px] font-black uppercase tracking-widest bg-zinc-800/50 border border-zinc-700/50 text-zinc-500 rounded-sm">
                                                                         Offline
-                                                                    </span>
-                                                                )}
-                                                            {isVessel(item) &&
-                                                                item.behavioralScore !==
-                                                                    undefined && (
-                                                                    <span
-                                                                        className={`ml-2 px-1 py-0.5 rounded-sm text-[8px] font-black ${
-                                                                            item.behavioralScore >
-                                                                            70
-                                                                                ? 'bg-red-500/10 text-red-500 border border-red-500/20'
-                                                                                : item.behavioralScore >
-                                                                                    30
-                                                                                  ? 'bg-amber-500/10 text-amber-500 border border-amber-500/20'
-                                                                                  : 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20'
-                                                                        }`}
-                                                                    >
-                                                                        {item.behavioralScore}%
                                                                     </span>
                                                                 )}
                                                         </span>
