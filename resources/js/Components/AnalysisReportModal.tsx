@@ -1762,7 +1762,11 @@ export default function AnalysisReportModal({
                                                             </div>
 
                                                             <p className="text-[11px] text-zinc-400 font-medium leading-relaxed mb-4">
-                                                                {activity.description}
+                                                                {activity.description.replace(
+                                                                    /(\d+\.\d{2,})/g,
+                                                                    (match) =>
+                                                                        parseFloat(match).toFixed(1)
+                                                                )}
                                                             </p>
 
                                                             {activity.details && (
@@ -1782,11 +1786,18 @@ export default function AnalysisReportModal({
                                                                             </span>
                                                                             <span className="text-[10px] text-zinc-400 font-mono">
                                                                                 {typeof value ===
-                                                                                'object'
-                                                                                    ? JSON.stringify(
-                                                                                          value
+                                                                                'number'
+                                                                                    ? value.toFixed(
+                                                                                          1
                                                                                       )
-                                                                                    : String(value)}
+                                                                                    : typeof value ===
+                                                                                        'object'
+                                                                                      ? JSON.stringify(
+                                                                                            value
+                                                                                        )
+                                                                                      : String(
+                                                                                            value
+                                                                                        )}
                                                                             </span>
                                                                         </div>
                                                                     ))}

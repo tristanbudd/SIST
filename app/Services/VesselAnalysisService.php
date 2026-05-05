@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Helpers\MaritimeFormatter;
 use App\Models\Vessel;
 use App\Models\VesselActivity;
 use Carbon\Carbon;
@@ -178,9 +179,9 @@ class VesselAnalysisService
     private function resolveDescription(string $type, array $details): string
     {
         return match ($type) {
-            'ais_gap' => 'AIS transmission interruption detected ('.($details['duration_minutes'] ?? '?').' min).',
+            'ais_gap' => 'AIS transmission interruption detected ('.MaritimeFormatter::formatDuration($details['duration_minutes'] ?? 0).').',
             'loitering' => 'Stationary residency pattern in open-sea transit area.',
-            'speed_anomaly' => 'Kinematic violation: speed exceeds physical capability ('.($details['reported_speed'] ?? '?').' kn).',
+            'speed_anomaly' => 'Kinematic violation: speed exceeds physical capability ('.round($details['reported_speed'] ?? 0, 1).' kn).',
             default => 'Anomalous behavioral event detected.',
         };
     }
