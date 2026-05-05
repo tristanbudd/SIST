@@ -17,6 +17,7 @@ class Vessel extends Model
 
     protected $casts = [
         'last_seen_at' => 'datetime',
+        'last_analyzed_at' => 'datetime',
         'eta' => 'datetime',
         'valid' => 'boolean',
         'position_accuracy' => 'boolean',
@@ -44,6 +45,11 @@ class Vessel extends Model
     public function positions(): HasMany
     {
         return $this->hasMany(VesselPosition::class, 'mmsi', 'mmsi');
+    }
+
+    public function activities(): HasMany
+    {
+        return $this->hasMany(VesselActivity::class, 'mmsi', 'mmsi');
     }
 
     protected function flyingFlag(): Attribute

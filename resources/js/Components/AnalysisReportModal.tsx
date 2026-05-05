@@ -20,6 +20,8 @@ import {
     FaArrowTrendUp,
     FaChevronLeft,
     FaChevronRight,
+    FaEyeSlash,
+    FaAnchor,
 } from 'react-icons/fa6';
 import {
     Vessel,
@@ -29,6 +31,7 @@ import {
     WeatherData,
     TideData,
     HistoryPosition,
+    VesselActivity,
 } from './ShipDetailsSidebar';
 import { SANCTIONER_MAPPING, WEATHER_CODES, NAV_STATUS_MAP } from '../constants';
 import { formatPositionAge, getDistance, generateExternalLinks, formatShortDate } from '../utils';
@@ -44,6 +47,7 @@ interface AnalysisReportModalProps {
     weather: WeatherData | null;
     tides: TideData | null;
     history: HistoryPosition[];
+    activities: VesselActivity[];
     isOffline: boolean;
     loading?: {
         details: boolean;
@@ -51,6 +55,7 @@ interface AnalysisReportModalProps {
         tides: boolean;
         sanctions: boolean;
         history: boolean;
+        activities: boolean;
     };
 }
 
@@ -189,6 +194,7 @@ export default function AnalysisReportModal({
     weather,
     tides,
     history = [],
+    activities = [],
     isOffline = false,
     loading = {
         details: false,
@@ -196,6 +202,7 @@ export default function AnalysisReportModal({
         tides: false,
         sanctions: false,
         history: false,
+        activities: false,
     },
 }: AnalysisReportModalProps) {
     const [activeTab, setActiveTab] = useState<TabType>('overview');
@@ -1575,13 +1582,120 @@ export default function AnalysisReportModal({
                         )}
 
                         {activeTab === 'activity' && (
-                            <div className="h-full flex flex-col items-center justify-center p-12 text-center animate-in fade-in duration-300">
-                                <h3 className="text-lg font-black text-white uppercase tracking-widest mb-2">
-                                    Activity Tracking
-                                </h3>
-                                <p className="text-[11px] text-zinc-500 font-bold uppercase tracking-widest">
-                                    Module currently under development (Work in Progress)
-                                </p>
+                            <div className="space-y-6 animate-in fade-in duration-300">
+                                <div className="flex flex-col gap-1">
+                                    <h3 className="text-lg font-black text-white uppercase tracking-tight flex items-center gap-2">
+                                        <FaEye className="text-zinc-500" />
+                                        Behavioral Analysis
+                                    </h3>
+                                    <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">
+                                        Automated detection of suspicious maritime movement patterns
+                                    </p>
+                                </div>
+
+                                <div className="flex-1 overflow-y-auto">
+                                    {loading?.activities ? (
+                                        <div className="h-40 flex flex-col items-center justify-center gap-4">
+                                            <LoadingSpinner size="lg" />
+                                            <span className="text-[10px] text-zinc-500 font-black uppercase tracking-[0.2em] animate-pulse">
+                                                Running Analysis...
+                                            </span>
+                                        </div>
+                                    ) : activities.length > 0 ? (
+                                        <div className="space-y-3">
+                                            {activities.map((activity) => (
+                                                <div
+                                                    key={activity.id}
+                                                    className={`p-4 border transition-all ${
+                                                        activity.severity === 'high'
+                                                            ? 'border-red-500/20 bg-red-500/5'
+                                                            : activity.severity === 'medium'
+                                                              ? 'border-amber-500/20 bg-amber-500/5'
+                                                              : 'border-white/5 bg-white/2'
+                                                    }`}
+                                                >
+                                                    <div className="flex justify-between items-start mb-3">
+                                                        <div className="flex items-center gap-3">
+                                                            <div>
+                                                                <div className="flex items-center gap-2">
+                                                                    <span className="text-xs font-black uppercase tracking-tight text-white">
+                                                                        {activity.type
+                                                                            .replace(/_/g, ' ')
+                                                                            .toUpperCase()}
+                                                                    </span>
+                                                                    <span
+                                                                        className={`text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded-sm ${
+                                                                            activity.severity ===
+                                                                            'high'
+                                                                                ? 'bg-red-500/20 text-red-400'
+                                                                                : activity.severity ===
+                                                                                    'medium'
+                                                                                  ? 'bg-amber-500/20 text-amber-400'
+                                                                                  : 'bg-zinc-800 text-zinc-500'
+                                                                        }`}
+                                                                    >
+                                                                        {activity.severity} risk
+                                                                    </span>
+                                                                </div>
+                                                                <div className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest mt-0.5">
+                                                                    {formatShortDate(
+                                                                        activity.started_at
+                                                                    )}
+                                                                    {activity.ended_at &&
+                                                                        ` — ${formatShortDate(activity.ended_at)}`}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        {activity.is_active && (
+                                                            <div className="flex items-center gap-1.5 px-2 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-sm">
+                                                                <div className="w-1 h-1 bg-emerald-500 rounded-full animate-pulse" />
+                                                                <span className="text-[8px] text-emerald-400 font-black uppercase tracking-widest">
+                                                                    Active
+                                                                </span>
+                                                            </div>
+                                                        )}
+                                                    </div>
+
+                                                    <p className="text-[11px] text-zinc-300 font-medium leading-relaxed mb-4">
+                                                        {activity.description}
+                                                    </p>
+
+                                                    {activity.details && (
+                                                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 pt-4 border-t border-white/5">
+                                                            {Object.entries(activity.details).map(
+                                                                ([key, value]) => (
+                                                                    <div key={key}>
+                                                                        <div className="text-[7px] text-zinc-500 font-black uppercase tracking-[0.2em] mb-0.5">
+                                                                            {key.replace(/_/g, ' ')}
+                                                                        </div>
+                                                                        <div className="text-[10px] text-zinc-400 font-mono">
+                                                                            {typeof value ===
+                                                                            'object'
+                                                                                ? JSON.stringify(
+                                                                                      value
+                                                                                  )
+                                                                                : String(value)}
+                                                                        </div>
+                                                                    </div>
+                                                                )
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <div className="h-60 flex flex-col items-center justify-center gap-2 text-center p-12 bg-white/2 border border-white/5">
+                                            <h3 className="text-sm font-black text-white uppercase tracking-[0.2em]">
+                                                Clear Profile
+                                            </h3>
+                                            <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest max-w-[280px] leading-relaxed">
+                                                No suspicious behavioral patterns or movement
+                                                anomalies detected in the recent positioning data.
+                                            </p>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         )}
                     </div>

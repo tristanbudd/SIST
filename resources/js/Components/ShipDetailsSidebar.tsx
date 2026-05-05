@@ -135,6 +135,17 @@ export interface HistoryPosition {
     isLatest?: boolean;
 }
 
+export interface VesselActivity {
+    id: number;
+    type: string;
+    severity: 'low' | 'medium' | 'high';
+    description: string;
+    details: any;
+    started_at: string;
+    ended_at: string | null;
+    is_active: boolean;
+}
+
 interface ShipDetailsSidebarProps {
     vessel: Vessel | null;
     onClose: () => void;
@@ -170,6 +181,7 @@ export default function ShipDetailsSidebar({
     const [tides, setTides] = useState<TideData | null>(null);
     const [sanctions, setSanctions] = useState<SanctionsData | null>(null);
     const [history, setHistory] = useState<HistoryPosition[]>([]);
+    const [activities, setActivities] = useState<VesselActivity[]>([]);
     const [historyHours, setHistoryHours] = useState(1);
     const [historyMode, setHistoryMode] = useState<'hours' | 'window'>('hours');
     const [historyStart, setHistoryStart] = useState<string>(() => {
@@ -191,12 +203,14 @@ export default function ShipDetailsSidebar({
         tides: boolean;
         sanctions: boolean;
         history: boolean;
+        activities: boolean;
     }>({
         details: false,
         weather: false,
         tides: false,
         sanctions: false,
         history: false,
+        activities: false,
     });
 
     const [isOffline, setIsOffline] = useState(false);
@@ -233,6 +247,7 @@ export default function ShipDetailsSidebar({
         setTides(null);
         setSanctions(null);
         setHistory([]);
+        setActivities([]);
         setWaypointsLimit(10);
         setHasEnvError(false);
         setHasSanctionsError(false);
@@ -388,6 +403,19 @@ export default function ShipDetailsSidebar({
             } finally {
                 if (!signal?.aborted) {
                     setLoading((prev) => ({ ...prev, history: false }));
+                }
+            }
+
+            try {
+                const res = await axios.get(`${API_BASE_URL}/vessels/${mmsi}/activities`, {
+                    signal,
+                });
+                setActivities(res.data.data || []);
+            } catch (err) {
+                console.error('Failed to fetch activities:', err);
+            } finally {
+                if (!signal?.aborted) {
+                    setLoading((prev) => ({ ...prev, activities: false }));
                 }
             }
         },
@@ -1376,6 +1404,7 @@ export default function ShipDetailsSidebar({
                 weather={weather}
                 tides={tides}
                 history={history}
+                activities={activities}
                 isOffline={isOffline}
                 loading={loading}
             />
