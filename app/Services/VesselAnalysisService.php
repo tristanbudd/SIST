@@ -22,7 +22,7 @@ class VesselAnalysisService
             $query->whereNull('last_analyzed_at')
                 ->orWhereColumn('last_seen_at', '>', 'last_analyzed_at');
         })
-            ->where('last_seen_at', '>=', now()->subHours(24))
+            ->where('last_seen_at', '>=', now()->subDays(30))
             ->limit(100) // Process in chunks to maintain low latency
             ->get();
 
@@ -58,7 +58,7 @@ class VesselAnalysisService
     private function detectTransmissionGaps(Vessel $vessel): void
     {
         $positions = $vessel->positions()
-            ->where('recorded_at', '>=', now()->subHours(48))
+            ->where('recorded_at', '>=', now()->subDays(30))
             ->orderBy('recorded_at', 'asc')
             ->get();
 
@@ -88,7 +88,7 @@ class VesselAnalysisService
     private function detectLoiteringPatterns(Vessel $vessel): void
     {
         $positions = $vessel->positions()
-            ->where('recorded_at', '>=', now()->subHours(12))
+            ->where('recorded_at', '>=', now()->subDays(30))
             ->orderBy('recorded_at', 'desc')
             ->get();
 
@@ -96,7 +96,7 @@ class VesselAnalysisService
             return;
         }
 
-        $recent = $positions->where('recorded_at', '>=', now()->subHours(4));
+        $recent = $positions->where('recorded_at', '>=', now()->subDays(7));
         if ($recent->count() > 5) {
             $avgSpeed = $recent->avg('speed');
 
