@@ -1725,6 +1725,20 @@ export default function AnalysisReportModal({
                                                                                     )
                                                                                     .toUpperCase()}
                                                                             </span>
+                                                                            <span
+                                                                                className={`text-[7px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded-sm bg-zinc-900 ${
+                                                                                    activity.severity ===
+                                                                                    'high'
+                                                                                        ? 'text-red-500'
+                                                                                        : activity.severity ===
+                                                                                            'medium'
+                                                                                          ? 'text-amber-500'
+                                                                                          : 'text-emerald-500'
+                                                                                }`}
+                                                                            >
+                                                                                {activity.severity}{' '}
+                                                                                risk
+                                                                            </span>
                                                                         </div>
                                                                         <div className="text-[9px] text-zinc-500 font-bold uppercase tracking-widest mt-0.5">
                                                                             {formatShortDate(
