@@ -290,7 +290,7 @@ export default function HeaderBar({
                             category: 'vessel',
                             name: v.name || 'UNKNOWN',
                             mmsi: String(v.mmsi),
-                            imo: String(v.imo || ''),
+                            imo: v.imo && String(v.imo) !== '0' ? String(v.imo) : '',
                             lat: v.lat,
                             lng: v.lng,
                             last_seen_at: v.last_seen_at,
@@ -781,7 +781,7 @@ export default function HeaderBar({
                                                         className={`text-[8px] font-mono uppercase ${isSelected ? 'text-zinc-300' : 'text-zinc-500'}`}
                                                     >
                                                         {isVessel(item)
-                                                            ? `MMSI: ${item.mmsi} | IMO: ${item.imo || 'Unknown'}`
+                                                            ? `MMSI: ${item.mmsi}${item.imo && item.imo !== '0' ? ` | IMO: ${item.imo}` : ''}`
                                                             : isPort(item)
                                                               ? `CODE: ${item.code} | ${item.country}`
                                                               : isCountry(item)
@@ -911,7 +911,7 @@ export default function HeaderBar({
                                                             className={`text-[9px] font-mono uppercase ${isSelected ? 'text-zinc-300' : 'text-zinc-500'}`}
                                                         >
                                                             {isVessel(item)
-                                                                ? `MMSI: ${item.mmsi} | IMO: ${item.imo || 'Unknown'}`
+                                                                ? `MMSI: ${item.mmsi}${item.imo && item.imo !== '0' ? ` | IMO: ${item.imo}` : ''}`
                                                                 : isPort(item)
                                                                   ? `CODE: ${item.code} | ${item.country}`
                                                                   : isCountry(item)

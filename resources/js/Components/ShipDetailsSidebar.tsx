@@ -547,7 +547,10 @@ export default function ShipDetailsSidebar({
                     </h2>
                     <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 mt-2 text-[11px] text-zinc-400 font-mono">
                         <span>MMSI: {vessel.mmsi}</span>
-                        {!!(details?.imo || vessel.imo) && (
+                        {!!(
+                            (details?.imo && String(details.imo) !== '0') ||
+                            (vessel.imo && String(vessel.imo) !== '0')
+                        ) && (
                             <>
                                 <span className="hidden sm:block w-1 h-1 bg-zinc-600 rounded-full" />
                                 <span>IMO: {details?.imo || vessel.imo}</span>
