@@ -397,7 +397,7 @@ export default function AnalysisReportModal({
         },
         { id: 'environment', label: 'Environment', icon: <FaCloudSun /> },
         { id: 'waypoints', label: 'Waypoints', icon: <FaRoute /> },
-        { id: 'activity', label: 'Activity', icon: <FaEye /> },
+        { id: 'activity', label: 'Activity', icon: <FaEye />, badge: activityStats.total },
     ];
 
     if (!isOpen) return null;
@@ -474,7 +474,17 @@ export default function AnalysisReportModal({
                                 {tab.label}
                                 {tab.badge !== undefined && tab.badge > 0 && (
                                     <span
-                                        className={`ml-auto px-1.5 py-0.5 text-[8px] rounded-sm ${activeTab === tab.id ? 'bg-red-500 text-white' : 'bg-red-500/20 text-red-400'}`}
+                                        className={`ml-auto px-1.5 py-0.5 text-[8px] font-black rounded-sm transition-colors ${
+                                            tab.id === 'sanctions'
+                                                ? 'bg-red-500 text-white'
+                                                : tab.id === 'activity'
+                                                  ? activityStats.score > 70
+                                                      ? 'bg-red-500 text-white'
+                                                      : activityStats.score > 30
+                                                        ? 'bg-amber-500 text-white'
+                                                        : 'bg-emerald-500 text-white'
+                                                  : 'bg-white text-zinc-950'
+                                        }`}
                                     >
                                         {tab.badge}
                                     </span>
