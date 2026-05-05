@@ -1685,13 +1685,14 @@ export default function AnalysisReportModal({
                                             ))}
                                         </div>
                                     ) : (
-                                        <div className="h-60 flex flex-col items-center justify-center gap-2 text-center p-12 bg-white/2 border border-white/5">
-                                            <h3 className="text-sm font-black text-white uppercase tracking-[0.2em]">
+                                        <div className="p-8 border border-emerald-500/20 bg-emerald-500/5 flex flex-col items-center justify-center text-center">
+                                            <FaCircleCheck className="w-10 h-10 text-emerald-500/50 mb-3" />
+                                            <h4 className="text-emerald-500 font-black">
                                                 Clear Profile
-                                            </h3>
-                                            <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest max-w-[280px] leading-relaxed">
+                                            </h4>
+                                            <p className="text-emerald-500/70 text-[11px] mt-1 uppercase tracking-widest">
                                                 No suspicious behavioral patterns or movement
-                                                anomalies detected in the recent positioning data.
+                                                anomalies detected.
                                             </p>
                                         </div>
                                     )}
