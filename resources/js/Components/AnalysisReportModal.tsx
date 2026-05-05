@@ -370,9 +370,15 @@ export default function AnalysisReportModal({
         if (activeTab === 'environment') {
             const scrollCurrent = (container: HTMLDivElement | null) => {
                 if (!container) return;
-                const currentItem = container.querySelector('[data-current="true"]');
+                const currentItem = container.querySelector('[data-current="true"]') as HTMLElement;
                 if (currentItem) {
-                    currentItem.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    const containerRect = container.getBoundingClientRect();
+                    const itemRect = currentItem.getBoundingClientRect();
+                    const offset = itemRect.top - containerRect.top + container.scrollTop;
+                    container.scrollTo({
+                        top: offset - container.clientHeight / 2 + currentItem.clientHeight / 2,
+                        behavior: 'smooth',
+                    });
                 }
             };
             const timer = setTimeout(() => {
