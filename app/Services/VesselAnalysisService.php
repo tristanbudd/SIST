@@ -6,6 +6,7 @@ use App\Helpers\MaritimeFormatter;
 use App\Models\Vessel;
 use App\Models\VesselActivity;
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -29,6 +30,7 @@ class VesselAnalysisService
 
         Log::info("Processing behavioral analysis for {$vessels->count()} vessels.");
 
+        /** @var Collection<Vessel> $vessels */
         foreach ($vessels as $vessel) {
             $this->processVesselMetrics($vessel);
         }

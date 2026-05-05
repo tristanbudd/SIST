@@ -157,13 +157,14 @@ export function calculateActivityStats(activities: VesselActivity[]) {
     const total = displayActivities.length;
     const highRisk = displayActivities.filter((a) => a.severity === 'high').length;
 
-    const totalWeight = displayActivities.reduce((acc, a) => {
-        if (a.severity === 'high') return acc + 30;
-        if (a.severity === 'medium') return acc + 15;
-        return acc + 5;
-    }, 0);
-
-    const score = total > 0 ? Math.min(100, Math.round(totalWeight / (total * 0.4))) : 0;
+    const score = Math.min(
+        100,
+        displayActivities.reduce((acc, a) => {
+            if (a.severity === 'high') return acc + 25;
+            if (a.severity === 'medium') return acc + 12;
+            return acc + 5;
+        }, 0)
+    );
 
     return { total, highRisk, score };
 }

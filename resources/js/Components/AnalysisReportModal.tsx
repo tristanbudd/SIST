@@ -1614,11 +1614,19 @@ export default function AnalysisReportModal({
 
                         {activeTab === 'activity' && (
                             <div className="space-y-6 animate-in fade-in duration-300">
-                                <div className="flex flex-col gap-1">
-                                    <h3 className="text-lg font-black text-white uppercase tracking-tight flex items-center gap-2">
-                                        <FaEye className="text-zinc-500" />
-                                        Behavioral Analysis
-                                    </h3>
+                                <div className="space-y-1">
+                                    <div className="flex flex-row flex-wrap items-center justify-between gap-3">
+                                        <h3 className="text-lg font-black text-white uppercase tracking-tight flex items-center gap-2">
+                                            <FaEye className="text-zinc-500" />
+                                            Behavioral Analysis
+                                        </h3>
+                                        <div className="w-fit flex items-center gap-2 bg-white/5 px-3 py-1.5 border border-white/5 rounded-sm">
+                                            <FaCircleInfo className="text-zinc-600 w-2.5 h-2.5" />
+                                            <span className="text-[9px] text-zinc-500 uppercase font-black tracking-widest whitespace-nowrap">
+                                                Last 30 Days Monitoring
+                                            </span>
+                                        </div>
+                                    </div>
                                     <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">
                                         Automated detection of suspicious maritime movement patterns
                                     </p>
@@ -1763,44 +1771,203 @@ export default function AnalysisReportModal({
 
                                                             <p className="text-[11px] text-zinc-400 font-medium leading-relaxed mb-4">
                                                                 {activity.description.replace(
-                                                                    /(\d+\.\d{2,})/g,
-                                                                    (match) =>
-                                                                        parseFloat(match).toFixed(1)
+                                                                    /\(([\d.]+)\s*(?:min|minutes)\)/g,
+                                                                    (match, minutes) => {
+                                                                        const totalSeconds =
+                                                                            Math.round(
+                                                                                parseFloat(
+                                                                                    minutes
+                                                                                ) * 60
+                                                                            );
+
+                                                                        if (totalSeconds < 60)
+                                                                            return `(${totalSeconds} seconds)`;
+                                                                        if (totalSeconds < 3600) {
+                                                                            const m = Math.floor(
+                                                                                totalSeconds / 60
+                                                                            );
+                                                                            return `(${m} minute${m !== 1 ? 's' : ''})`;
+                                                                        }
+                                                                        if (totalSeconds < 86400) {
+                                                                            const h = Math.floor(
+                                                                                totalSeconds / 3600
+                                                                            );
+                                                                            const m = Math.floor(
+                                                                                (totalSeconds %
+                                                                                    3600) /
+                                                                                    60
+                                                                            );
+                                                                            return `(${h} hour${h !== 1 ? 's' : ''}${m > 0 ? `, ${m} minute${m !== 1 ? 's' : ''}` : ''})`;
+                                                                        }
+                                                                        if (
+                                                                            totalSeconds < 2592000
+                                                                        ) {
+                                                                            const d = Math.floor(
+                                                                                totalSeconds / 86400
+                                                                            );
+                                                                            const h = Math.floor(
+                                                                                (totalSeconds %
+                                                                                    86400) /
+                                                                                    3600
+                                                                            );
+                                                                            return `(${d} day${d !== 1 ? 's' : ''}${h > 0 ? `, ${h} hour${h !== 1 ? 's' : ''}` : ''})`;
+                                                                        }
+                                                                        if (
+                                                                            totalSeconds < 31536000
+                                                                        ) {
+                                                                            const mo = Math.floor(
+                                                                                totalSeconds /
+                                                                                    2592000
+                                                                            );
+                                                                            const d = Math.floor(
+                                                                                (totalSeconds %
+                                                                                    2592000) /
+                                                                                    86400
+                                                                            );
+                                                                            return `(${mo} month${mo !== 1 ? 's' : ''}${d > 0 ? `, ${d} day${d !== 1 ? 's' : ''}` : ''})`;
+                                                                        }
+                                                                        const y = Math.floor(
+                                                                            totalSeconds / 31536000
+                                                                        );
+                                                                        const mo = Math.floor(
+                                                                            (totalSeconds %
+                                                                                31536000) /
+                                                                                2592000
+                                                                        );
+                                                                        return `(${y} year${y !== 1 ? 's' : ''}${mo > 0 ? `, ${mo} month${mo !== 1 ? 's' : ''}` : ''})`;
+                                                                    }
                                                                 )}
                                                             </p>
 
                                                             {activity.details && (
-                                                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-3 pt-4 border-t border-white/5">
+                                                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-3 pt-4 border-t border-white/5">
                                                                     {Object.entries(
                                                                         activity.details
-                                                                    ).map(([key, value]) => (
-                                                                        <div
-                                                                            key={key}
-                                                                            className="flex flex-col gap-0.5"
-                                                                        >
-                                                                            <span className="text-[7px] text-zinc-600 font-black uppercase tracking-widest">
-                                                                                {key.replace(
-                                                                                    /_/g,
-                                                                                    ' '
-                                                                                )}
-                                                                            </span>
-                                                                            <span className="text-[10px] text-zinc-400 font-mono">
-                                                                                {typeof value ===
+                                                                    ).map(([key, value]) => {
+                                                                        const isDuration =
+                                                                            key ===
+                                                                            'duration_minutes';
+                                                                        const displayKey =
+                                                                            isDuration
+                                                                                ? 'duration'
+                                                                                : key;
+                                                                        const displayValue =
+                                                                            isDuration &&
+                                                                            typeof value ===
                                                                                 'number'
-                                                                                    ? value.toFixed(
-                                                                                          1
+                                                                                ? (() => {
+                                                                                      const totalSeconds =
+                                                                                          Math.round(
+                                                                                              value *
+                                                                                                  60
+                                                                                          );
+                                                                                      if (
+                                                                                          totalSeconds <
+                                                                                          60
                                                                                       )
-                                                                                    : typeof value ===
-                                                                                        'object'
-                                                                                      ? JSON.stringify(
-                                                                                            value
-                                                                                        )
-                                                                                      : String(
-                                                                                            value
-                                                                                        )}
-                                                                            </span>
-                                                                        </div>
-                                                                    ))}
+                                                                                          return `${totalSeconds} seconds`;
+                                                                                      if (
+                                                                                          totalSeconds <
+                                                                                          3600
+                                                                                      ) {
+                                                                                          const m =
+                                                                                              Math.floor(
+                                                                                                  totalSeconds /
+                                                                                                      60
+                                                                                              );
+                                                                                          return `${m} minute${m !== 1 ? 's' : ''}`;
+                                                                                      }
+                                                                                      if (
+                                                                                          totalSeconds <
+                                                                                          86400
+                                                                                      ) {
+                                                                                          const h =
+                                                                                              Math.floor(
+                                                                                                  totalSeconds /
+                                                                                                      3600
+                                                                                              );
+                                                                                          const m =
+                                                                                              Math.floor(
+                                                                                                  (totalSeconds %
+                                                                                                      3600) /
+                                                                                                      60
+                                                                                              );
+                                                                                          return `${h} hour${h !== 1 ? 's' : ''}${m > 0 ? `, ${m} minute${m !== 1 ? 's' : ''}` : ''}`;
+                                                                                      }
+                                                                                      if (
+                                                                                          totalSeconds <
+                                                                                          2592000
+                                                                                      ) {
+                                                                                          const d =
+                                                                                              Math.floor(
+                                                                                                  totalSeconds /
+                                                                                                      86400
+                                                                                              );
+                                                                                          const h =
+                                                                                              Math.floor(
+                                                                                                  (totalSeconds %
+                                                                                                      86400) /
+                                                                                                      3600
+                                                                                              );
+                                                                                          return `${d} day${d !== 1 ? 's' : ''}${h > 0 ? `, ${h} hour${h !== 1 ? 's' : ''}` : ''}`;
+                                                                                      }
+                                                                                      if (
+                                                                                          totalSeconds <
+                                                                                          31536000
+                                                                                      ) {
+                                                                                          const mo =
+                                                                                              Math.floor(
+                                                                                                  totalSeconds /
+                                                                                                      2592000
+                                                                                              );
+                                                                                          const d =
+                                                                                              Math.floor(
+                                                                                                  (totalSeconds %
+                                                                                                      2592000) /
+                                                                                                      86400
+                                                                                              );
+                                                                                          return `${mo} month${mo !== 1 ? 's' : ''}${d > 0 ? `, ${d} day${d !== 1 ? 's' : ''}` : ''}`;
+                                                                                      }
+                                                                                      const y =
+                                                                                          Math.floor(
+                                                                                              totalSeconds /
+                                                                                                  31536000
+                                                                                          );
+                                                                                      const mo =
+                                                                                          Math.floor(
+                                                                                              (totalSeconds %
+                                                                                                  31536000) /
+                                                                                                  2592000
+                                                                                          );
+                                                                                      return `${y} year${y !== 1 ? 's' : ''}${mo > 0 ? `, ${mo} month${mo !== 1 ? 's' : ''}` : ''}`;
+                                                                                  })()
+                                                                                : typeof value ===
+                                                                                    'number'
+                                                                                  ? value.toFixed(1)
+                                                                                  : typeof value ===
+                                                                                      'object'
+                                                                                    ? JSON.stringify(
+                                                                                          value
+                                                                                      )
+                                                                                    : String(value);
+
+                                                                        return (
+                                                                            <div
+                                                                                key={key}
+                                                                                className="flex flex-col gap-0.5"
+                                                                            >
+                                                                                <span className="text-[7px] text-zinc-600 font-black uppercase tracking-widest">
+                                                                                    {displayKey.replace(
+                                                                                        /_/g,
+                                                                                        ' '
+                                                                                    )}
+                                                                                </span>
+                                                                                <span className="text-[10px] text-zinc-400 font-mono">
+                                                                                    {displayValue}
+                                                                                </span>
+                                                                            </div>
+                                                                        );
+                                                                    })}
                                                                 </div>
                                                             )}
                                                         </div>
