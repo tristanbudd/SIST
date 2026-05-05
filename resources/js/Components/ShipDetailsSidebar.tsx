@@ -17,14 +17,14 @@ import {
     FaEye,
     FaArrowUpRightFromSquare,
 } from 'react-icons/fa6';
-import { LuAnchor, LuWaves, LuThermometer } from 'react-icons/lu';
+import { LuWaves, LuThermometer } from 'react-icons/lu';
 import axios from 'axios';
 import AnalysisReportModal from './AnalysisReportModal';
 import {
-    SANCTIONER_MAPPING,
-    NAV_STATUS_MAP,
     API_BASE_URL,
     OFFLINE_THRESHOLD_MINUTES,
+    WEATHER_CODES,
+    SANCTIONER_MAPPING,
 } from '../constants';
 import {
     formatPositionAge,
