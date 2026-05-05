@@ -896,7 +896,7 @@ export default function ShipDetailsSidebar({
                                 <div
                                     className={`w-8 h-8 rounded-full border-2 flex items-center justify-center text-[10px] font-black ${
                                         loading.activities
-                                            ? 'border-zinc-800 text-zinc-800'
+                                            ? 'border-zinc-800 text-zinc-500'
                                             : activityStats.score > 70
                                               ? 'border-red-500 text-red-500'
                                               : activityStats.score > 30
@@ -909,11 +909,13 @@ export default function ShipDetailsSidebar({
                                 <div className="min-w-0">
                                     <div
                                         className={`text-sm font-black uppercase tracking-tight ${
-                                            activityStats.score > 70
-                                                ? 'text-red-500'
-                                                : activityStats.score > 30
-                                                  ? 'text-amber-500'
-                                                  : 'text-emerald-500'
+                                            loading.activities
+                                                ? 'text-zinc-500'
+                                                : activityStats.score > 70
+                                                  ? 'text-red-500'
+                                                  : activityStats.score > 30
+                                                    ? 'text-amber-500'
+                                                    : 'text-emerald-500'
                                         }`}
                                     >
                                         {loading.activities
