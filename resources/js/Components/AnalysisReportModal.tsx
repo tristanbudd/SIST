@@ -59,6 +59,11 @@ interface AnalysisReportModalProps {
 }
 
 import { calculateActivityStats } from './ShipDetailsSidebar';
+const truncate = (str: string, length: number = 40) => {
+    if (str.length <= length) return str;
+    return str.slice(0, length) + '...';
+};
+
 const SanctionRecordCard = ({
     record,
     variant,
@@ -75,44 +80,67 @@ const SanctionRecordCard = ({
                     <div className="flex items-center gap-2">
                         <span
                             className={`text-xs font-black uppercase tracking-tight ${variant === 'official' ? 'text-red-400' : 'text-zinc-200'}`}
+                            title={record.name}
                         >
-                            {record.name}
+                            {truncate(record.name, 50)}
                         </span>
-                        {record.match_type === 'fuzzy' && (
-                            <span className="px-1.5 py-0.5 bg-zinc-800 text-zinc-500 text-[7px] font-black uppercase tracking-tighter rounded-sm">
-                                Fuzzy Match
-                            </span>
-                        )}
                     </div>
                     <div className="flex items-center gap-2 text-[8px] text-zinc-500 font-bold uppercase tracking-widest">
                         <FaBuildingColumns className="w-2.5 h-2.5" />
-                        Source:{' '}
-                        {record.source === 'fleetleaks'
-                            ? 'FleetLeaks (Official)'
-                            : 'Sanctions Network (Analysis)'}
-                        {record.source_id && (
-                            <span className="opacity-50"> • ID: {record.source_id}</span>
-                        )}
+                        <span>
+                            Source:{' '}
+                            <a
+                                href={
+                                    record.source === 'fleetleaks'
+                                        ? record.link ||
+                                          `https://www.google.com/search?q=${encodeURIComponent(record.name)}+sanctions+vessel`
+                                        : 'https://sanctions.network/'
+                                }
+                                target="_blank"
+                                rel="noreferrer"
+                                className="hover:text-zinc-300 transition-colors underline decoration-zinc-700 underline-offset-2"
+                            >
+                                {record.source === 'fleetleaks'
+                                    ? 'FleetLeaks'
+                                    : 'Sanctions Network'}
+                            </a>
+                        </span>
                     </div>
                 </div>
-                {record.link && (
-                    <a
-                        href={record.link}
-                        target="_blank"
-                        rel="noreferrer"
-                        className={`p-2 rounded-sm transition-all ${variant === 'official' ? 'bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20' : 'bg-white/5 hover:bg-white/10 text-zinc-400 border border-white/10'}`}
-                        title="View Full Record"
-                    >
-                        <FaArrowUpRightFromSquare className="w-3 h-3" />
-                    </a>
-                )}
+                <div className="flex items-center gap-2.5">
+                    {record.source_id && (
+                        <div className="flex flex-col items-end">
+                            <span className="text-[7px] text-zinc-600 font-black uppercase tracking-tighter">
+                                Record ID
+                            </span>
+                            <span className="text-[11px] text-zinc-400 font-mono font-bold leading-none">
+                                {record.source_id}
+                            </span>
+                        </div>
+                    )}
+                    {(record.link || record.source !== 'fleetleaks') && (
+                        <a
+                            href={
+                                record.source === 'fleetleaks'
+                                    ? record.link
+                                    : 'https://sanctions.network/'
+                            }
+                            target="_blank"
+                            rel="noreferrer"
+                            className={`p-2 rounded-none transition-all ${variant === 'official' ? 'bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20' : 'bg-white/5 hover:bg-white/10 text-zinc-400 border border-white/10'}`}
+                            title="View Full Record"
+                        >
+                            <FaArrowUpRightFromSquare className="w-3 h-3" />
+                        </a>
+                    )}
+                </div>
             </div>
 
             <div className="flex flex-col gap-4">
                 {record.sanctioned_by && record.sanctioned_by.length > 0 && (
-                    <div className="space-y-2">
-                        <div className="text-[7px] text-zinc-500 font-black uppercase tracking-widest flex items-center gap-1.5">
-                            <FaPassport className="w-2.5 h-2.5" />
+                    <div className="space-y-3 pt-4 border-t border-white/5">
+                        <div className="text-[11px] text-zinc-500 font-black uppercase tracking-widest flex items-center gap-2">
+                            <FaPassport className="w-4 h-4" />
                             Official Watchlists
                         </div>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -124,7 +152,7 @@ const SanctionRecordCard = ({
                                         className={`flex flex-col py-2 px-3 border-l-2 ${variant === 'official' ? 'border-red-500/40 bg-red-500/5' : 'border-zinc-700 bg-white/5'}`}
                                     >
                                         <span
-                                            className={`text-[11px] font-black uppercase tracking-tight ${variant === 'official' ? 'text-red-400' : 'text-zinc-300'}`}
+                                            className={`text-[11px] font-black uppercase tracking-tight ${variant === 'official' ? 'text-red-400' : 'text-zinc-200'}`}
                                         >
                                             {info ? info.name : code.toUpperCase()}
                                         </span>
@@ -143,8 +171,11 @@ const SanctionRecordCard = ({
                         <span className="text-[7px] text-zinc-500 font-black uppercase tracking-widest">
                             Matched Identifier
                         </span>
-                        <span className="text-[11px] text-zinc-400 font-mono">
-                            {record.matched_name}
+                        <span
+                            className="text-[11px] text-zinc-400 font-mono"
+                            title={record.matched_name}
+                        >
+                            {truncate(record.matched_name, 50)}
                         </span>
                     </div>
                 )}
@@ -254,11 +285,9 @@ export default function AnalysisReportModal({
             const speed = Number(pos.speed);
             const recordedAt = new Date(pos.recorded_at).getTime();
 
-            // Movement Type Filter
             if (waypointFilters.movementType === 'moving' && speed < 0.5) return false;
             if (waypointFilters.movementType === 'stationary' && speed >= 0.5) return false;
 
-            // Time Range Filter
             if (waypointFilters.timeRange === '1h' && now - recordedAt > 3600000) return false;
             if (waypointFilters.timeRange === '6h' && now - recordedAt > 21600000) return false;
             if (waypointFilters.timeRange === '24h' && now - recordedAt > 86400000) return false;
@@ -289,7 +318,6 @@ export default function AnalysisReportModal({
                 }
             }
 
-            // Search filter
             const matchesSearch =
                 waypointFilters.search === '' ||
                 formatShortDate(pos.recorded_at)
@@ -370,24 +398,26 @@ export default function AnalysisReportModal({
         if (activeTab === 'environment') {
             const scrollCurrent = (container: HTMLDivElement | null) => {
                 if (!container) return;
-                const currentItem = container.querySelector('[data-current="true"]') as HTMLElement;
-                if (currentItem) {
-                    const containerRect = container.getBoundingClientRect();
-                    const itemRect = currentItem.getBoundingClientRect();
-                    const offset = itemRect.top - containerRect.top + container.scrollTop;
-                    container.scrollTo({
-                        top: offset - container.clientHeight / 2 + currentItem.clientHeight / 2,
-                        behavior: 'smooth',
-                    });
-                }
+                requestAnimationFrame(() => {
+                    const currentItem = container.querySelector(
+                        '[data-current="true"]'
+                    ) as HTMLElement;
+                    if (currentItem) {
+                        currentItem.scrollIntoView({
+                            block: 'center',
+                            behavior: 'smooth',
+                        });
+                    }
+                });
             };
+
             const timer = setTimeout(() => {
                 scrollCurrent(weatherContainerRef.current);
                 scrollCurrent(tideContainerRef.current);
-            }, 300);
+            }, 500);
             return () => clearTimeout(timer);
         }
-    }, [activeTab, weather, tides]);
+    }, [activeTab, weather?.hourly, tides?.predictions]);
 
     const generatedLinks = useMemo(
         () => (vessel ? generateExternalLinks(vessel.mmsi, details?.imo || vessel.imo) : []),
@@ -395,8 +425,10 @@ export default function AnalysisReportModal({
     );
 
     const isCurrentTime = (timeStr: string) => {
-        const itemDate = new Date(timeStr);
+        if (!timeStr) return false;
         const now = new Date();
+        const itemDate = new Date(timeStr);
+
         return (
             itemDate.getUTCFullYear() === now.getUTCFullYear() &&
             itemDate.getUTCMonth() === now.getUTCMonth() &&
@@ -503,7 +535,7 @@ export default function AnalysisReportModal({
                                 {tab.label}
                                 {tab.badge !== undefined && tab.badge > 0 && (
                                     <span
-                                        className={`ml-auto px-1.5 py-0.5 text-[8px] font-black rounded-sm transition-colors ${
+                                        className={`ml-auto px-1.5 py-0.5 text-[8px] font-black rounded-none transition-colors ${
                                             tab.id === 'sanctions'
                                                 ? 'bg-red-500 text-white'
                                                 : tab.id === 'activity'
@@ -856,43 +888,66 @@ export default function AnalysisReportModal({
                                     <FaShieldHalved className="text-zinc-500" />
                                     Sanctions Intelligence
                                 </h3>
-                                {!sanctions?.sanctions || sanctions.sanctions.length === 0 ? (
-                                    <div className="p-8 border border-emerald-500/20 bg-emerald-500/5 flex flex-col items-center justify-center text-center">
-                                        <FaCircleCheck className="w-10 h-10 text-emerald-500/50 mb-3" />
-                                        <h4 className="text-emerald-500 font-black">
-                                            Clear from Watchlists
-                                        </h4>
-                                        <p className="text-emerald-500/70 text-[11px] mt-1 uppercase tracking-widest">
-                                            No matches found on OFAC, UN, EU, or proprietary
-                                            databases.
-                                        </p>
+                                {!sanctions ? (
+                                    <div className="flex flex-col items-center justify-center py-20 text-center">
+                                        <LoadingSpinner size="lg" />
+                                        <span className="mt-4 text-zinc-500 text-[10px] uppercase font-black tracking-widest">
+                                            Fetching Intelligence...
+                                        </span>
                                     </div>
                                 ) : (
                                     <div className="space-y-4">
                                         {(() => {
-                                            const officialMatches = sanctions.sanctions.filter(
-                                                (s) =>
-                                                    s.source === 'fleetleaks' &&
-                                                    s.match_type === 'exact'
-                                            );
-                                            const networkMatches = sanctions.sanctions.filter(
-                                                (s) =>
-                                                    !(
+                                            const officialMatches = sanctions.sanctions
+                                                .filter(
+                                                    (s) =>
                                                         s.source === 'fleetleaks' &&
                                                         s.match_type === 'exact'
+                                                )
+                                                .filter(
+                                                    (s, i, self) =>
+                                                        i ===
+                                                        self.findIndex((t) => t.name === s.name)
+                                                );
+
+                                            const networkMatches = sanctions.sanctions
+                                                .filter(
+                                                    (s) =>
+                                                        !(
+                                                            s.source === 'fleetleaks' &&
+                                                            s.match_type === 'exact'
+                                                        )
+                                                )
+                                                .filter(
+                                                    (s, i, self) =>
+                                                        i ===
+                                                        self.findIndex((t) => t.name === s.name)
+                                                )
+                                                .sort((a, b) => {
+                                                    if (
+                                                        a.source === 'fleetleaks' &&
+                                                        b.source !== 'fleetleaks'
                                                     )
-                                            );
+                                                        return -1;
+                                                    if (
+                                                        a.source !== 'fleetleaks' &&
+                                                        b.source === 'fleetleaks'
+                                                    )
+                                                        return 1;
+                                                    return 0;
+                                                });
 
                                             return (
                                                 <div className="space-y-8">
-                                                    {officialMatches.length > 0 && (
-                                                        <div className="space-y-4">
-                                                            <div className="flex items-center gap-3 border-b border-red-500/30 pb-2">
-                                                                <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
-                                                                <h4 className="text-red-400 font-black uppercase tracking-widest text-[11px]">
-                                                                    Official Designations
-                                                                </h4>
-                                                            </div>
+                                                    {/* Official Section */}
+                                                    <div className="space-y-4">
+                                                        <div className="flex items-center gap-3 border-b border-red-500/30 pb-2">
+                                                            <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+                                                            <h4 className="text-red-400 font-black uppercase tracking-widest text-[11px]">
+                                                                Official Designations
+                                                            </h4>
+                                                        </div>
+                                                        {officialMatches.length > 0 ? (
                                                             <div className="space-y-3">
                                                                 {officialMatches.map((s, idx) => (
                                                                     <SanctionRecordCard
@@ -902,17 +957,24 @@ export default function AnalysisReportModal({
                                                                     />
                                                                 ))}
                                                             </div>
-                                                        </div>
-                                                    )}
-
-                                                    {networkMatches.length > 0 && (
-                                                        <div className="space-y-4">
-                                                            <div className="flex items-center gap-3 border-b border-white/10 pb-2">
-                                                                <div className="w-2 h-2 bg-zinc-600 rounded-full" />
-                                                                <h4 className="text-zinc-500 font-black uppercase tracking-widest text-[11px]">
-                                                                    Network Analysis Matches
-                                                                </h4>
+                                                        ) : (
+                                                            <div className="py-12 flex flex-col items-center justify-center text-center border border-white/5 bg-white/2 rounded-none">
+                                                                <span className="text-[10px] text-zinc-600 font-black uppercase tracking-[0.2em]">
+                                                                    No official designations found
+                                                                </span>
                                                             </div>
+                                                        )}
+                                                    </div>
+
+                                                    {/* Network Section */}
+                                                    <div className="space-y-4">
+                                                        <div className="flex items-center gap-3 border-b border-white/10 pb-2">
+                                                            <div className="w-2 h-2 bg-zinc-600 rounded-full" />
+                                                            <h4 className="text-zinc-500 font-black uppercase tracking-widest text-[11px]">
+                                                                Network Analysis Matches
+                                                            </h4>
+                                                        </div>
+                                                        {networkMatches.length > 0 ? (
                                                             <div className="space-y-3">
                                                                 {networkMatches.map((s, idx) => (
                                                                     <SanctionRecordCard
@@ -922,8 +984,15 @@ export default function AnalysisReportModal({
                                                                     />
                                                                 ))}
                                                             </div>
-                                                        </div>
-                                                    )}
+                                                        ) : (
+                                                            <div className="py-12 flex flex-col items-center justify-center text-center border border-white/5 bg-white/2 rounded-none">
+                                                                <span className="text-[10px] text-zinc-600 font-black uppercase tracking-[0.2em]">
+                                                                    No network analysis matches
+                                                                    found
+                                                                </span>
+                                                            </div>
+                                                        )}
+                                                    </div>
                                                 </div>
                                             );
                                         })()}
@@ -1077,7 +1146,7 @@ export default function AnalysisReportModal({
                                     </div>
                                 </section>
 
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                                     <section>
                                         <h4 className="text-[11px] font-black text-zinc-500 uppercase tracking-widest mb-4 border-b border-white/5 pb-2">
                                             Hourly Weather Outlook
@@ -1117,8 +1186,11 @@ export default function AnalysisReportModal({
                                                                     {Number(
                                                                         h.wind_speed_kph
                                                                     ).toFixed(1)}{' '}
-                                                                    kph • Precip:{' '}
-                                                                    {h.precipitation_mm}mm
+                                                                    kph{' '}
+                                                                    <span className="mx-2 text-zinc-800">
+                                                                        •
+                                                                    </span>{' '}
+                                                                    Precip: {h.precipitation_mm}mm
                                                                 </span>
                                                             </div>
                                                             <span
@@ -1217,9 +1289,6 @@ export default function AnalysisReportModal({
                                         <FaRoute className="text-zinc-500" />
                                         Waypoint Analysis Report
                                     </h3>
-                                    <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">
-                                        Trajectory data and navigational diagnostics
-                                    </p>
                                 </div>
 
                                 {/* Unified Filter & Search Panel */}
@@ -1676,16 +1745,13 @@ export default function AnalysisReportModal({
                                             <FaEye className="text-zinc-500" />
                                             Behavioral Analysis
                                         </h3>
-                                        <div className="w-fit flex items-center gap-2 bg-white/5 px-3 py-1.5 border border-white/5 rounded-sm">
+                                        <div className="w-fit flex items-center gap-2 bg-white/5 px-3 py-1.5 border border-white/5 rounded-none">
                                             <FaCircleInfo className="text-zinc-600 w-2.5 h-2.5" />
                                             <span className="text-[9px] text-zinc-500 uppercase font-black tracking-widest whitespace-nowrap">
                                                 Last 30 Days Monitoring
                                             </span>
                                         </div>
                                     </div>
-                                    <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">
-                                        Automated detection of suspicious maritime movement patterns
-                                    </p>
                                 </div>
 
                                 <div className="flex-1 overflow-y-auto">
@@ -1702,21 +1768,6 @@ export default function AnalysisReportModal({
                                         }
 
                                         const displayActivities = activities;
-
-                                        if (displayActivities.length === 0) {
-                                            return (
-                                                <div className="p-8 border border-emerald-500/20 bg-emerald-500/5 flex flex-col items-center justify-center text-center">
-                                                    <FaCircleCheck className="w-10 h-10 text-emerald-500/50 mb-3" />
-                                                    <h4 className="text-emerald-500 font-black">
-                                                        Clear Profile
-                                                    </h4>
-                                                    <p className="text-emerald-500/70 text-[11px] mt-1 uppercase tracking-widest">
-                                                        No suspicious behavioral patterns or
-                                                        movement anomalies detected.
-                                                    </p>
-                                                </div>
-                                            );
-                                        }
 
                                         return (
                                             <div className="space-y-6">
@@ -1780,296 +1831,347 @@ export default function AnalysisReportModal({
                                                     </div>
                                                 </div>
 
-                                                {/* Simplified Activity List */}
-                                                <div className="space-y-3">
-                                                    {paginatedActivities.map((activity) => (
-                                                        <div
-                                                            key={activity.id}
-                                                            className="p-4 border border-white/5 bg-white/2 hover:bg-white/4 transition-colors"
-                                                        >
-                                                            <div className="flex justify-between items-start mb-3">
-                                                                <div className="flex items-center gap-3">
-                                                                    <div>
-                                                                        <div className="flex items-center gap-2">
-                                                                            <span className="text-[11px] font-black uppercase tracking-tight text-white">
-                                                                                {activity.type
-                                                                                    .replace(
-                                                                                        /_/g,
-                                                                                        ' '
-                                                                                    )
-                                                                                    .toUpperCase()}
-                                                                            </span>
-                                                                            <span
-                                                                                className={`text-[7px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded-sm bg-zinc-900 ${
-                                                                                    activity.severity ===
-                                                                                    'high'
-                                                                                        ? 'text-red-500'
-                                                                                        : activity.severity ===
-                                                                                            'medium'
-                                                                                          ? 'text-amber-500'
-                                                                                          : 'text-emerald-500'
-                                                                                }`}
-                                                                            >
-                                                                                {activity.severity}{' '}
-                                                                                risk
-                                                                            </span>
+                                                {displayActivities.length === 0 ? (
+                                                    <div className="py-12 flex flex-col items-center justify-center text-center border border-white/5 bg-white/2 rounded-sm">
+                                                        <span className="text-zinc-600 text-[10px] uppercase font-black tracking-[0.2em]">
+                                                            No suspicious behavioral patterns
+                                                            detected
+                                                        </span>
+                                                    </div>
+                                                ) : (
+                                                    <>
+                                                        {/* Simplified Activity List */}
+                                                        <div className="space-y-3">
+                                                            {paginatedActivities.map((activity) => (
+                                                                <div
+                                                                    key={activity.id}
+                                                                    className="p-4 border border-white/5 bg-white/2 hover:bg-white/4 transition-colors"
+                                                                >
+                                                                    <div className="flex justify-between items-start mb-3">
+                                                                        <div className="flex items-center gap-3">
+                                                                            <div>
+                                                                                <div className="flex items-center gap-2">
+                                                                                    <span className="text-[11px] font-black uppercase tracking-tight text-white">
+                                                                                        {activity.type
+                                                                                            .replace(
+                                                                                                /_/g,
+                                                                                                ' '
+                                                                                            )
+                                                                                            .toUpperCase()}
+                                                                                    </span>
+                                                                                </div>
+                                                                                <div className="text-[9px] text-zinc-500 font-bold uppercase tracking-widest mt-0.5">
+                                                                                    {formatShortDate(
+                                                                                        activity.started_at
+                                                                                    )}
+                                                                                    {activity.ended_at &&
+                                                                                        ` - ${formatShortDate(activity.ended_at)}`}
+                                                                                </div>
+                                                                            </div>
                                                                         </div>
-                                                                        <div className="text-[9px] text-zinc-500 font-bold uppercase tracking-widest mt-0.5">
-                                                                            {formatShortDate(
-                                                                                activity.started_at
-                                                                            )}
-                                                                            {activity.ended_at &&
-                                                                                ` - ${formatShortDate(activity.ended_at)}`}
-                                                                        </div>
+                                                                        <span
+                                                                            className={`text-[8px] font-black uppercase tracking-widest px-2 py-1 rounded-[1px] border ${
+                                                                                activity.severity ===
+                                                                                'high'
+                                                                                    ? 'bg-red-500/10 text-red-500 border-red-500/20'
+                                                                                    : activity.severity ===
+                                                                                        'medium'
+                                                                                      ? 'bg-amber-500/10 text-amber-500 border-amber-500/20'
+                                                                                      : 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'
+                                                                            }`}
+                                                                        >
+                                                                            {activity.severity}
+                                                                            <span className="hidden sm:inline">
+                                                                                {' '}
+                                                                                Severity
+                                                                            </span>
+                                                                        </span>
                                                                     </div>
+
+                                                                    <p className="text-[11px] text-zinc-400 font-medium leading-relaxed mb-4">
+                                                                        {activity.description.replace(
+                                                                            /\(([\d.]+)\s*(?:min|minutes)\)/g,
+                                                                            (match, minutes) => {
+                                                                                const totalSeconds =
+                                                                                    Math.round(
+                                                                                        parseFloat(
+                                                                                            minutes
+                                                                                        ) * 60
+                                                                                    );
+
+                                                                                if (
+                                                                                    totalSeconds <
+                                                                                    60
+                                                                                )
+                                                                                    return `(${totalSeconds} seconds)`;
+                                                                                if (
+                                                                                    totalSeconds <
+                                                                                    3600
+                                                                                ) {
+                                                                                    const m =
+                                                                                        Math.floor(
+                                                                                            totalSeconds /
+                                                                                                60
+                                                                                        );
+                                                                                    return `(${m} minute${m !== 1 ? 's' : ''})`;
+                                                                                }
+                                                                                if (
+                                                                                    totalSeconds <
+                                                                                    86400
+                                                                                ) {
+                                                                                    const h =
+                                                                                        Math.floor(
+                                                                                            totalSeconds /
+                                                                                                3600
+                                                                                        );
+                                                                                    const m =
+                                                                                        Math.floor(
+                                                                                            (totalSeconds %
+                                                                                                3600) /
+                                                                                                60
+                                                                                        );
+                                                                                    return `(${h} hour${h !== 1 ? 's' : ''}${m > 0 ? `, ${m} minute${m !== 1 ? 's' : ''}` : ''})`;
+                                                                                }
+                                                                                if (
+                                                                                    totalSeconds <
+                                                                                    2592000
+                                                                                ) {
+                                                                                    const d =
+                                                                                        Math.floor(
+                                                                                            totalSeconds /
+                                                                                                86400
+                                                                                        );
+                                                                                    const h =
+                                                                                        Math.floor(
+                                                                                            (totalSeconds %
+                                                                                                86400) /
+                                                                                                3600
+                                                                                        );
+                                                                                    return `(${d} day${d !== 1 ? 's' : ''}${h > 0 ? `, ${h} hour${h !== 1 ? 's' : ''}` : ''})`;
+                                                                                }
+                                                                                if (
+                                                                                    totalSeconds <
+                                                                                    31536000
+                                                                                ) {
+                                                                                    const mo =
+                                                                                        Math.floor(
+                                                                                            totalSeconds /
+                                                                                                2592000
+                                                                                        );
+                                                                                    const d =
+                                                                                        Math.floor(
+                                                                                            (totalSeconds %
+                                                                                                2592000) /
+                                                                                                86400
+                                                                                        );
+                                                                                    return `(${mo} month${mo !== 1 ? 's' : ''}${d > 0 ? `, ${d} day${d !== 1 ? 's' : ''}` : ''})`;
+                                                                                }
+                                                                                const y =
+                                                                                    Math.floor(
+                                                                                        totalSeconds /
+                                                                                            31536000
+                                                                                    );
+                                                                                const mo =
+                                                                                    Math.floor(
+                                                                                        (totalSeconds %
+                                                                                            31536000) /
+                                                                                            2592000
+                                                                                    );
+                                                                                return `(${y} year${y !== 1 ? 's' : ''}${mo > 0 ? `, ${mo} month${mo !== 1 ? 's' : ''}` : ''})`;
+                                                                            }
+                                                                        )}
+                                                                    </p>
+
+                                                                    {activity.details && (
+                                                                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-3 pt-4 border-t border-white/5">
+                                                                            {Object.entries(
+                                                                                activity.details
+                                                                            ).map(
+                                                                                ([key, value]) => {
+                                                                                    const isDuration =
+                                                                                        key ===
+                                                                                        'duration_minutes';
+                                                                                    const displayKey =
+                                                                                        isDuration
+                                                                                            ? 'duration'
+                                                                                            : key;
+                                                                                    const displayValue =
+                                                                                        isDuration &&
+                                                                                        typeof value ===
+                                                                                            'number'
+                                                                                            ? (() => {
+                                                                                                  const totalSeconds =
+                                                                                                      Math.round(
+                                                                                                          value *
+                                                                                                              60
+                                                                                                      );
+                                                                                                  if (
+                                                                                                      totalSeconds <
+                                                                                                      60
+                                                                                                  ) {
+                                                                                                      return `${totalSeconds} seconds`;
+                                                                                                  }
+                                                                                                  if (
+                                                                                                      totalSeconds <
+                                                                                                      3600
+                                                                                                  ) {
+                                                                                                      const m =
+                                                                                                          Math.floor(
+                                                                                                              totalSeconds /
+                                                                                                                  60
+                                                                                                          );
+                                                                                                      return `${m} minute${m !== 1 ? 's' : ''}`;
+                                                                                                  }
+                                                                                                  if (
+                                                                                                      totalSeconds <
+                                                                                                      86400
+                                                                                                  ) {
+                                                                                                      const h =
+                                                                                                          Math.floor(
+                                                                                                              totalSeconds /
+                                                                                                                  3600
+                                                                                                          );
+                                                                                                      const m =
+                                                                                                          Math.floor(
+                                                                                                              (totalSeconds %
+                                                                                                                  3600) /
+                                                                                                                  60
+                                                                                                          );
+                                                                                                      return `${h} hour${h !== 1 ? 's' : ''}${m > 0 ? `, ${m} minute${m !== 1 ? 's' : ''}` : ''}`;
+                                                                                                  }
+                                                                                                  if (
+                                                                                                      totalSeconds <
+                                                                                                      2592000
+                                                                                                  ) {
+                                                                                                      const d =
+                                                                                                          Math.floor(
+                                                                                                              totalSeconds /
+                                                                                                                  86400
+                                                                                                          );
+                                                                                                      const h =
+                                                                                                          Math.floor(
+                                                                                                              (totalSeconds %
+                                                                                                                  86400) /
+                                                                                                                  3600
+                                                                                                          );
+                                                                                                      return `${d} day${d !== 1 ? 's' : ''}${h > 0 ? `, ${h} hour${h !== 1 ? 's' : ''}` : ''}`;
+                                                                                                  }
+                                                                                                  if (
+                                                                                                      totalSeconds <
+                                                                                                      31536000
+                                                                                                  ) {
+                                                                                                      const mo =
+                                                                                                          Math.floor(
+                                                                                                              totalSeconds /
+                                                                                                                  2592000
+                                                                                                          );
+                                                                                                      const d =
+                                                                                                          Math.floor(
+                                                                                                              (totalSeconds %
+                                                                                                                  2592000) /
+                                                                                                                  86400
+                                                                                                          );
+                                                                                                      return `${mo} month${mo !== 1 ? 's' : ''}${d > 0 ? `, ${d} day${d !== 1 ? 's' : ''}` : ''}`;
+                                                                                                  }
+                                                                                                  const y =
+                                                                                                      Math.floor(
+                                                                                                          totalSeconds /
+                                                                                                              31536000
+                                                                                                      );
+                                                                                                  const mo =
+                                                                                                      Math.floor(
+                                                                                                          (totalSeconds %
+                                                                                                              31536000) /
+                                                                                                              2592000
+                                                                                                      );
+                                                                                                  return `${y} year${y !== 1 ? 's' : ''}${mo > 0 ? `, ${mo} month${mo !== 1 ? 's' : ''}` : ''}`;
+                                                                                              })()
+                                                                                            : typeof value ===
+                                                                                                'number'
+                                                                                              ? value.toFixed(
+                                                                                                    1
+                                                                                                )
+                                                                                              : typeof value ===
+                                                                                                  'object'
+                                                                                                ? JSON.stringify(
+                                                                                                      value
+                                                                                                  )
+                                                                                                : String(
+                                                                                                      value
+                                                                                                  );
+
+                                                                                    return (
+                                                                                        <div
+                                                                                            key={
+                                                                                                key
+                                                                                            }
+                                                                                            className="flex flex-col gap-0.5"
+                                                                                        >
+                                                                                            <span className="text-[7px] text-zinc-600 font-black uppercase tracking-widest">
+                                                                                                {displayKey.replace(
+                                                                                                    /_/g,
+                                                                                                    ' '
+                                                                                                )}
+                                                                                            </span>
+                                                                                            <span className="text-[10px] text-zinc-400 font-mono">
+                                                                                                {
+                                                                                                    displayValue
+                                                                                                }
+                                                                                            </span>
+                                                                                        </div>
+                                                                                    );
+                                                                                }
+                                                                            )}
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            ))}
+                                                        </div>
+
+                                                        {/* Pagination Controls */}
+                                                        {totalActivityPages > 1 && (
+                                                            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-white/5">
+                                                                <div className="flex items-center gap-2">
+                                                                    <button
+                                                                        onClick={() =>
+                                                                            setActivityPage((p) =>
+                                                                                Math.max(1, p - 1)
+                                                                            )
+                                                                        }
+                                                                        disabled={
+                                                                            activityPage === 1
+                                                                        }
+                                                                        className="flex items-center gap-2 px-3 py-1.5 bg-white/5 border border-white/10 text-[9px] font-black text-zinc-500 uppercase tracking-widest hover:bg-white/10 disabled:opacity-20 disabled:cursor-not-allowed transition-colors"
+                                                                    >
+                                                                        <FaChevronLeft className="w-2 h-2" />
+                                                                        Prev
+                                                                    </button>
+                                                                    <button
+                                                                        onClick={() =>
+                                                                            setActivityPage((p) =>
+                                                                                Math.min(
+                                                                                    totalActivityPages,
+                                                                                    p + 1
+                                                                                )
+                                                                            )
+                                                                        }
+                                                                        disabled={
+                                                                            activityPage ===
+                                                                            totalActivityPages
+                                                                        }
+                                                                        className="flex items-center gap-2 px-3 py-1.5 bg-white/5 border border-white/10 text-[9px] font-black text-zinc-500 uppercase tracking-widest hover:bg-white/10 disabled:opacity-20 disabled:cursor-not-allowed transition-colors"
+                                                                    >
+                                                                        Next
+                                                                        <FaChevronRight className="w-2 h-2" />
+                                                                    </button>
+                                                                </div>
+                                                                <div className="text-[10px] text-zinc-500 font-black uppercase tracking-widest">
+                                                                    Page {activityPage} of{' '}
+                                                                    {totalActivityPages}
                                                                 </div>
                                                             </div>
-
-                                                            <p className="text-[11px] text-zinc-400 font-medium leading-relaxed mb-4">
-                                                                {activity.description.replace(
-                                                                    /\(([\d.]+)\s*(?:min|minutes)\)/g,
-                                                                    (match, minutes) => {
-                                                                        const totalSeconds =
-                                                                            Math.round(
-                                                                                parseFloat(
-                                                                                    minutes
-                                                                                ) * 60
-                                                                            );
-
-                                                                        if (totalSeconds < 60)
-                                                                            return `(${totalSeconds} seconds)`;
-                                                                        if (totalSeconds < 3600) {
-                                                                            const m = Math.floor(
-                                                                                totalSeconds / 60
-                                                                            );
-                                                                            return `(${m} minute${m !== 1 ? 's' : ''})`;
-                                                                        }
-                                                                        if (totalSeconds < 86400) {
-                                                                            const h = Math.floor(
-                                                                                totalSeconds / 3600
-                                                                            );
-                                                                            const m = Math.floor(
-                                                                                (totalSeconds %
-                                                                                    3600) /
-                                                                                    60
-                                                                            );
-                                                                            return `(${h} hour${h !== 1 ? 's' : ''}${m > 0 ? `, ${m} minute${m !== 1 ? 's' : ''}` : ''})`;
-                                                                        }
-                                                                        if (
-                                                                            totalSeconds < 2592000
-                                                                        ) {
-                                                                            const d = Math.floor(
-                                                                                totalSeconds / 86400
-                                                                            );
-                                                                            const h = Math.floor(
-                                                                                (totalSeconds %
-                                                                                    86400) /
-                                                                                    3600
-                                                                            );
-                                                                            return `(${d} day${d !== 1 ? 's' : ''}${h > 0 ? `, ${h} hour${h !== 1 ? 's' : ''}` : ''})`;
-                                                                        }
-                                                                        if (
-                                                                            totalSeconds < 31536000
-                                                                        ) {
-                                                                            const mo = Math.floor(
-                                                                                totalSeconds /
-                                                                                    2592000
-                                                                            );
-                                                                            const d = Math.floor(
-                                                                                (totalSeconds %
-                                                                                    2592000) /
-                                                                                    86400
-                                                                            );
-                                                                            return `(${mo} month${mo !== 1 ? 's' : ''}${d > 0 ? `, ${d} day${d !== 1 ? 's' : ''}` : ''})`;
-                                                                        }
-                                                                        const y = Math.floor(
-                                                                            totalSeconds / 31536000
-                                                                        );
-                                                                        const mo = Math.floor(
-                                                                            (totalSeconds %
-                                                                                31536000) /
-                                                                                2592000
-                                                                        );
-                                                                        return `(${y} year${y !== 1 ? 's' : ''}${mo > 0 ? `, ${mo} month${mo !== 1 ? 's' : ''}` : ''})`;
-                                                                    }
-                                                                )}
-                                                            </p>
-
-                                                            {activity.details && (
-                                                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-3 pt-4 border-t border-white/5">
-                                                                    {Object.entries(
-                                                                        activity.details
-                                                                    ).map(([key, value]) => {
-                                                                        const isDuration =
-                                                                            key ===
-                                                                            'duration_minutes';
-                                                                        const displayKey =
-                                                                            isDuration
-                                                                                ? 'duration'
-                                                                                : key;
-                                                                        const displayValue =
-                                                                            isDuration &&
-                                                                            typeof value ===
-                                                                                'number'
-                                                                                ? (() => {
-                                                                                      const totalSeconds =
-                                                                                          Math.round(
-                                                                                              value *
-                                                                                                  60
-                                                                                          );
-                                                                                      if (
-                                                                                          totalSeconds <
-                                                                                          60
-                                                                                      )
-                                                                                          return `${totalSeconds} seconds`;
-                                                                                      if (
-                                                                                          totalSeconds <
-                                                                                          3600
-                                                                                      ) {
-                                                                                          const m =
-                                                                                              Math.floor(
-                                                                                                  totalSeconds /
-                                                                                                      60
-                                                                                              );
-                                                                                          return `${m} minute${m !== 1 ? 's' : ''}`;
-                                                                                      }
-                                                                                      if (
-                                                                                          totalSeconds <
-                                                                                          86400
-                                                                                      ) {
-                                                                                          const h =
-                                                                                              Math.floor(
-                                                                                                  totalSeconds /
-                                                                                                      3600
-                                                                                              );
-                                                                                          const m =
-                                                                                              Math.floor(
-                                                                                                  (totalSeconds %
-                                                                                                      3600) /
-                                                                                                      60
-                                                                                              );
-                                                                                          return `${h} hour${h !== 1 ? 's' : ''}${m > 0 ? `, ${m} minute${m !== 1 ? 's' : ''}` : ''}`;
-                                                                                      }
-                                                                                      if (
-                                                                                          totalSeconds <
-                                                                                          2592000
-                                                                                      ) {
-                                                                                          const d =
-                                                                                              Math.floor(
-                                                                                                  totalSeconds /
-                                                                                                      86400
-                                                                                              );
-                                                                                          const h =
-                                                                                              Math.floor(
-                                                                                                  (totalSeconds %
-                                                                                                      86400) /
-                                                                                                      3600
-                                                                                              );
-                                                                                          return `${d} day${d !== 1 ? 's' : ''}${h > 0 ? `, ${h} hour${h !== 1 ? 's' : ''}` : ''}`;
-                                                                                      }
-                                                                                      if (
-                                                                                          totalSeconds <
-                                                                                          31536000
-                                                                                      ) {
-                                                                                          const mo =
-                                                                                              Math.floor(
-                                                                                                  totalSeconds /
-                                                                                                      2592000
-                                                                                              );
-                                                                                          const d =
-                                                                                              Math.floor(
-                                                                                                  (totalSeconds %
-                                                                                                      2592000) /
-                                                                                                      86400
-                                                                                              );
-                                                                                          return `${mo} month${mo !== 1 ? 's' : ''}${d > 0 ? `, ${d} day${d !== 1 ? 's' : ''}` : ''}`;
-                                                                                      }
-                                                                                      const y =
-                                                                                          Math.floor(
-                                                                                              totalSeconds /
-                                                                                                  31536000
-                                                                                          );
-                                                                                      const mo =
-                                                                                          Math.floor(
-                                                                                              (totalSeconds %
-                                                                                                  31536000) /
-                                                                                                  2592000
-                                                                                          );
-                                                                                      return `${y} year${y !== 1 ? 's' : ''}${mo > 0 ? `, ${mo} month${mo !== 1 ? 's' : ''}` : ''}`;
-                                                                                  })()
-                                                                                : typeof value ===
-                                                                                    'number'
-                                                                                  ? value.toFixed(1)
-                                                                                  : typeof value ===
-                                                                                      'object'
-                                                                                    ? JSON.stringify(
-                                                                                          value
-                                                                                      )
-                                                                                    : String(value);
-
-                                                                        return (
-                                                                            <div
-                                                                                key={key}
-                                                                                className="flex flex-col gap-0.5"
-                                                                            >
-                                                                                <span className="text-[7px] text-zinc-600 font-black uppercase tracking-widest">
-                                                                                    {displayKey.replace(
-                                                                                        /_/g,
-                                                                                        ' '
-                                                                                    )}
-                                                                                </span>
-                                                                                <span className="text-[10px] text-zinc-400 font-mono">
-                                                                                    {displayValue}
-                                                                                </span>
-                                                                            </div>
-                                                                        );
-                                                                    })}
-                                                                </div>
-                                                            )}
-                                                        </div>
-                                                    ))}
-                                                </div>
-
-                                                {/* Pagination Controls */}
-                                                {totalActivityPages > 1 && (
-                                                    <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-white/5">
-                                                        <div className="flex items-center gap-2">
-                                                            <button
-                                                                onClick={() =>
-                                                                    setActivityPage((p) =>
-                                                                        Math.max(1, p - 1)
-                                                                    )
-                                                                }
-                                                                disabled={activityPage === 1}
-                                                                className="flex items-center gap-2 px-3 py-1.5 bg-white/5 border border-white/10 text-[9px] font-black text-zinc-500 uppercase tracking-widest hover:bg-white/10 disabled:opacity-20 disabled:cursor-not-allowed transition-colors"
-                                                            >
-                                                                <FaChevronLeft className="w-2 h-2" />
-                                                                Prev
-                                                            </button>
-                                                            <button
-                                                                onClick={() =>
-                                                                    setActivityPage((p) =>
-                                                                        Math.min(
-                                                                            totalActivityPages,
-                                                                            p + 1
-                                                                        )
-                                                                    )
-                                                                }
-                                                                disabled={
-                                                                    activityPage ===
-                                                                    totalActivityPages
-                                                                }
-                                                                className="flex items-center gap-2 px-3 py-1.5 bg-white/5 border border-white/10 text-[9px] font-black text-zinc-500 uppercase tracking-widest hover:bg-white/10 disabled:opacity-20 disabled:cursor-not-allowed transition-colors"
-                                                            >
-                                                                Next
-                                                                <FaChevronRight className="w-2 h-2" />
-                                                            </button>
-                                                        </div>
-                                                        <div className="text-[9px] font-black text-zinc-600 uppercase tracking-widest">
-                                                            Page {activityPage} of{' '}
-                                                            {totalActivityPages}
-                                                        </div>
-                                                    </div>
+                                                        )}
+                                                    </>
                                                 )}
                                             </div>
                                         );

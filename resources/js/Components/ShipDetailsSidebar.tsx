@@ -767,7 +767,7 @@ export default function ShipDetailsSidebar({
                                                 setReportTab('sanctions');
                                                 setIsReportOpen(true);
                                             }}
-                                            className="px-3 py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 text-[8px] text-zinc-500 hover:text-zinc-300 font-black uppercase tracking-widest transition-all rounded-sm flex items-center gap-1.5 group shrink-0"
+                                            className="px-3 py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 text-[8px] text-zinc-500 hover:text-zinc-300 font-black uppercase tracking-widest transition-all rounded-none flex items-center gap-1.5 group shrink-0"
                                         >
                                             Details
                                             <FaArrowUpRightFromSquare className="w-2 h-2 text-zinc-600 group-hover:text-zinc-300 transition-colors" />
@@ -865,7 +865,7 @@ export default function ShipDetailsSidebar({
                                 icon={<FaEye aria-hidden="true" />}
                                 title="Behavioral Profile"
                             />
-                            <span className="text-[8px] font-black text-zinc-600 uppercase tracking-widest bg-white/5 px-1.5 py-0.5 rounded-sm border border-white/5">
+                            <span className="text-[8px] font-black text-zinc-600 uppercase tracking-widest bg-white/5 px-1.5 py-0.5 rounded-none border border-white/5">
                                 Last 30 Days
                             </span>
                         </div>
@@ -928,7 +928,7 @@ export default function ShipDetailsSidebar({
                                     setReportTab('activity');
                                     setIsReportOpen(true);
                                 }}
-                                className="px-3 py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 text-[8px] text-zinc-500 hover:text-zinc-300 font-black uppercase tracking-widest transition-all rounded-sm flex items-center gap-1.5 group shrink-0"
+                                className="px-3 py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 text-[8px] text-zinc-500 hover:text-zinc-300 font-black uppercase tracking-widest transition-all rounded-none flex items-center gap-1.5 group shrink-0"
                             >
                                 Details
                                 <FaArrowUpRightFromSquare className="w-2 h-2 text-zinc-600 group-hover:text-zinc-300 transition-colors" />
@@ -945,9 +945,6 @@ export default function ShipDetailsSidebar({
                                     <div className="flex flex-col">
                                         <span className="text-xs font-bold text-zinc-200">
                                             Trajectory Visualization
-                                        </span>
-                                        <span className="text-[10px] text-zinc-500 uppercase font-bold tracking-tight">
-                                            Historical voyage path visualization
                                         </span>
                                     </div>
                                     <button
@@ -1011,7 +1008,7 @@ export default function ShipDetailsSidebar({
                                                 <span className="text-[10px] text-zinc-500 uppercase font-bold tracking-tight">
                                                     History Window
                                                 </span>
-                                                <div className="flex items-center bg-zinc-900 border border-white/10 rounded-sm overflow-hidden">
+                                                <div className="flex items-center bg-zinc-900 border border-white/10 rounded-none overflow-hidden">
                                                     <button
                                                         onClick={() => setHistoryMode('hours')}
                                                         className={`px-2 py-1 text-[9px] font-bold uppercase tracking-widest transition-colors ${historyMode === 'hours' ? 'bg-zinc-700 text-white' : 'text-zinc-500 hover:text-zinc-300'}`}
