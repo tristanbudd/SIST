@@ -422,9 +422,11 @@ export default function AnalysisReportModal({
 
     return (
         <div
+            onClick={onClose}
             className={`fixed inset-0 z-5000 flex items-center justify-center p-0 md:p-6 transition-all duration-500 ${animateIn ? 'opacity-100 backdrop-blur-md bg-black/60' : 'opacity-0 pointer-events-none'}`}
         >
             <div
+                onClick={(e) => e.stopPropagation()}
                 className={`relative w-full md:max-w-5xl h-full md:max-h-[85vh] bg-zinc-950 border-0 md:border border-white/10 shadow-2xl flex flex-col transform transition-all duration-500 ease-out ${animateIn ? 'translate-y-0 scale-100' : 'translate-y-12 md:translate-y-12 scale-100 md:scale-95 opacity-0'}`}
                 role="dialog"
                 aria-modal="true"
