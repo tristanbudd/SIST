@@ -511,10 +511,11 @@ export default function AnalysisReportModal({
                                 <h4 className="text-red-400 font-bold uppercase tracking-widest text-xs mb-1">
                                     Offline / Historical Data Only
                                 </h4>
-                                <p className="text-red-400/80 text-[11px] leading-relaxed uppercase font-bold tracking-tight">
-                                    This vessel has not transmitted AIS data in the last hour. All
-                                    situational intelligence and environmental analysis is based on
-                                    the last known coordinates and should be treated as historical.
+                                <p className="text-red-400/80 text-[11px] leading-relaxed">
+                                    This vessel has not transmitted AIS data in the last 15 minutes.
+                                    All situational intelligence and environmental analysis is based
+                                    on the last known coordinates and should be treated as
+                                    historical.
                                 </p>
                             </div>
                         )}

@@ -572,7 +572,7 @@ export default function ShipDetailsSidebar({
                                 Offline / Historical Data Only
                             </h3>
                             <p className="text-red-400/80 text-[10px] leading-relaxed">
-                                This vessel has not transmitted AIS data in the last hour. The
+                                This vessel has not transmitted AIS data in the last 15 minutes. The
                                 status shown is outdated. Historical trajectory analysis remains
                                 available.
                             </p>
