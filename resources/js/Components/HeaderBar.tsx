@@ -260,8 +260,10 @@ export default function HeaderBar({
 
     useEffect(() => {
         if (isSearchEmpty || activeQuery.trim().length < 2) {
-            setIsSearching(false);
-            const clearTimer = setTimeout(() => setRemoteVessels([]), 0);
+            const clearTimer = setTimeout(() => {
+                setIsSearching(false);
+                setRemoteVessels([]);
+            }, 0);
             return () => clearTimeout(clearTimer);
         }
 
@@ -269,7 +271,7 @@ export default function HeaderBar({
             clearTimeout(searchTimeoutRef.current);
         }
 
-        setIsSearching(true);
+        const startTimer = setTimeout(() => setIsSearching(true), 0);
         searchTimeoutRef.current = setTimeout(async () => {
             try {
                 const res = await axios.get(`${API_BASE_URL}/vessels/search`, {
@@ -310,6 +312,7 @@ export default function HeaderBar({
         }, 400);
 
         return () => {
+            clearTimeout(startTimer);
             if (searchTimeoutRef.current) {
                 clearTimeout(searchTimeoutRef.current);
             }
