@@ -37,6 +37,28 @@ class VesselAnalysisService
     }
 
     /**
+     * Resets and re-runs analysis for the entire fleet.
+     */
+    public function rebuildAll(): void
+    {
+        Log::info('SIST | REBUILD: Starting full fleet analysis rebuild...');
+
+        DB::transaction(function () {
+            VesselActivity::truncate();
+
+            Vessel::query()->update(['last_analyzed_at' => null]);
+        });
+
+        Vessel::chunk(100, function ($vessels) {
+            foreach ($vessels as $vessel) {
+                $this->processVesselMetrics($vessel);
+            }
+        });
+
+        Log::info('SIST | REBUILD: Full fleet analysis rebuild completed.');
+    }
+
+    /**
      * Evaluates a single vessel against behavioral anomaly heuristics.
      */
     public function processVesselMetrics(Vessel $vessel): void
