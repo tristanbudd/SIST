@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Helpers\MaritimeFormatter;
 use App\Models\Vessel;
 use App\Models\VesselActivity;
+use App\Models\VesselPosition;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
@@ -97,12 +98,27 @@ class VesselAnalysisService
 
             $delta = $current->recorded_at->diffInMinutes($next->recorded_at);
 
-            if ($delta > 120) {
-                $this->persistActivity($vessel, 'ais_gap', 'medium', [
-                    'duration_minutes' => $delta,
-                    'gap_start' => $current->recorded_at->toIso8601String(),
-                    'gap_end' => $next->recorded_at->toIso8601String(),
-                ], $current->recorded_at, $next->recorded_at);
+            if ($delta > 360) {
+                if (($current->speed ?? 0) > 1.0 || ($next->speed ?? 0) > 1.0) {
+                    $hasGlobalActivity = VesselPosition::whereBetween('recorded_at', [
+                        $current->recorded_at->addMinute(),
+                        $next->recorded_at->subMinute(),
+                    ])
+                        ->where('mmsi', '!=', $vessel->mmsi)
+                        ->exists();
+
+                    if (! $hasGlobalActivity) {
+                        continue;
+                    }
+
+                    $this->persistActivity($vessel, 'ais_gap', 'medium', [
+                        'duration_minutes' => $delta,
+                        'gap_start' => $current->recorded_at->toIso8601String(),
+                        'gap_end' => $next->recorded_at->toIso8601String(),
+                        'start_speed' => $current->speed,
+                        'end_speed' => $next->speed,
+                    ], $current->recorded_at, $next->recorded_at);
+                }
             }
         }
     }
@@ -125,7 +141,7 @@ class VesselAnalysisService
         if ($recent->count() > 5) {
             $avgSpeed = $recent->avg('speed');
 
-            if ($avgSpeed < 1.0) {
+            if ($avgSpeed >= 1.0 && $avgSpeed < 5.0) {
                 $latRange = $recent->max('lat') - $recent->min('lat');
                 $lngRange = $recent->max('lng') - $recent->min('lng');
 
