@@ -99,6 +99,11 @@ class VesselAnalysisService
             $delta = $current->recorded_at->diffInMinutes($next->recorded_at);
 
             if ($delta > 360) {
+                // Ignore if vessel is explicitly anchored or moored (safe power down)
+                if (in_array($vessel->navigational_status, [1, 5, 6])) {
+                    continue;
+                }
+
                 if (($current->speed ?? 0) > 1.0 || ($next->speed ?? 0) > 1.0) {
                     $hasGlobalActivity = VesselPosition::whereBetween('recorded_at', [
                         $current->recorded_at->addMinute(),
@@ -145,8 +150,11 @@ class VesselAnalysisService
                 $latRange = $recent->max('lat') - $recent->min('lat');
                 $lngRange = $recent->max('lng') - $recent->min('lng');
 
-                // Flag if remaining within ~500m area
-                if ($latRange < 0.005 && $lngRange < 0.005) {
+                if ($latRange < 0.005 && $lngRange < 0.005 && ($latRange > 0 || $lngRange > 0)) {
+                    if (in_array($vessel->navigational_status, [1, 5, 6, 7])) {
+                        return;
+                    }
+
                     $this->persistActivity($vessel, 'loitering', 'low', [
                         'avg_speed' => round($avgSpeed, 2),
                         'lat_span' => round($latRange, 6),
