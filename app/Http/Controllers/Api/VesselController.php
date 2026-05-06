@@ -626,10 +626,11 @@ class VesselController extends Controller
     {
         $severity = $request->input('severity');
         $search = $request->input('search');
-        $limit = min((int) $request->input('limit', 100), 500);
+        $perPage = min((int) $request->input('per_page', 20), 100);
         $cutoff = now()->subDays(30);
 
         $query = Vessel::query()
+            ->select(['mmsi', 'imo', 'name', 'lat', 'lng', 'course'])
             ->whereHas('activities', function ($q) use ($severity, $cutoff) {
                 $q->where('started_at', '>=', $cutoff);
                 if ($severity && $severity !== 'all') {
@@ -642,6 +643,9 @@ class VesselController extends Controller
                     $q->where('severity', $severity);
                 }
             }])
+            ->with(['activities' => function ($q) use ($cutoff) {
+                $q->where('started_at', '>=', $cutoff)->select(['mmsi', 'severity', 'started_at']);
+            }])
             ->orderBy('activities_count', 'desc');
 
         if ($search) {
@@ -652,18 +656,16 @@ class VesselController extends Controller
             });
         }
 
-        $vessels = $query->limit($limit)->get();
+        $paginator = $query->paginate($perPage);
 
-        if ($vessels->isEmpty()) {
+        if ($paginator->isEmpty()) {
             return response()->json([
                 'message' => 'No vessels with behavioural infractions found in the last 30 days.',
             ], 404);
         }
 
-        $data = $vessels->map(function (Vessel $vessel) use ($cutoff) {
-            $activities = $vessel->activities()
-                ->where('started_at', '>=', $cutoff)
-                ->get(['severity']);
+        $items = collect($paginator->items())->map(function (Vessel $vessel) {
+            $activities = $vessel->activities;
 
             $score = $activities->reduce(function ($acc, $activity) {
                 $severity = $activity->severity;
@@ -698,7 +700,13 @@ class VesselController extends Controller
         });
 
         return response()->json([
-            'data' => $data,
+            'data' => $items,
+            'meta' => [
+                'current_page' => $paginator->currentPage(),
+                'last_page' => $paginator->lastPage(),
+                'total' => $paginator->total(),
+                'per_page' => $paginator->perPage(),
+            ],
         ]);
     }
 }

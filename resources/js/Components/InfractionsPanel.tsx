@@ -50,6 +50,8 @@ export default function InfractionsPanel({
     const [vessels, setVessels] = useState<InfractionVessel[]>([]);
     const [loading, setLoading] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
+    const [totalVessels, setTotalVessels] = useState(0);
     const ITEMS_PER_PAGE = 20;
 
     const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -63,45 +65,53 @@ export default function InfractionsPanel({
         }
     }, [isOpen]);
 
-    const fetchVessels = useCallback(async (search: string = '', severity: string = 'all') => {
-        setLoading(true);
-        try {
-            const response = await axios.get(`${API_BASE_URL}/vessels/infractions`, {
-                params: {
-                    search: search.trim(),
-                    severity: severity === 'all' ? undefined : severity,
-                    limit: 100,
-                },
-            });
-            setVessels(response.data.data || []);
-        } catch (error) {
-            console.error('Failed to fetch infractions vessels:', error);
-            setVessels([]);
-        } finally {
-            setLoading(false);
-        }
-    }, []);
+    const fetchVessels = useCallback(
+        async (search: string = '', severity: string = 'all', page: number = 1) => {
+            setLoading(true);
+            try {
+                const response = await axios.get(`${API_BASE_URL}/vessels/infractions`, {
+                    params: {
+                        search: search.trim(),
+                        severity: severity === 'all' ? undefined : severity,
+                        per_page: ITEMS_PER_PAGE,
+                        page: page,
+                    },
+                });
+                setVessels(response.data.data || []);
+                setTotalPages(response.data.meta?.last_page || 1);
+                setTotalVessels(response.data.meta?.total || 0);
+            } catch (error) {
+                console.error('Failed to fetch infractions vessels:', error);
+                setVessels([]);
+                setTotalPages(1);
+                setTotalVessels(0);
+            } finally {
+                setLoading(false);
+            }
+        },
+        []
+    );
 
     // Initial fetch handled by debounced effect below
 
     useEffect(() => {
+        if (!isOpen) return;
+
         if (searchTimeoutRef.current) {
             clearTimeout(searchTimeoutRef.current);
         }
 
         searchTimeoutRef.current = setTimeout(
             () => {
-                if (isOpen) {
-                    fetchVessels(searchQuery, severityFilter);
-                }
+                fetchVessels(searchQuery, severityFilter, currentPage);
             },
-            vessels.length === 0 ? 0 : 300
+            searchQuery ? 300 : 0
         );
 
         return () => {
             if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
         };
-    }, [searchQuery, severityFilter, isOpen, fetchVessels, vessels.length]);
+    }, [searchQuery, severityFilter, isOpen, fetchVessels, currentPage]);
 
     const onlineMmsis = useMemo(() => {
         const set = new Set<number>();
@@ -111,12 +121,6 @@ export default function InfractionsPanel({
         });
         return set;
     }, [trackedVessels]);
-
-    const totalPages = Math.ceil(vessels.length / ITEMS_PER_PAGE);
-    const paginatedVessels = vessels.slice(
-        (currentPage - 1) * ITEMS_PER_PAGE,
-        currentPage * ITEMS_PER_PAGE
-    );
 
     const handleVesselClick = (vessel: InfractionVessel) => {
         if (onVesselSelect) {
@@ -224,7 +228,7 @@ export default function InfractionsPanel({
                         )}
 
                         <div className="space-y-1">
-                            {paginatedVessels.map((vessel) => {
+                            {vessels.map((vessel) => {
                                 const isOnline = onlineMmsis.has(vessel.mmsi);
                                 return (
                                     <button
@@ -302,8 +306,8 @@ export default function InfractionsPanel({
                             <div className="flex justify-between items-center text-[9px] font-semibold text-zinc-500 tracking-wider">
                                 <span>
                                     SHOWING {(currentPage - 1) * ITEMS_PER_PAGE + 1} -{' '}
-                                    {Math.min(currentPage * ITEMS_PER_PAGE, vessels.length)} OF{' '}
-                                    {vessels.length}
+                                    {Math.min(currentPage * ITEMS_PER_PAGE, totalVessels)} OF{' '}
+                                    {totalVessels}
                                 </span>
                             </div>
                             <div className="flex justify-between items-center mt-1">
