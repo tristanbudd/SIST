@@ -1013,13 +1013,13 @@ export default function MapDisplay({
     setShowCities,
 }: MapDisplayProps) {
     const [isCompact, setIsCompact] = useState(
-        typeof window !== 'undefined' ? window.innerWidth < 640 || window.innerHeight < 800 : false
+        typeof window !== 'undefined' ? window.innerWidth < 640 || window.innerHeight < 840 : false
     );
 
     useEffect(() => {
         if (typeof window === 'undefined') return;
         const handleResize = () =>
-            setIsCompact(window.innerWidth < 640 || window.innerHeight < 800);
+            setIsCompact(window.innerWidth < 640 || window.innerHeight < 840);
         window.addEventListener('resize', handleResize);
         return () => window.removeEventListener('resize', handleResize);
     }, []);

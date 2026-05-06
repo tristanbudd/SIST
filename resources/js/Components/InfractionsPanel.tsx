@@ -1,11 +1,5 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import {
-    FaTriangleExclamation,
-    FaXmark,
-    FaMagnifyingGlass,
-    FaChevronLeft,
-    FaChevronRight,
-} from 'react-icons/fa6';
+import { FaEye, FaXmark, FaMagnifyingGlass, FaChevronLeft, FaChevronRight } from 'react-icons/fa6';
 import axios from 'axios';
 import L from 'leaflet';
 import { API_BASE_URL } from '../constants';
@@ -32,6 +26,7 @@ interface InfractionsPanelProps {
     onClose?: () => void;
     hideTrigger?: boolean;
     trackedVessels?: MapVessel[];
+    isCompact?: boolean;
 }
 
 export default function InfractionsPanel({
@@ -43,6 +38,7 @@ export default function InfractionsPanel({
     onClose,
     hideTrigger = false,
     trackedVessels = [],
+    isCompact = false,
 }: InfractionsPanelProps) {
     const [isOpenInternal, setIsOpenInternal] = useState(false);
     const isOpen = isOpenProp ?? isOpenInternal;
@@ -105,7 +101,7 @@ export default function InfractionsPanel({
         return () => {
             if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
         };
-    }, [searchQuery, severityFilter, isOpen, fetchVessels]);
+    }, [searchQuery, severityFilter, isOpen, fetchVessels, vessels.length]);
 
     const onlineMmsis = useMemo(() => {
         const set = new Set<number>();
@@ -144,9 +140,9 @@ export default function InfractionsPanel({
             className={`
                 ${
                     isOpen
-                        ? `fixed inset-0 sm:absolute sm:inset-auto sm:top-1/2 sm:-translate-y-1/2 ${
-                              isGrouped ? 'sm:left-0' : 'sm:left-4'
-                          }`
+                        ? `fixed inset-0 sm:absolute sm:inset-auto ${
+                              isCompact ? 'sm:top-[calc(50%+16px)]' : 'sm:top-1/2'
+                          } sm:-translate-y-1/2 ${isGrouped ? 'sm:left-0' : 'sm:left-4'}`
                         : isGrouped
                           ? ''
                           : 'absolute top-1/2 -translate-y-1/2 left-4'
@@ -156,10 +152,12 @@ export default function InfractionsPanel({
             `}
         >
             {isOpen && (
-                <div className="bg-zinc-950 border-white/20 shadow-2xl flex flex-col w-full sm:w-96 h-[calc(100vh-32px)] sm:h-auto sm:max-h-[70vh] animate-in slide-in-from-left-2 duration-200 overflow-hidden sm:border">
+                <div
+                    className={`bg-zinc-950 border-white/20 shadow-2xl flex flex-col w-full sm:w-96 h-[calc(100vh-32px)] sm:h-auto ${isCompact ? 'sm:max-h-[calc(100vh-160px)]' : 'sm:max-h-[70vh]'} animate-in slide-in-from-left-2 duration-200 overflow-hidden sm:border`}
+                >
                     <div className="flex items-center justify-between border-b border-white/10 px-4 pt-4 pb-3">
                         <div className="flex items-center gap-3">
-                            <FaTriangleExclamation className="text-white w-4 h-4" />
+                            <FaEye className="text-white w-4 h-4" />
                             <span className="text-xs font-bold text-white tracking-wider">
                                 BEHAVIOURAL INFRACTIONS
                             </span>
@@ -344,7 +342,7 @@ export default function InfractionsPanel({
                     title="Behavioural Infractions"
                     className="bg-zinc-950 border border-white/20 w-10 h-10 shadow-2xl hover:bg-zinc-900 active:scale-95 transition-all flex items-center justify-center pointer-events-auto z-1000"
                 >
-                    <FaTriangleExclamation className="w-4 h-4 text-white" />
+                    <FaEye className="w-4 h-4 text-white" />
                 </button>
             )}
         </div>

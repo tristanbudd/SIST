@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
-    FaShip,
+    FaShieldHalved,
     FaXmark,
     FaMagnifyingGlass,
     FaChevronLeft,
@@ -48,6 +48,7 @@ interface SanctionedShipsPanelProps {
     onClose?: () => void;
     hideTrigger?: boolean;
     trackedVessels?: MapVessel[];
+    isCompact?: boolean;
 }
 
 interface SanctionedShipsPanelWithToolsProps {
@@ -85,6 +86,7 @@ export default function SanctionedShipsPanel({
     onClose,
     hideTrigger = false,
     trackedVessels = [],
+    isCompact = false,
 }: SanctionedShipsPanelProps) {
     const [isOpenInternal, setIsOpenInternal] = useState(false);
     const isOpen = isOpenProp ?? isOpenInternal;
@@ -162,7 +164,7 @@ export default function SanctionedShipsPanel({
         return () => {
             if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
         };
-    }, [searchQuery, isOpen, fetchSanctionedVessels]);
+    }, [searchQuery, isOpen, fetchSanctionedVessels, sanctionedVessels.length]);
 
     const onlineMmsis = useMemo(() => {
         const set = new Set<number>();
@@ -306,9 +308,9 @@ export default function SanctionedShipsPanel({
             className={`
                 ${
                     isOpen
-                        ? `fixed inset-0 sm:absolute sm:inset-auto sm:top-1/2 sm:-translate-y-1/2 ${
-                              isGrouped ? 'sm:left-0' : 'sm:left-4'
-                          }`
+                        ? `fixed inset-0 sm:absolute sm:inset-auto ${
+                              isCompact ? 'sm:top-[calc(50%+16px)]' : 'sm:top-1/2'
+                          } sm:-translate-y-1/2 ${isGrouped ? 'sm:left-0' : 'sm:left-4'}`
                         : isGrouped
                           ? ''
                           : 'absolute top-1/2 -translate-y-1/2 left-4'
@@ -328,10 +330,12 @@ export default function SanctionedShipsPanel({
             onTouchMove={(e) => e.stopPropagation()}
         >
             {isOpen && (
-                <div className="bg-zinc-950 border-white/20 shadow-2xl flex flex-col w-full sm:w-96 h-[calc(100vh-32px)] sm:h-auto sm:max-h-[70vh] animate-in slide-in-from-left-2 duration-200 overflow-hidden sm:border">
+                <div
+                    className={`bg-zinc-950 border-white/20 shadow-2xl flex flex-col w-full sm:w-96 h-[calc(100vh-32px)] sm:h-auto ${isCompact ? 'sm:max-h-[calc(100vh-160px)]' : 'sm:max-h-[70vh]'} animate-in slide-in-from-left-2 duration-200 overflow-hidden sm:border`}
+                >
                     <div className="flex items-center justify-between border-b border-white/10 px-4 pt-4 pb-3">
                         <div className="flex items-center gap-3">
-                            <FaShip className="text-white w-4 h-4" />
+                            <FaShieldHalved className="text-white w-4 h-4" />
                             <span className="text-xs font-bold text-white tracking-wider">
                                 SANCTIONED VESSELS
                             </span>
@@ -545,7 +549,7 @@ export default function SanctionedShipsPanel({
                     title="Sanctioned Vessels"
                     className="bg-zinc-950 border border-white/20 w-10 h-10 shadow-2xl hover:bg-zinc-900 active:scale-95 transition-all flex items-center justify-center pointer-events-auto z-1000"
                 >
-                    <FaShip className="w-4 h-4 text-white" />
+                    <FaShieldHalved className="w-4 h-4 text-white" />
                 </button>
             )}
         </div>
@@ -588,13 +592,13 @@ export function SanctionedShipsPanelWithTools({
     );
 
     const [isCompact, setIsCompact] = useState(
-        typeof window !== 'undefined' ? window.innerWidth < 640 || window.innerHeight < 800 : false
+        typeof window !== 'undefined' ? window.innerWidth < 640 || window.innerHeight < 840 : false
     );
 
     useEffect(() => {
         if (typeof window === 'undefined') return;
         const handleResize = () =>
-            setIsCompact(window.innerWidth < 640 || window.innerHeight < 800);
+            setIsCompact(window.innerWidth < 640 || window.innerHeight < 840);
         window.addEventListener('resize', handleResize);
         return () => window.removeEventListener('resize', handleResize);
     }, []);
@@ -625,6 +629,7 @@ export function SanctionedShipsPanelWithTools({
                 onClose={() => setOpenPanel(null)}
                 hideTrigger={hideTriggers}
                 trackedVessels={trackedVessels}
+                isCompact={isCompact}
             />
             <InfractionsPanel
                 onNavigate={onNavigate}
@@ -635,6 +640,7 @@ export function SanctionedShipsPanelWithTools({
                 onClose={() => setOpenPanel(null)}
                 hideTrigger={hideTriggers}
                 trackedVessels={trackedVessels}
+                isCompact={isCompact}
             />
             <MapToolsPanel
                 onMeasureDistance={onMeasureDistance}
