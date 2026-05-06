@@ -13,6 +13,7 @@ import L from 'leaflet';
 import { API_BASE_URL } from '../constants';
 import { Vessel as MapVessel } from './MapDisplay';
 import MapToolsPanel from './MapToolsPanel';
+import InfractionsPanel from './InfractionsPanel';
 
 interface SanctionedVessel {
     id?: string;
@@ -62,8 +63,8 @@ interface SanctionedShipsPanelWithToolsProps {
     measurementMode?: 'distance' | 'area' | null;
     measurementPoints?: { lat: number; lng: number }[];
     isIdle?: boolean;
-    activePanel?: 'sanctioned' | 'tools' | null;
-    onOpenPanelChange?: (panel: 'sanctioned' | 'tools' | null) => void;
+    activePanel?: 'sanctioned' | 'tools' | 'infractions' | null;
+    onOpenPanelChange?: (panel: 'sanctioned' | 'tools' | 'infractions' | null) => void;
     isLayersOpen?: boolean;
     showVessels?: boolean;
     setShowVessels?: (v: boolean) => void;
@@ -142,25 +143,21 @@ export default function SanctionedShipsPanel({
         }
     }, []);
 
-    useEffect(() => {
-        if (isOpen && sanctionedVessels.length === 0) {
-            const timer = setTimeout(() => {
-                fetchSanctionedVessels();
-            }, 0);
-            return () => clearTimeout(timer);
-        }
-    }, [isOpen, sanctionedVessels.length, fetchSanctionedVessels]);
+    // Initial fetch handled by debounced effect below
 
     useEffect(() => {
         if (searchTimeoutRef.current) {
             clearTimeout(searchTimeoutRef.current);
         }
 
-        searchTimeoutRef.current = setTimeout(() => {
-            if (isOpen) {
-                fetchSanctionedVessels(searchQuery);
-            }
-        }, 300);
+        searchTimeoutRef.current = setTimeout(
+            () => {
+                if (isOpen) {
+                    fetchSanctionedVessels(searchQuery);
+                }
+            },
+            sanctionedVessels.length === 0 ? 0 : 300
+        );
 
         return () => {
             if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
@@ -575,11 +572,13 @@ export function SanctionedShipsPanelWithTools({
     isSearchActive = false,
     trackedVessels = [],
 }: SanctionedShipsPanelWithToolsProps) {
-    const [openPanelInternal, setOpenPanelInternal] = useState<'sanctioned' | 'tools' | null>(null);
+    const [openPanelInternal, setOpenPanelInternal] = useState<
+        'sanctioned' | 'tools' | 'infractions' | null
+    >(null);
     const openPanel = activePanelProp !== undefined ? activePanelProp : openPanelInternal;
 
     const setOpenPanel = useCallback(
-        (panel: 'sanctioned' | 'tools' | null) => {
+        (panel: 'sanctioned' | 'tools' | 'infractions' | null) => {
             if (activePanelProp === undefined) {
                 setOpenPanelInternal(panel);
             }
@@ -623,6 +622,16 @@ export function SanctionedShipsPanelWithTools({
                 isGrouped={true}
                 isOpen={openPanel === 'sanctioned'}
                 onOpen={() => setOpenPanel('sanctioned')}
+                onClose={() => setOpenPanel(null)}
+                hideTrigger={hideTriggers}
+                trackedVessels={trackedVessels}
+            />
+            <InfractionsPanel
+                onNavigate={onNavigate}
+                onVesselSelect={onVesselSelect}
+                isGrouped={true}
+                isOpen={openPanel === 'infractions'}
+                onOpen={() => setOpenPanel('infractions')}
                 onClose={() => setOpenPanel(null)}
                 hideTrigger={hideTriggers}
                 trackedVessels={trackedVessels}

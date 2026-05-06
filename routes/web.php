@@ -32,6 +32,7 @@ Route::prefix('api')->middleware('throttle:api')->group(function () {
             Route::get('/', [VesselController::class, 'index'])->name('index');
             Route::get('/search', [VesselController::class, 'search'])->name('search');
             Route::get('/sanctioned/list', [VesselController::class, 'sanctionedList'])->name('sanctioned-list');
+            Route::get('/infractions', [VesselController::class, 'infractionsList'])->name('infractions');
             Route::get('/{mmsi}', [VesselController::class, 'show'])->name('show');
             Route::get('/{mmsi}/history', [VesselController::class, 'history'])->name('history');
             Route::get('/{mmsi}/sanctions', [VesselController::class, 'checkSanctions'])->name('sanctions');

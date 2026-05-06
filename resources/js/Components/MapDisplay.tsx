@@ -970,8 +970,8 @@ interface MapDisplayProps {
     isIdle?: boolean;
     onIdleChange?: (isIdle: boolean) => void;
     isToolsOpen?: boolean;
-    activePanel?: 'sanctioned' | 'tools' | null;
-    onOpenPanelChange?: (panel: 'sanctioned' | 'tools' | null) => void;
+    activePanel?: 'sanctioned' | 'tools' | 'infractions' | null;
+    onOpenPanelChange?: (panel: 'sanctioned' | 'tools' | 'infractions' | null) => void;
     isLayersOpen: boolean;
     onLayersOpenChange: (open: boolean) => void;
     showVessels: boolean;

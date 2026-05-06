@@ -189,7 +189,7 @@ interface ShipDetailsSidebarProps {
     onWaypointSelect?: (pos: HistoryPosition) => void;
     selectedWaypointKey?: string | null;
     isLayersOpen?: boolean;
-    activePanel?: 'sanctioned' | 'tools' | null;
+    activePanel?: 'sanctioned' | 'tools' | 'infractions' | null;
 }
 
 export default function ShipDetailsSidebar({

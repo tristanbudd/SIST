@@ -140,7 +140,9 @@ export default function Index() {
     }, []);
 
     const [isIdle, setIsIdle] = useState(false);
-    const [activePanel, setActivePanel] = useState<'sanctioned' | 'tools' | null>(null);
+    const [activePanel, setActivePanel] = useState<'sanctioned' | 'tools' | 'infractions' | null>(
+        null
+    );
     const [isLayersOpen, setIsLayersOpen] = useState(false);
     const [showVessels, setShowVessels] = useState(true);
     const [showPorts, setShowPorts] = useState(false);
