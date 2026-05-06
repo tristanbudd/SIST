@@ -970,8 +970,8 @@ interface MapDisplayProps {
     isIdle?: boolean;
     onIdleChange?: (isIdle: boolean) => void;
     isToolsOpen?: boolean;
-    activePanel?: 'sanctioned' | 'tools' | null;
-    onOpenPanelChange?: (panel: 'sanctioned' | 'tools' | null) => void;
+    activePanel?: 'sanctioned' | 'tools' | 'infractions' | null;
+    onOpenPanelChange?: (panel: 'sanctioned' | 'tools' | 'infractions' | null) => void;
     isLayersOpen: boolean;
     onLayersOpenChange: (open: boolean) => void;
     showVessels: boolean;
@@ -1013,13 +1013,13 @@ export default function MapDisplay({
     setShowCities,
 }: MapDisplayProps) {
     const [isCompact, setIsCompact] = useState(
-        typeof window !== 'undefined' ? window.innerWidth < 640 || window.innerHeight < 800 : false
+        typeof window !== 'undefined' ? window.innerWidth < 640 || window.innerHeight < 840 : false
     );
 
     useEffect(() => {
         if (typeof window === 'undefined') return;
         const handleResize = () =>
-            setIsCompact(window.innerWidth < 640 || window.innerHeight < 800);
+            setIsCompact(window.innerWidth < 640 || window.innerHeight < 840);
         window.addEventListener('resize', handleResize);
         return () => window.removeEventListener('resize', handleResize);
     }, []);

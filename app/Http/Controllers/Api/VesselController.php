@@ -120,6 +120,9 @@ class VesselController extends Controller
      * }
      * ]
      * }
+     * @response 404 scenario="No vessels found" {
+     * "message": "No vessels found matching your search query."
+     * }
      */
     public function search(Request $request): JsonResponse
     {
@@ -147,6 +150,12 @@ class VesselController extends Controller
                 'last_seen_at' => $v->last_seen_at,
             ];
         });
+
+        if ($formatted->isEmpty()) {
+            return response()->json([
+                'message' => 'No vessels found matching your search query.',
+            ], 404);
+        }
 
         return response()->json([
             'data' => $formatted,
@@ -427,7 +436,6 @@ class VesselController extends Controller
             $forceRefresh
         );
 
-        // Build clean response matching API style
         return response()->json([
             'mmsi' => (int) $mmsi,
             'imo' => $vessel->imo,
@@ -461,6 +469,9 @@ class VesselController extends Controller
      * "risk_level": "high"
      * }
      * ]
+     * }
+     * @response 404 scenario="No sanctioned vessels found" {
+     * "message": "No sanctioned vessels found in the current records."
      * }
      */
     public function sanctionedList(Request $request): JsonResponse
@@ -524,6 +535,12 @@ class VesselController extends Controller
             }
         }
 
+        if (empty($sanctioned)) {
+            return response()->json([
+                'message' => 'No sanctioned vessels found in the current records.',
+            ], 404);
+        }
+
         return response()->json(['data' => $sanctioned]);
     }
 
@@ -553,6 +570,10 @@ class VesselController extends Controller
      * }
      * ]
      * }
+     * @response 404 scenario="Vessel not found" {
+     * "error": "Vessel not found in SIST records",
+     * "mmsi": 219225000
+     * }
      */
     public function activities(string $mmsi): JsonResponse
     {
@@ -573,6 +594,111 @@ class VesselController extends Controller
         return response()->json([
             'mmsi' => (int) $mmsi,
             'data' => $activities,
+        ]);
+    }
+
+    /**
+     * List Vessels with Infractions
+     *
+     * Retrieve a list of vessels with the most behavioural infractions in the last 30 days.
+     *
+     * @queryParam severity string Filter by infraction severity (all, low, medium, high). Example: high
+     * @queryParam search string Search by vessel name, IMO, or MMSI. Example: MAERSK
+     * @queryParam limit integer Maximum number of results. Example: 100
+     *
+     * @response 200 scenario="Success" {
+     * "data": [
+     * {
+     * "mmsi": 219225000,
+     * "imo": 9326093,
+     * "name": "MAERSK NORFOLK",
+     * "infractions_count": 12,
+     * "highest_severity": "high",
+     * "risk_score": 85
+     * }
+     * ]
+     * }
+     * @response 404 scenario="No infractions found" {
+     * "message": "No vessels with behavioural infractions found in the last 30 days."
+     * }
+     */
+    public function infractionsList(Request $request): JsonResponse
+    {
+        $severity = $request->input('severity');
+        $search = $request->input('search');
+        $limit = min((int) $request->input('limit', 100), 500);
+        $cutoff = now()->subDays(30);
+
+        $query = Vessel::query()
+            ->whereHas('activities', function ($q) use ($severity, $cutoff) {
+                $q->where('started_at', '>=', $cutoff);
+                if ($severity && $severity !== 'all') {
+                    $q->where('severity', $severity);
+                }
+            })
+            ->withCount(['activities' => function ($q) use ($severity, $cutoff) {
+                $q->where('started_at', '>=', $cutoff);
+                if ($severity && $severity !== 'all') {
+                    $q->where('severity', $severity);
+                }
+            }])
+            ->orderBy('activities_count', 'desc');
+
+        if ($search) {
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                    ->orWhere('mmsi', 'like', "{$search}%")
+                    ->orWhere('imo', 'like', "{$search}%");
+            });
+        }
+
+        $vessels = $query->limit($limit)->get();
+
+        if ($vessels->isEmpty()) {
+            return response()->json([
+                'message' => 'No vessels with behavioural infractions found in the last 30 days.',
+            ], 404);
+        }
+
+        $data = $vessels->map(function (Vessel $vessel) use ($cutoff) {
+            $activities = $vessel->activities()
+                ->where('started_at', '>=', $cutoff)
+                ->get(['severity']);
+
+            $score = $activities->reduce(function ($acc, $activity) {
+                $severity = $activity->severity;
+                if ($severity === 'high') {
+                    return $acc + 10;
+                }
+                if ($severity === 'medium') {
+                    return $acc + 3;
+                }
+
+                return $acc + 1;
+            }, 0);
+
+            $highestSeverity = 'low';
+            if ($activities->contains('severity', 'high')) {
+                $highestSeverity = 'high';
+            } elseif ($activities->contains('severity', 'medium')) {
+                $highestSeverity = 'medium';
+            }
+
+            return [
+                'mmsi' => (int) $vessel->mmsi,
+                'imo' => $vessel->imo ? (int) $vessel->imo : null,
+                'name' => $vessel->name,
+                'lat' => (float) $vessel->lat,
+                'lng' => (float) $vessel->lng,
+                'course' => (float) $vessel->course,
+                'infractions_count' => (int) $vessel->activities_count,
+                'highest_severity' => $highestSeverity,
+                'risk_score' => min(100, (int) $score),
+            ];
+        });
+
+        return response()->json([
+            'data' => $data,
         ]);
     }
 }
