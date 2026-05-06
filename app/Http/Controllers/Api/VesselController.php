@@ -120,6 +120,9 @@ class VesselController extends Controller
      * }
      * ]
      * }
+     * @response 404 scenario="No vessels found" {
+     * "message": "No vessels found matching your search query."
+     * }
      */
     public function search(Request $request): JsonResponse
     {
@@ -147,6 +150,12 @@ class VesselController extends Controller
                 'last_seen_at' => $v->last_seen_at,
             ];
         });
+
+        if ($formatted->isEmpty()) {
+            return response()->json([
+                'message' => 'No vessels found matching your search query.',
+            ], 404);
+        }
 
         return response()->json([
             'data' => $formatted,
@@ -462,6 +471,9 @@ class VesselController extends Controller
      * }
      * ]
      * }
+     * @response 404 scenario="No sanctioned vessels found" {
+     * "message": "No sanctioned vessels found in the current records."
+     * }
      */
     public function sanctionedList(Request $request): JsonResponse
     {
@@ -524,6 +536,12 @@ class VesselController extends Controller
             }
         }
 
+        if (empty($sanctioned)) {
+            return response()->json([
+                'message' => 'No sanctioned vessels found in the current records.',
+            ], 404);
+        }
+
         return response()->json(['data' => $sanctioned]);
     }
 
@@ -552,6 +570,10 @@ class VesselController extends Controller
      * "is_active": false
      * }
      * ]
+     * }
+     * @response 404 scenario="Vessel not found" {
+     * "error": "Vessel not found in SIST records",
+     * "mmsi": 219225000
      * }
      */
     public function activities(string $mmsi): JsonResponse
@@ -597,6 +619,9 @@ class VesselController extends Controller
      * }
      * ]
      * }
+     * @response 404 scenario="No infractions found" {
+     * "message": "No vessels with behavioural infractions found in the last 30 days."
+     * }
      */
     public function infractionsList(Request $request): JsonResponse
     {
@@ -630,7 +655,13 @@ class VesselController extends Controller
 
         $vessels = $query->limit($limit)->get();
 
-        $data = $vessels->map(function ($vessel) use ($cutoff) {
+        if ($vessels->isEmpty()) {
+            return response()->json([
+                'message' => 'No vessels with behavioural infractions found in the last 30 days.',
+            ], 404);
+        }
+
+        $data = $vessels->map(function (Vessel $vessel) use ($cutoff) {
             $activities = $vessel->activities()
                 ->where('started_at', '>=', $cutoff)
                 ->get(['severity']);
