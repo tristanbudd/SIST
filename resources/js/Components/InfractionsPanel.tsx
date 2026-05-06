@@ -47,6 +47,7 @@ export default function InfractionsPanel({
 
     const [searchQuery, setSearchQuery] = useState('');
     const [severityFilter, setSeverityFilter] = useState<'all' | 'low' | 'medium' | 'high'>('all');
+    const [statusFilter, setStatusFilter] = useState<'all' | 'online' | 'offline'>('all');
     const [vessels, setVessels] = useState<InfractionVessel[]>([]);
     const [loading, setLoading] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
@@ -66,13 +67,19 @@ export default function InfractionsPanel({
     }, [isOpen]);
 
     const fetchVessels = useCallback(
-        async (search: string = '', severity: string = 'all', page: number = 1) => {
+        async (
+            search: string = '',
+            severity: string = 'all',
+            status: string = 'all',
+            page: number = 1
+        ) => {
             setLoading(true);
             try {
                 const response = await axios.get(`${API_BASE_URL}/vessels/infractions`, {
                     params: {
                         search: search.trim(),
                         severity: severity === 'all' ? undefined : severity,
+                        status: status === 'all' ? undefined : status,
                         per_page: ITEMS_PER_PAGE,
                         page: page,
                     },
@@ -103,7 +110,7 @@ export default function InfractionsPanel({
 
         searchTimeoutRef.current = setTimeout(
             () => {
-                fetchVessels(searchQuery, severityFilter, currentPage);
+                fetchVessels(searchQuery, severityFilter, statusFilter, currentPage);
             },
             searchQuery ? 300 : 0
         );
@@ -111,7 +118,7 @@ export default function InfractionsPanel({
         return () => {
             if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
         };
-    }, [searchQuery, severityFilter, isOpen, fetchVessels, currentPage]);
+    }, [searchQuery, severityFilter, statusFilter, isOpen, fetchVessels, currentPage]);
 
     const onlineMmsis = useMemo(() => {
         const set = new Set<number>();
@@ -191,7 +198,7 @@ export default function InfractionsPanel({
                                 />
                             </div>
 
-                            <div className="flex justify-between items-center w-full">
+                            <div className="flex flex-col gap-2">
                                 <div className="flex bg-zinc-950 border border-white/20 divide-x divide-white/10 overflow-hidden w-full">
                                     {(['all', 'low', 'medium', 'high'] as const).map((sev) => (
                                         <button
@@ -207,6 +214,24 @@ export default function InfractionsPanel({
                                             }`}
                                         >
                                             {sev}
+                                        </button>
+                                    ))}
+                                </div>
+                                <div className="flex bg-zinc-950 border border-white/20 divide-x divide-white/10 overflow-hidden w-full">
+                                    {(['all', 'online', 'offline'] as const).map((status) => (
+                                        <button
+                                            key={status}
+                                            onClick={() => {
+                                                setStatusFilter(status);
+                                                setCurrentPage(1);
+                                            }}
+                                            className={`flex-1 text-[9px] font-bold uppercase tracking-widest px-2 py-2 transition-all ${
+                                                statusFilter === status
+                                                    ? 'bg-zinc-800 text-white'
+                                                    : 'bg-transparent text-zinc-500 hover:bg-white/5 hover:text-zinc-300'
+                                            }`}
+                                        >
+                                            {status}
                                         </button>
                                     ))}
                                 </div>

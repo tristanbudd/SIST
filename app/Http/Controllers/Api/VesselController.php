@@ -626,11 +626,12 @@ class VesselController extends Controller
     {
         $severity = $request->input('severity');
         $search = $request->input('search');
+        $status = $request->input('status');
         $perPage = min((int) $request->input('per_page', 20), 100);
         $cutoff = now()->subDays(30);
 
         $query = Vessel::query()
-            ->select(['mmsi', 'imo', 'name', 'lat', 'lng', 'course'])
+            ->select(['mmsi', 'imo', 'name', 'lat', 'lng', 'course', 'last_seen_at'])
             ->whereHas('activities', function ($q) use ($severity, $cutoff) {
                 $q->where('started_at', '>=', $cutoff);
                 if ($severity && $severity !== 'all') {
@@ -654,6 +655,18 @@ class VesselController extends Controller
                     ->orWhere('mmsi', 'like', "{$search}%")
                     ->orWhere('imo', 'like', "{$search}%");
             });
+        }
+
+        if ($status && $status !== 'all') {
+            $onlineThreshold = now()->subMinutes(5);
+            if ($status === 'online') {
+                $query->where('last_seen_at', '>=', $onlineThreshold);
+            } elseif ($status === 'offline') {
+                $query->where(function ($q) use ($onlineThreshold) {
+                    $q->where('last_seen_at', '<', $onlineThreshold)
+                        ->orWhereNull('last_seen_at');
+                });
+            }
         }
 
         $paginator = $query->paginate($perPage);
