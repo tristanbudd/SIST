@@ -539,9 +539,9 @@ export default function AnalysisReportModal({
                                             tab.id === 'sanctions'
                                                 ? 'bg-red-500 text-white'
                                                 : tab.id === 'activity'
-                                                  ? activityStats.score > 70
+                                                  ? activityStats.riskLevel === 'high'
                                                       ? 'bg-red-500 text-white'
-                                                      : activityStats.score > 30
+                                                      : activityStats.riskLevel === 'medium'
                                                         ? 'bg-amber-500 text-white'
                                                         : 'bg-emerald-500 text-white'
                                                   : 'bg-white text-zinc-950'
@@ -613,9 +613,9 @@ export default function AnalysisReportModal({
                                         className={`p-6 border flex flex-col justify-center items-center text-center gap-3 ${
                                             loading.activities
                                                 ? 'bg-zinc-900 border-zinc-800'
-                                                : activityStats.score > 70
+                                                : activityStats.riskLevel === 'high'
                                                   ? 'bg-red-500/5 border-red-500/20'
-                                                  : activityStats.score > 30
+                                                  : activityStats.riskLevel === 'medium'
                                                     ? 'bg-amber-500/5 border-amber-500/10'
                                                     : 'bg-emerald-500/5 border-emerald-500/10'
                                         }`}
@@ -626,9 +626,9 @@ export default function AnalysisReportModal({
                                         <div className="flex items-center gap-2">
                                             {loading.activities ? (
                                                 <LoadingSpinner size="md" />
-                                            ) : activityStats.score > 70 ? (
+                                            ) : activityStats.riskLevel === 'high' ? (
                                                 <FaCircleExclamation className="text-red-500 w-6 h-6" />
-                                            ) : activityStats.score > 30 ? (
+                                            ) : activityStats.riskLevel === 'medium' ? (
                                                 <FaCircleExclamation className="text-amber-500 w-6 h-6" />
                                             ) : (
                                                 <FaCircleCheck className="text-emerald-500 w-6 h-6" />
@@ -637,18 +637,18 @@ export default function AnalysisReportModal({
                                                 className={`text-2xl font-black uppercase tracking-tight ${
                                                     loading.activities
                                                         ? 'text-zinc-700'
-                                                        : activityStats.score > 70
+                                                        : activityStats.riskLevel === 'high'
                                                           ? 'text-red-500'
-                                                          : activityStats.score > 30
+                                                          : activityStats.riskLevel === 'medium'
                                                             ? 'text-amber-500'
                                                             : 'text-emerald-500'
                                                 }`}
                                             >
                                                 {loading.activities
                                                     ? 'Analyzing...'
-                                                    : activityStats.score > 70
+                                                    : activityStats.riskLevel === 'high'
                                                       ? 'High Risk'
-                                                      : activityStats.score > 30
+                                                      : activityStats.riskLevel === 'medium'
                                                         ? 'Medium Risk'
                                                         : 'Low Risk'}
                                             </span>
@@ -1812,7 +1812,7 @@ export default function AnalysisReportModal({
                                                             High Risk
                                                         </span>
                                                         <div className="text-4xl font-black text-zinc-300">
-                                                            {activityStats.highRisk}
+                                                            {activityStats.highRiskCount}
                                                         </div>
                                                         <div className="text-[9px] text-zinc-600 uppercase font-bold tracking-tight">
                                                             Critical Alerts

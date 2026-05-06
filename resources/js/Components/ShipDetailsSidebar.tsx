@@ -156,18 +156,25 @@ export function calculateActivityStats(activities: VesselActivity[]) {
     });
 
     const total = displayActivities.length;
-    const highRisk = displayActivities.filter((a) => a.severity === 'high').length;
+    const highRiskCount = displayActivities.filter((a) => a.severity === 'high').length;
 
+    // Reworked Scoring System:
+    // High: 10 pts, Medium: 3 pts, Low: 1 pt
+    // Requires significant volume of infractions to reach "Critical" (90+)
     const score = Math.min(
         100,
         displayActivities.reduce((acc, a) => {
-            if (a.severity === 'high') return acc + 25;
-            if (a.severity === 'medium') return acc + 12;
-            return acc + 5;
+            if (a.severity === 'high') return acc + 10;
+            if (a.severity === 'medium') return acc + 3;
+            return acc + 1;
         }, 0)
     );
 
-    return { total, highRisk, score };
+    let riskLevel: 'low' | 'medium' | 'high' = 'low';
+    if (score >= 75) riskLevel = 'high';
+    else if (score >= 50) riskLevel = 'medium';
+
+    return { total, highRiskCount, score, riskLevel };
 }
 
 interface ShipDetailsSidebarProps {
@@ -873,9 +880,9 @@ export default function ShipDetailsSidebar({
                             className={`mt-4 p-4 border flex items-center justify-between gap-4 ${
                                 loading.activities
                                     ? 'bg-zinc-900 border-zinc-800'
-                                    : activityStats.score > 70
+                                    : activityStats.riskLevel === 'high'
                                       ? 'bg-red-500/5 border-red-500/20'
-                                      : activityStats.score > 30
+                                      : activityStats.riskLevel === 'medium'
                                         ? 'bg-amber-500/5 border-amber-500/10'
                                         : 'bg-emerald-500/5 border-emerald-500/10'
                             }`}
@@ -886,9 +893,9 @@ export default function ShipDetailsSidebar({
                                 ) : (
                                     <div
                                         className={`w-8 h-8 rounded-full border-2 flex items-center justify-center text-[10px] font-black ${
-                                            activityStats.score > 70
+                                            activityStats.riskLevel === 'high'
                                                 ? 'border-red-500 text-red-500'
-                                                : activityStats.score > 30
+                                                : activityStats.riskLevel === 'medium'
                                                   ? 'border-amber-500 text-amber-500'
                                                   : 'border-emerald-500 text-emerald-500'
                                         }`}
@@ -901,18 +908,18 @@ export default function ShipDetailsSidebar({
                                         className={`text-sm font-black uppercase tracking-tight ${
                                             loading.activities
                                                 ? 'text-zinc-500'
-                                                : activityStats.score > 70
+                                                : activityStats.riskLevel === 'high'
                                                   ? 'text-red-500'
-                                                  : activityStats.score > 30
+                                                  : activityStats.riskLevel === 'medium'
                                                     ? 'text-amber-500'
                                                     : 'text-emerald-500'
                                         }`}
                                     >
                                         {loading.activities
                                             ? 'Analyzing...'
-                                            : activityStats.score > 70
+                                            : activityStats.riskLevel === 'high'
                                               ? 'High Risk'
-                                              : activityStats.score > 30
+                                              : activityStats.riskLevel === 'medium'
                                                 ? 'Medium Risk'
                                                 : 'Low Risk'}
                                     </div>

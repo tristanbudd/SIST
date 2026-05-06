@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Helpers\MaritimeFormatter;
 use App\Models\Vessel;
 use App\Models\VesselActivity;
+use App\Models\VesselPosition;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
@@ -34,6 +35,28 @@ class VesselAnalysisService
         foreach ($vessels as $vessel) {
             $this->processVesselMetrics($vessel);
         }
+    }
+
+    /**
+     * Resets and re-runs analysis for the entire fleet.
+     */
+    public function rebuildAll(): void
+    {
+        Log::info('SIST | REBUILD: Starting full fleet analysis rebuild...');
+
+        DB::transaction(function () {
+            VesselActivity::truncate();
+
+            Vessel::query()->update(['last_analyzed_at' => null]);
+        });
+
+        Vessel::chunk(100, function ($vessels) {
+            foreach ($vessels as $vessel) {
+                $this->processVesselMetrics($vessel);
+            }
+        });
+
+        Log::info('SIST | REBUILD: Full fleet analysis rebuild completed.');
     }
 
     /**
@@ -75,12 +98,32 @@ class VesselAnalysisService
 
             $delta = $current->recorded_at->diffInMinutes($next->recorded_at);
 
-            if ($delta > 120) {
-                $this->persistActivity($vessel, 'ais_gap', 'medium', [
-                    'duration_minutes' => $delta,
-                    'gap_start' => $current->recorded_at->toIso8601String(),
-                    'gap_end' => $next->recorded_at->toIso8601String(),
-                ], $current->recorded_at, $next->recorded_at);
+            if ($delta > 360) {
+                // Ignore if vessel is explicitly anchored or moored (safe power down)
+                if (in_array($vessel->navigational_status, [1, 5, 6])) {
+                    continue;
+                }
+
+                if (($current->speed ?? 0) > 1.0 || ($next->speed ?? 0) > 1.0) {
+                    $hasGlobalActivity = VesselPosition::whereBetween('recorded_at', [
+                        $current->recorded_at->addMinute(),
+                        $next->recorded_at->subMinute(),
+                    ])
+                        ->where('mmsi', '!=', $vessel->mmsi)
+                        ->exists();
+
+                    if (! $hasGlobalActivity) {
+                        continue;
+                    }
+
+                    $this->persistActivity($vessel, 'ais_gap', 'medium', [
+                        'duration_minutes' => $delta,
+                        'gap_start' => $current->recorded_at->toIso8601String(),
+                        'gap_end' => $next->recorded_at->toIso8601String(),
+                        'start_speed' => $current->speed,
+                        'end_speed' => $next->speed,
+                    ], $current->recorded_at, $next->recorded_at);
+                }
             }
         }
     }
@@ -103,12 +146,15 @@ class VesselAnalysisService
         if ($recent->count() > 5) {
             $avgSpeed = $recent->avg('speed');
 
-            if ($avgSpeed < 1.0) {
+            if ($avgSpeed >= 1.0 && $avgSpeed < 5.0) {
                 $latRange = $recent->max('lat') - $recent->min('lat');
                 $lngRange = $recent->max('lng') - $recent->min('lng');
 
-                // Flag if remaining within ~500m area
-                if ($latRange < 0.005 && $lngRange < 0.005) {
+                if ($latRange < 0.005 && $lngRange < 0.005 && ($latRange > 0 || $lngRange > 0)) {
+                    if (in_array($vessel->navigational_status, [1, 5, 6, 7])) {
+                        return;
+                    }
+
                     $this->persistActivity($vessel, 'loitering', 'low', [
                         'avg_speed' => round($avgSpeed, 2),
                         'lat_span' => round($latRange, 6),
