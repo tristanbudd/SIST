@@ -17,7 +17,6 @@ interface Vessel {
     lng: number;
     last_seen_at?: string;
     isOffline?: boolean;
-    behavioralScore?: number;
 }
 
 interface Port {
@@ -256,11 +255,15 @@ export default function HeaderBar({
     const hasRecents = recentSearches.length > 0;
 
     const [remoteVessels, setRemoteVessels] = useState<Vessel[]>([]);
+    const [isSearching, setIsSearching] = useState(false);
     const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     useEffect(() => {
         if (isSearchEmpty || activeQuery.trim().length < 2) {
-            const clearTimer = setTimeout(() => setRemoteVessels([]), 0);
+            const clearTimer = setTimeout(() => {
+                setIsSearching(false);
+                setRemoteVessels([]);
+            }, 0);
             return () => clearTimeout(clearTimer);
         }
 
@@ -268,6 +271,7 @@ export default function HeaderBar({
             clearTimeout(searchTimeoutRef.current);
         }
 
+        const startTimer = setTimeout(() => setIsSearching(true), 0);
         searchTimeoutRef.current = setTimeout(async () => {
             try {
                 const res = await axios.get(`${API_BASE_URL}/vessels/search`, {
@@ -286,26 +290,29 @@ export default function HeaderBar({
                     }) => {
                         const lastSeen = new Date(v.last_seen_at).getTime();
                         const ageMinutes = (Date.now() - lastSeen) / 60000;
+
                         return {
                             category: 'vessel',
                             name: v.name || 'UNKNOWN',
                             mmsi: String(v.mmsi),
-                            imo: String(v.imo || ''),
+                            imo: v.imo && String(v.imo) !== '0' ? String(v.imo) : '',
                             lat: v.lat,
                             lng: v.lng,
                             last_seen_at: v.last_seen_at,
                             isOffline: ageMinutes > OFFLINE_THRESHOLD_MINUTES,
-                            behavioralScore: Math.floor(Math.random() * 80) + 10, // Mock score for demo
                         };
                     }
                 );
                 setRemoteVessels(parsed);
             } catch (err) {
                 console.error('Failed to search remote vessels', err);
+            } finally {
+                setIsSearching(false);
             }
-        }, 300);
+        }, 400);
 
         return () => {
+            clearTimeout(startTimer);
             if (searchTimeoutRef.current) {
                 clearTimeout(searchTimeoutRef.current);
             }
@@ -400,6 +407,14 @@ export default function HeaderBar({
                 };
                 return priority[a.category] - priority[b.category];
             }
+
+            if (isVessel(a) && isVessel(b)) {
+                // Online first
+                if (!!a.isOffline !== !!b.isOffline) {
+                    return a.isOffline ? 1 : -1;
+                }
+            }
+
             return a.name.localeCompare(b.name);
         });
     }, [activeQuery, allResults]);
@@ -442,7 +457,7 @@ export default function HeaderBar({
     }, [suggestions, categoryLimits, isSearchEmpty, hasRecents, recentSearches, recentLimit]);
 
     const showSuggestionsPanel =
-        showSuggestions && !error && (suggestions.length > 0 || hasRecents);
+        showSuggestions && !error && (suggestions.length > 0 || hasRecents || isSearching);
 
     useEffect(() => {
         onSearchActiveChange?.(showSuggestionsPanel);
@@ -653,10 +668,17 @@ export default function HeaderBar({
 
             <div className="relative w-full sm:px-0 sm:max-w-100 min-[960px]:absolute min-[960px]:left-1/2 min-[960px]:-translate-x-1/2 pointer-events-auto z-10">
                 <div className="relative flex items-center gap-3 bg-zinc-950 border border-white/20 px-4 py-3 shadow-2xl transition-all focus-within:border-white/40 focus-within:ring-1 focus-within:ring-white/10">
-                    <FaSearch
-                        className={`w-4 h-4 ${query ? 'text-white' : 'text-zinc-500'}`}
-                        aria-hidden="true"
-                    />
+                    {isSearching ? (
+                        <div className="w-4 h-4 relative flex items-center justify-center">
+                            <div className="w-full h-full border-2 border-white/10 rounded-full" />
+                            <div className="absolute inset-0 border-t-2 border-white rounded-full animate-spin" />
+                        </div>
+                    ) : (
+                        <FaSearch
+                            className={`w-4 h-4 ${query ? 'text-white' : 'text-zinc-500'}`}
+                            aria-hidden="true"
+                        />
+                    )}
                     <input
                         type="text"
                         value={activeQuery}
@@ -782,7 +804,7 @@ export default function HeaderBar({
                                                         className={`text-[8px] font-mono uppercase ${isSelected ? 'text-zinc-300' : 'text-zinc-500'}`}
                                                     >
                                                         {isVessel(item)
-                                                            ? `MMSI: ${item.mmsi} | IMO: ${item.imo || 'Unknown'}`
+                                                            ? `MMSI: ${item.mmsi}${item.imo && item.imo !== '0' ? ` | IMO: ${item.imo}` : ''}`
                                                             : isPort(item)
                                                               ? `CODE: ${item.code} | ${item.country}`
                                                               : isCountry(item)
@@ -907,29 +929,12 @@ export default function HeaderBar({
                                                                         Offline
                                                                     </span>
                                                                 )}
-                                                            {isVessel(item) &&
-                                                                item.behavioralScore !==
-                                                                    undefined && (
-                                                                    <span
-                                                                        className={`ml-2 px-1 py-0.5 rounded-sm text-[8px] font-black ${
-                                                                            item.behavioralScore >
-                                                                            70
-                                                                                ? 'bg-red-500/10 text-red-500 border border-red-500/20'
-                                                                                : item.behavioralScore >
-                                                                                    30
-                                                                                  ? 'bg-amber-500/10 text-amber-500 border border-amber-500/20'
-                                                                                  : 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20'
-                                                                        }`}
-                                                                    >
-                                                                        {item.behavioralScore}%
-                                                                    </span>
-                                                                )}
                                                         </span>
                                                         <span
                                                             className={`text-[9px] font-mono uppercase ${isSelected ? 'text-zinc-300' : 'text-zinc-500'}`}
                                                         >
                                                             {isVessel(item)
-                                                                ? `MMSI: ${item.mmsi} | IMO: ${item.imo || 'Unknown'}`
+                                                                ? `MMSI: ${item.mmsi}${item.imo && item.imo !== '0' ? ` | IMO: ${item.imo}` : ''}`
                                                                 : isPort(item)
                                                                   ? `CODE: ${item.code} | ${item.country}`
                                                                   : isCountry(item)
@@ -979,6 +984,39 @@ export default function HeaderBar({
                                 </div>
                             );
                         })}
+
+                        {!isSearchEmpty && suggestions.length === 0 && (
+                            <div className="px-4 py-8 flex flex-col items-center justify-center text-center gap-3">
+                                {isSearching ? (
+                                    <>
+                                        <div className="w-6 h-6 relative flex items-center justify-center">
+                                            <div className="w-full h-full border-2 border-white/5 rounded-full" />
+                                            <div className="absolute inset-0 border-t-2 border-white/40 rounded-full animate-spin" />
+                                        </div>
+                                        <div className="flex flex-col gap-1">
+                                            <span className="text-[10px] text-zinc-400 font-black uppercase tracking-widest">
+                                                Searching for vessels...
+                                            </span>
+                                            <span className="text-[8px] text-zinc-600 font-bold uppercase tracking-tight">
+                                                Checking live and historical data
+                                            </span>
+                                        </div>
+                                    </>
+                                ) : (
+                                    <>
+                                        <FaShip className="w-6 h-6 text-zinc-800" />
+                                        <div className="flex flex-col gap-1">
+                                            <span className="text-[10px] text-zinc-500 font-black uppercase tracking-widest">
+                                                No results found
+                                            </span>
+                                            <span className="text-[8px] text-zinc-600 font-bold uppercase tracking-tight">
+                                                Try searching by MMSI, IMO, or vessel name
+                                            </span>
+                                        </div>
+                                    </>
+                                )}
+                            </div>
+                        )}
 
                         <div className="flex flex-col gap-2 px-4 py-2 bg-white/2 border-t border-white/5">
                             <div className="flex items-center justify-center">

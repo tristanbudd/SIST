@@ -3,10 +3,20 @@
 namespace App\Models;
 
 use App\Services\MaritimeIdentityService;
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
+/**
+ * @property int $mmsi
+ * @property int|null $imo
+ * @property string|null $name
+ * @property float|null $lat
+ * @property float|null $lng
+ * @property Carbon|null $last_seen_at
+ * @property Carbon|null $last_analyzed_at
+ */
 class Vessel extends Model
 {
     protected $primaryKey = 'mmsi';

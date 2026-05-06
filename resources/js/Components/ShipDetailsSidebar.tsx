@@ -15,15 +15,16 @@ import {
     FaCircleExclamation,
     FaChevronDown,
     FaEye,
+    FaArrowUpRightFromSquare,
 } from 'react-icons/fa6';
 import { LuAnchor, LuWaves, LuThermometer } from 'react-icons/lu';
 import axios from 'axios';
 import AnalysisReportModal from './AnalysisReportModal';
 import {
-    SANCTIONER_MAPPING,
-    NAV_STATUS_MAP,
     API_BASE_URL,
     OFFLINE_THRESHOLD_MINUTES,
+    NAV_STATUS_MAP,
+    SANCTIONER_MAPPING,
 } from '../constants';
 import {
     formatPositionAge,
@@ -157,13 +158,14 @@ export function calculateActivityStats(activities: VesselActivity[]) {
     const total = displayActivities.length;
     const highRisk = displayActivities.filter((a) => a.severity === 'high').length;
 
-    const totalWeight = displayActivities.reduce((acc, a) => {
-        if (a.severity === 'high') return acc + 30;
-        if (a.severity === 'medium') return acc + 15;
-        return acc + 5;
-    }, 0);
-
-    const score = total > 0 ? Math.min(100, Math.round(totalWeight / (total * 0.4))) : 0;
+    const score = Math.min(
+        100,
+        displayActivities.reduce((acc, a) => {
+            if (a.severity === 'high') return acc + 25;
+            if (a.severity === 'medium') return acc + 12;
+            return acc + 5;
+        }, 0)
+    );
 
     return { total, highRisk, score };
 }
@@ -237,10 +239,44 @@ export default function ShipDetailsSidebar({
 
     const [isOffline, setIsOffline] = useState(false);
     const [isReportOpen, setIsReportOpen] = useState(false);
+    const [reportTab, setReportTab] = useState<
+        'overview' | 'particulars' | 'sanctions' | 'environment' | 'waypoints' | 'activity'
+    >('overview');
 
     const activityStats = useMemo(() => {
         return calculateActivityStats(activities);
     }, [activities]);
+
+    const isCurrentTime = useCallback((timeStr: string) => {
+        const itemDate = new Date(timeStr);
+        const now = new Date();
+        return (
+            itemDate.getUTCFullYear() === now.getUTCFullYear() &&
+            itemDate.getUTCMonth() === now.getUTCMonth() &&
+            itemDate.getUTCDate() === now.getUTCDate() &&
+            itemDate.getUTCHours() === now.getUTCHours()
+        );
+    }, []);
+
+    const getFilteredEnvData = useCallback(<T extends { time: string }>(data: T[] | undefined) => {
+        if (!data) return [];
+        const now = new Date();
+        const currentHourIndex = data.findIndex((h) => {
+            const d = new Date(h.time);
+            return (
+                d.getUTCFullYear() === now.getUTCFullYear() &&
+                d.getUTCMonth() === now.getUTCMonth() &&
+                d.getUTCDate() === now.getUTCDate() &&
+                d.getUTCHours() === now.getUTCHours()
+            );
+        });
+
+        if (currentHourIndex === -1) return data.slice(0, 7);
+
+        const start = Math.max(0, currentHourIndex - 3);
+        const end = Math.min(data.length, currentHourIndex + 4);
+        return data.slice(start, end);
+    }, []);
 
     useEffect(() => {
         const timer = setTimeout(() => {
@@ -542,7 +578,10 @@ export default function ShipDetailsSidebar({
                     </h2>
                     <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 mt-2 text-[11px] text-zinc-400 font-mono">
                         <span>MMSI: {vessel.mmsi}</span>
-                        {!!(details?.imo || vessel.imo) && (
+                        {!!(
+                            (details?.imo && String(details.imo) !== '0') ||
+                            (vessel.imo && String(vessel.imo) !== '0')
+                        ) && (
                             <>
                                 <span className="hidden sm:block w-1 h-1 bg-zinc-600 rounded-full" />
                                 <span>IMO: {details?.imo || vessel.imo}</span>
@@ -571,7 +610,7 @@ export default function ShipDetailsSidebar({
                                 Offline / Historical Data Only
                             </h3>
                             <p className="text-red-400/80 text-[10px] leading-relaxed">
-                                This vessel has not transmitted AIS data in the last hour. The
+                                This vessel has not transmitted AIS data in the last 15 minutes. The
                                 status shown is outdated. Historical trajectory analysis remains
                                 available.
                             </p>
@@ -668,10 +707,6 @@ export default function ShipDetailsSidebar({
                                     (s) => s.source === 'fleetleaks' && s.match_type === 'exact'
                                 ) || [];
                             const isOfficiallySanctioned = officialSanctions.length > 0;
-                            const networkMatches =
-                                sanctions?.sanctions.filter(
-                                    (s) => s.match_type === 'fuzzy' || s.source !== 'fleetleaks'
-                                ) || [];
 
                             return (
                                 <>
@@ -727,6 +762,16 @@ export default function ShipDetailsSidebar({
                                                 </div>
                                             </div>
                                         </div>
+                                        <button
+                                            onClick={() => {
+                                                setReportTab('sanctions');
+                                                setIsReportOpen(true);
+                                            }}
+                                            className="px-3 py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 text-[8px] text-zinc-500 hover:text-zinc-300 font-black uppercase tracking-widest transition-all rounded-none flex items-center gap-1.5 group shrink-0"
+                                        >
+                                            Details
+                                            <FaArrowUpRightFromSquare className="w-2 h-2 text-zinc-600 group-hover:text-zinc-300 transition-colors" />
+                                        </button>
                                     </div>
 
                                     {sanctions && !loading.sanctions && (
@@ -803,63 +848,6 @@ export default function ShipDetailsSidebar({
                                                     </div>
                                                 </div>
                                             )}
-
-                                            {/* Network Analysis Section */}
-                                            {networkMatches.length > 0 && (
-                                                <div className="space-y-2">
-                                                    <div className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">
-                                                        Network Analysis
-                                                    </div>
-                                                    <div className="space-y-1">
-                                                        {networkMatches.map((s, i) => (
-                                                            <div
-                                                                key={i}
-                                                                className="p-3 border border-white/10 bg-white/5 flex flex-col gap-1"
-                                                            >
-                                                                <div className="flex items-start justify-between gap-4">
-                                                                    <div className="flex flex-col gap-0.5 min-w-0">
-                                                                        <span className="text-[11px] font-black uppercase tracking-tight leading-tight truncate text-zinc-300">
-                                                                            {s.name}
-                                                                        </span>
-                                                                        <div className="text-[8px] text-zinc-500 font-bold uppercase tracking-widest mt-0.5">
-                                                                            Matched on name
-                                                                            similarity
-                                                                        </div>
-                                                                    </div>
-                                                                    <a
-                                                                        href={
-                                                                            s.link ||
-                                                                            (s.source ===
-                                                                            'fleetleaks'
-                                                                                ? 'https://fleetleaks.com/'
-                                                                                : 'https://sanctions.network/')
-                                                                        }
-                                                                        target="_blank"
-                                                                        rel="noopener noreferrer"
-                                                                        className="flex items-center gap-1.5 text-[9px] text-zinc-500 font-bold uppercase hover:text-zinc-300 transition-colors underline decoration-zinc-800 underline-offset-2 shrink-0 self-start mt-0.5"
-                                                                    >
-                                                                        <ExternalProviderIcon
-                                                                            name={s.source}
-                                                                            className="w-3 h-3 opacity-50"
-                                                                        />
-                                                                        {s.source === 'fleetleaks'
-                                                                            ? 'FleetLeaks'
-                                                                            : 'Sanctions Network'}
-                                                                    </a>
-                                                                </div>
-                                                                {s.matched_name && (
-                                                                    <div className="text-[9px] text-zinc-600 mt-0.5">
-                                                                        Match:{' '}
-                                                                        <span className="text-zinc-400">
-                                                                            {s.matched_name}
-                                                                        </span>
-                                                                    </div>
-                                                                )}
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                </div>
-                                            )}
                                         </div>
                                     )}
                                 </>
@@ -877,7 +865,7 @@ export default function ShipDetailsSidebar({
                                 icon={<FaEye aria-hidden="true" />}
                                 title="Behavioral Profile"
                             />
-                            <span className="text-[8px] font-black text-zinc-600 uppercase tracking-widest bg-white/5 px-1.5 py-0.5 rounded-sm border border-white/5">
+                            <span className="text-[8px] font-black text-zinc-600 uppercase tracking-widest bg-white/5 px-1.5 py-0.5 rounded-none border border-white/5">
                                 Last 30 Days
                             </span>
                         </div>
@@ -886,34 +874,38 @@ export default function ShipDetailsSidebar({
                                 loading.activities
                                     ? 'bg-zinc-900 border-zinc-800'
                                     : activityStats.score > 70
-                                      ? 'bg-red-500/5 border-red-500/10'
+                                      ? 'bg-red-500/5 border-red-500/20'
                                       : activityStats.score > 30
                                         ? 'bg-amber-500/5 border-amber-500/10'
                                         : 'bg-emerald-500/5 border-emerald-500/10'
                             }`}
                         >
                             <div className="flex items-center gap-3 min-w-0">
-                                <div
-                                    className={`w-8 h-8 rounded-full border-2 flex items-center justify-center text-[10px] font-black ${
-                                        loading.activities
-                                            ? 'border-zinc-800 text-zinc-800'
-                                            : activityStats.score > 70
-                                              ? 'border-red-500 text-red-500'
-                                              : activityStats.score > 30
-                                                ? 'border-amber-500 text-amber-500'
-                                                : 'border-emerald-500 text-emerald-500'
-                                    }`}
-                                >
-                                    {loading.activities ? '--' : activityStats.score}
-                                </div>
+                                {loading.activities ? (
+                                    <LoadingSpinner size="lg" />
+                                ) : (
+                                    <div
+                                        className={`w-8 h-8 rounded-full border-2 flex items-center justify-center text-[10px] font-black ${
+                                            activityStats.score > 70
+                                                ? 'border-red-500 text-red-500'
+                                                : activityStats.score > 30
+                                                  ? 'border-amber-500 text-amber-500'
+                                                  : 'border-emerald-500 text-emerald-500'
+                                        }`}
+                                    >
+                                        {activityStats.score}
+                                    </div>
+                                )}
                                 <div className="min-w-0">
                                     <div
                                         className={`text-sm font-black uppercase tracking-tight ${
-                                            activityStats.score > 70
-                                                ? 'text-red-500'
-                                                : activityStats.score > 30
-                                                  ? 'text-amber-500'
-                                                  : 'text-emerald-500'
+                                            loading.activities
+                                                ? 'text-zinc-500'
+                                                : activityStats.score > 70
+                                                  ? 'text-red-500'
+                                                  : activityStats.score > 30
+                                                    ? 'text-amber-500'
+                                                    : 'text-emerald-500'
                                         }`}
                                     >
                                         {loading.activities
@@ -931,6 +923,16 @@ export default function ShipDetailsSidebar({
                                     </div>
                                 </div>
                             </div>
+                            <button
+                                onClick={() => {
+                                    setReportTab('activity');
+                                    setIsReportOpen(true);
+                                }}
+                                className="px-3 py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 text-[8px] text-zinc-500 hover:text-zinc-300 font-black uppercase tracking-widest transition-all rounded-none flex items-center gap-1.5 group shrink-0"
+                            >
+                                Details
+                                <FaArrowUpRightFromSquare className="w-2 h-2 text-zinc-600 group-hover:text-zinc-300 transition-colors" />
+                            </button>
                         </div>
                     </section>
 
@@ -943,9 +945,6 @@ export default function ShipDetailsSidebar({
                                     <div className="flex flex-col">
                                         <span className="text-xs font-bold text-zinc-200">
                                             Trajectory Visualization
-                                        </span>
-                                        <span className="text-[10px] text-zinc-500 uppercase font-bold tracking-tight">
-                                            Historical voyage path visualization
                                         </span>
                                     </div>
                                     <button
@@ -1009,7 +1008,7 @@ export default function ShipDetailsSidebar({
                                                 <span className="text-[10px] text-zinc-500 uppercase font-bold tracking-tight">
                                                     History Window
                                                 </span>
-                                                <div className="flex items-center bg-zinc-900 border border-white/10 rounded-sm overflow-hidden">
+                                                <div className="flex items-center bg-zinc-900 border border-white/10 rounded-none overflow-hidden">
                                                     <button
                                                         onClick={() => setHistoryMode('hours')}
                                                         className={`px-2 py-1 text-[9px] font-bold uppercase tracking-widest transition-colors ${historyMode === 'hours' ? 'bg-zinc-700 text-white' : 'text-zinc-500 hover:text-zinc-300'}`}
@@ -1266,7 +1265,7 @@ export default function ShipDetailsSidebar({
                                         Outlook
                                     </div>
                                     {loading.weather || !weather
-                                        ? Array(5)
+                                        ? Array(7)
                                               .fill(0)
                                               .map((_, i) => (
                                                   <div
@@ -1274,19 +1273,28 @@ export default function ShipDetailsSidebar({
                                                       className="bg-white/5 border border-white/10 p-2 h-10 animate-pulse"
                                                   />
                                               ))
-                                        : weather.hourly.slice(1, 6).map((h, i) => (
-                                              <div
-                                                  key={i}
-                                                  className="bg-white/5 border border-white/5 p-2 flex items-center justify-between"
-                                              >
-                                                  <span className="text-[10px] font-mono text-zinc-500">
-                                                      {h.time.split('T')[1]}
-                                                  </span>
-                                                  <span className="text-[11px] font-black text-zinc-200">
-                                                      {Number(h.temperature_c).toFixed(1)}°C
-                                                  </span>
-                                              </div>
-                                          ))}
+                                        : getFilteredEnvData(weather.hourly).map((h, i) => {
+                                              const current = isCurrentTime(h.time);
+                                              return (
+                                                  <div
+                                                      key={i}
+                                                      className={`border p-2 flex items-center justify-between transition-all ${current ? 'bg-white/10 border-white/20' : 'bg-white/5 border-white/5'}`}
+                                                  >
+                                                      <div className="flex flex-col">
+                                                          <span
+                                                              className={`text-[9px] font-mono ${current ? 'text-zinc-200' : 'text-zinc-500'}`}
+                                                          >
+                                                              {h.time.split('T')[1]}
+                                                          </span>
+                                                      </div>
+                                                      <span
+                                                          className={`text-[10px] font-black ${current ? 'text-white' : 'text-zinc-300'}`}
+                                                      >
+                                                          {Number(h.temperature_c).toFixed(1)}°C
+                                                      </span>
+                                                  </div>
+                                              );
+                                          })}
                                 </div>
                             )}
 
@@ -1296,7 +1304,7 @@ export default function ShipDetailsSidebar({
                                         Predictions
                                     </div>
                                     {loading.tides || !tides
-                                        ? Array(5)
+                                        ? Array(7)
                                               .fill(0)
                                               .map((_, i) => (
                                                   <div
@@ -1304,19 +1312,28 @@ export default function ShipDetailsSidebar({
                                                       className="bg-white/5 border border-white/10 p-2 h-10 animate-pulse"
                                                   />
                                               ))
-                                        : tides.predictions.slice(1, 6).map((p, i) => (
-                                              <div
-                                                  key={i}
-                                                  className="bg-white/5 border border-white/5 p-2 flex items-center justify-between"
-                                              >
-                                                  <span className="text-[10px] font-mono text-zinc-500">
-                                                      {p.time.split('T')[1]}
-                                                  </span>
-                                                  <span className="text-[11px] font-black text-cyan-500/80">
-                                                      {Number(p.wave_height).toFixed(1)}m
-                                                  </span>
-                                              </div>
-                                          ))}
+                                        : getFilteredEnvData(tides.predictions).map((p, i) => {
+                                              const current = isCurrentTime(p.time);
+                                              return (
+                                                  <div
+                                                      key={i}
+                                                      className={`border p-2 flex items-center justify-between transition-all ${current ? 'bg-white/10 border-white/20' : 'bg-white/5 border-white/5'}`}
+                                                  >
+                                                      <div className="flex flex-col">
+                                                          <span
+                                                              className={`text-[9px] font-mono ${current ? 'text-zinc-200' : 'text-zinc-500'}`}
+                                                          >
+                                                              {p.time.split('T')[1]}
+                                                          </span>
+                                                      </div>
+                                                      <span
+                                                          className={`text-[10px] font-black ${current ? 'text-cyan-400' : 'text-cyan-500/80'}`}
+                                                      >
+                                                          {Number(p.wave_height).toFixed(1)}m
+                                                      </span>
+                                                  </div>
+                                              );
+                                          })}
                                 </div>
                             )}
                         </div>
@@ -1467,7 +1484,10 @@ export default function ShipDetailsSidebar({
 
                 <div className="p-6 border-t border-white/10 shrink-0 bg-zinc-950">
                     <button
-                        onClick={() => setIsReportOpen(true)}
+                        onClick={() => {
+                            setReportTab('overview');
+                            setIsReportOpen(true);
+                        }}
                         className="w-full py-3 bg-zinc-100 hover:bg-white text-black font-black uppercase text-xs tracking-widest transition-all active:scale-[0.98] flex items-center justify-center gap-2 group"
                     >
                         View Full Analysis Report
@@ -1501,6 +1521,7 @@ export default function ShipDetailsSidebar({
                 history={history}
                 activities={activities}
                 isOffline={isOffline}
+                initialTab={reportTab}
                 loading={loading}
             />
         </>
