@@ -32,7 +32,14 @@ import {
     VesselActivity,
 } from './ShipDetailsSidebar';
 import { SANCTIONER_MAPPING, WEATHER_CODES, NAV_STATUS_MAP } from '../constants';
-import { formatPositionAge, getDistance, generateExternalLinks, formatShortDate } from '../utils';
+import {
+    formatPositionAge,
+    getDistance,
+    generateExternalLinks,
+    formatShortDate,
+    calculateActivityStats,
+    truncate,
+} from '../utils';
 import ExternalProviderIcon from './shared/ExternalProviderIcon';
 import LoadingSpinner from './shared/LoadingSpinner';
 
@@ -57,12 +64,6 @@ interface AnalysisReportModalProps {
         activities: boolean;
     };
 }
-
-import { calculateActivityStats } from './ShipDetailsSidebar';
-const truncate = (str: string, length: number = 40) => {
-    if (str.length <= length) return str;
-    return str.slice(0, length) + '...';
-};
 
 const SanctionRecordCard = ({
     record,

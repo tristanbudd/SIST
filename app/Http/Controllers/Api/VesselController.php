@@ -436,7 +436,6 @@ class VesselController extends Controller
             $forceRefresh
         );
 
-        // Build clean response matching API style
         return response()->json([
             'mmsi' => (int) $mmsi,
             'imo' => $vessel->imo,

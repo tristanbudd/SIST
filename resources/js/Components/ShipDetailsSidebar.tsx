@@ -31,6 +31,7 @@ import {
     generateExternalLinks,
     formatLondonTime,
     formatShortDate,
+    calculateActivityStats,
 } from '../utils';
 import ExternalProviderIcon from './shared/ExternalProviderIcon';
 import LoadingSpinner from './shared/LoadingSpinner';
@@ -145,36 +146,6 @@ export interface VesselActivity {
     details: Record<string, unknown>;
     started_at: string;
     ended_at: string | null;
-}
-
-export function calculateActivityStats(activities: VesselActivity[]) {
-    const days = 30;
-    const cutoff = Date.now() - days * 24 * 60 * 60 * 1000;
-    const displayActivities = activities.filter((a) => {
-        const started = new Date(a.started_at).getTime();
-        return started >= cutoff;
-    });
-
-    const total = displayActivities.length;
-    const highRiskCount = displayActivities.filter((a) => a.severity === 'high').length;
-
-    // Reworked Scoring System:
-    // High: 10 pts, Medium: 3 pts, Low: 1 pt
-    // Requires significant volume of infractions to reach "Critical" (90+)
-    const score = Math.min(
-        100,
-        displayActivities.reduce((acc, a) => {
-            if (a.severity === 'high') return acc + 10;
-            if (a.severity === 'medium') return acc + 3;
-            return acc + 1;
-        }, 0)
-    );
-
-    let riskLevel: 'low' | 'medium' | 'high' = 'low';
-    if (score >= 75) riskLevel = 'high';
-    else if (score >= 50) riskLevel = 'medium';
-
-    return { total, highRiskCount, score, riskLevel };
 }
 
 interface ShipDetailsSidebarProps {
