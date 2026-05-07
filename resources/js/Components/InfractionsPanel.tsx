@@ -49,7 +49,7 @@ export default function InfractionsPanel({
     const [severityFilter, setSeverityFilter] = useState<'low' | 'medium' | 'high'>('high');
     const [statusFilter, setStatusFilter] = useState<'all' | 'online' | 'offline'>('all');
     const [vessels, setVessels] = useState<InfractionVessel[]>([]);
-    const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState(true);
     const [currentPage, setCurrentPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
     const [totalVessels, setTotalVessels] = useState(0);
@@ -86,9 +86,7 @@ export default function InfractionsPanel({
             const controller = new AbortController();
             abortControllerRef.current = controller;
 
-            if (page === 1) {
-                setVessels([]);
-            }
+            setVessels([]);
 
             try {
                 const response = await axios.get(`${API_BASE_URL}/vessels/infractions`, {
@@ -210,6 +208,8 @@ export default function InfractionsPanel({
                                     placeholder="Search by name, IMO, MMSI..."
                                     value={searchQuery}
                                     onChange={(e) => {
+                                        setVessels([]);
+                                        setLoading(true);
                                         setSearchQuery(e.target.value);
                                         setCurrentPage(1);
                                     }}
@@ -223,7 +223,10 @@ export default function InfractionsPanel({
                                         <button
                                             key={sev}
                                             onClick={() => {
-                                                if (severityFilter !== sev) setVessels([]);
+                                                if (severityFilter !== sev) {
+                                                    setVessels([]);
+                                                    setLoading(true);
+                                                }
                                                 setSeverityFilter(sev);
                                                 setCurrentPage(1);
                                             }}
@@ -242,7 +245,10 @@ export default function InfractionsPanel({
                                         <button
                                             key={status}
                                             onClick={() => {
-                                                if (statusFilter !== status) setVessels([]);
+                                                if (statusFilter !== status) {
+                                                    setVessels([]);
+                                                    setLoading(true);
+                                                }
                                                 setStatusFilter(status);
                                                 setCurrentPage(1);
                                             }}
@@ -262,8 +268,16 @@ export default function InfractionsPanel({
 
                     <div ref={listRef} className="flex-1 overflow-y-auto px-2 py-2">
                         {loading && (
-                            <div className="flex items-center justify-center py-8">
-                                <div className="w-5 h-5 border-2 border-white/20 border-t-zinc-400 rounded-full animate-spin" />
+                            <div className="flex flex-col items-center justify-center py-12 gap-3">
+                                <div className="w-5 h-5 border-2 border-white/20 border-t-zinc-400 rounded-full animate-spin mb-1" />
+                                <div className="flex flex-col items-center gap-1">
+                                    <p className="text-[9px] text-zinc-400 font-bold uppercase tracking-widest text-center">
+                                        Aggregating Database Records...
+                                    </p>
+                                    <p className="text-[8px] text-zinc-500 font-semibold uppercase tracking-wider text-center">
+                                        This panel may take extra time to load
+                                    </p>
+                                </div>
                             </div>
                         )}
 
