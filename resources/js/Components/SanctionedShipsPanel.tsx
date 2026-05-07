@@ -652,7 +652,6 @@ export function SanctionedShipsPanelWithTools({
                 onOpen={() => setOpenPanel('infractions')}
                 onClose={() => setOpenPanel(null)}
                 hideTrigger={hideTriggers}
-                trackedVessels={trackedVessels}
                 isCompact={isCompact}
             />
             <MapToolsPanel
