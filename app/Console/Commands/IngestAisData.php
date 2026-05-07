@@ -166,6 +166,11 @@ class IngestAisData extends Command
         }
 
         $vessel->last_seen_at = now();
+
+        if (empty($vessel->name)) {
+            return;
+        }
+
         $vessel->save();
 
         if ($needsHistoryUpdate) {
