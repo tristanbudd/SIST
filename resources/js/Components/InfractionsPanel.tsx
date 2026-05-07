@@ -4,6 +4,7 @@ import axios from 'axios';
 import L from 'leaflet';
 import { API_BASE_URL } from '../constants';
 import { Vessel as MapVessel } from './MapDisplay';
+import { getRiskLevel } from '../utils';
 
 interface InfractionVessel {
     mmsi: number;
@@ -53,11 +54,13 @@ export default function InfractionsPanel({
     const [currentPage, setCurrentPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
     const [totalVessels, setTotalVessels] = useState(0);
+    const [checkingVesselMmsi, setCheckingVesselMmsi] = useState<number | null>(null);
     const ITEMS_PER_PAGE = 20;
 
     const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const panelRef = useRef<HTMLDivElement>(null);
     const listRef = useRef<HTMLDivElement>(null);
+    const abortControllerRef = useRef<AbortController | null>(null);
 
     useEffect(() => {
         if (panelRef.current) {
@@ -74,6 +77,13 @@ export default function InfractionsPanel({
             page: number = 1
         ) => {
             setLoading(true);
+            if (abortControllerRef.current) {
+                abortControllerRef.current.abort();
+            }
+
+            const controller = new AbortController();
+            abortControllerRef.current = controller;
+
             try {
                 const response = await axios.get(`${API_BASE_URL}/vessels/infractions`, {
                     params: {
@@ -83,11 +93,13 @@ export default function InfractionsPanel({
                         per_page: ITEMS_PER_PAGE,
                         page: page,
                     },
+                    signal: controller.signal,
                 });
                 setVessels(response.data.data || []);
                 setTotalPages(response.data.meta?.last_page || 1);
                 setTotalVessels(response.data.meta?.total || 0);
             } catch (error) {
+                if (axios.isCancel(error)) return;
                 console.error('Failed to fetch infractions vessels:', error);
                 setVessels([]);
                 setTotalPages(1);
@@ -110,6 +122,9 @@ export default function InfractionsPanel({
 
         searchTimeoutRef.current = setTimeout(
             () => {
+                if (abortControllerRef.current) {
+                    abortControllerRef.current.abort();
+                }
                 fetchVessels(searchQuery, severityFilter, statusFilter, currentPage);
             },
             searchQuery ? 300 : 0
@@ -117,6 +132,7 @@ export default function InfractionsPanel({
 
         return () => {
             if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
+            if (abortControllerRef.current) abortControllerRef.current.abort();
         };
     }, [searchQuery, severityFilter, statusFilter, isOpen, fetchVessels, currentPage]);
 
@@ -129,19 +145,27 @@ export default function InfractionsPanel({
         return set;
     }, [trackedVessels]);
 
-    const handleVesselClick = (vessel: InfractionVessel) => {
-        if (onVesselSelect) {
-            onVesselSelect({
-                mmsi: vessel.mmsi,
-                imo: vessel.imo || undefined,
-                name: vessel.name,
-                lat: vessel.lat,
-                lng: vessel.lng,
-                course: vessel.course,
-            });
-        }
-        if (onNavigate) {
-            onNavigate(vessel.lat, vessel.lng, 14);
+    const handleVesselClick = async (vessel: InfractionVessel) => {
+        setCheckingVesselMmsi(vessel.mmsi);
+        try {
+            // Artificial delay to match the "intelligence verification" feel of the sanctions panel
+            await new Promise((resolve) => setTimeout(resolve, 600));
+
+            if (onVesselSelect) {
+                onVesselSelect({
+                    mmsi: vessel.mmsi,
+                    imo: vessel.imo || undefined,
+                    name: vessel.name,
+                    lat: vessel.lat,
+                    lng: vessel.lng,
+                    course: vessel.course,
+                });
+            }
+            if (onNavigate) {
+                onNavigate(vessel.lat, vessel.lng, 14);
+            }
+        } finally {
+            setCheckingVesselMmsi(null);
         }
     };
 
@@ -275,6 +299,9 @@ export default function InfractionsPanel({
                                                         OFFLINE
                                                     </span>
                                                 )}
+                                                {checkingVesselMmsi === vessel.mmsi && (
+                                                    <div className="w-3 h-3 border-2 border-white/20 border-t-white/60 rounded-full animate-spin" />
+                                                )}
                                             </div>
                                             <div className="flex items-center gap-2 text-[9px] font-semibold text-zinc-500">
                                                 <span>
@@ -296,11 +323,12 @@ export default function InfractionsPanel({
                                         <div className="text-right whitespace-nowrap flex flex-col items-end gap-1">
                                             <div
                                                 className={`text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-sm border ${
-                                                    vessel.highest_severity === 'high'
-                                                        ? 'bg-red-500/10 text-red-500 border-red-500/20'
-                                                        : vessel.highest_severity === 'medium'
-                                                          ? 'bg-amber-500/10 text-amber-500 border-amber-500/20'
-                                                          : 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'
+                                                    getRiskLevel(vessel.risk_score) === 'high'
+                                                        ? 'border-red-500 text-red-500'
+                                                        : getRiskLevel(vessel.risk_score) ===
+                                                            'medium'
+                                                          ? 'border-amber-500 text-amber-500'
+                                                          : 'border-emerald-500 text-emerald-500'
                                                 }`}
                                             >
                                                 {vessel.infractions_count} INFRACTIONS
@@ -309,9 +337,10 @@ export default function InfractionsPanel({
                                                 RISK SCORE:{' '}
                                                 <span
                                                     className={
-                                                        vessel.risk_score >= 75
+                                                        getRiskLevel(vessel.risk_score) === 'high'
                                                             ? 'text-red-500'
-                                                            : vessel.risk_score >= 50
+                                                            : getRiskLevel(vessel.risk_score) ===
+                                                                'medium'
                                                               ? 'text-amber-500'
                                                               : 'text-emerald-500'
                                                     }

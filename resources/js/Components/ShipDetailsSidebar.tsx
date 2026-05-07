@@ -863,7 +863,7 @@ export default function ShipDetailsSidebar({
                                     <LoadingSpinner size="lg" />
                                 ) : (
                                     <div
-                                        className={`w-8 h-8 rounded-full border-2 flex items-center justify-center text-[10px] font-black ${
+                                        className={`w-8 h-8 rounded-full border flex items-center justify-center text-[10px] font-black ${
                                             activityStats.riskLevel === 'high'
                                                 ? 'border-red-500 text-red-500'
                                                 : activityStats.riskLevel === 'medium'

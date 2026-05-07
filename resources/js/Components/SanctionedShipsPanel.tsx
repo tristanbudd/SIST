@@ -110,6 +110,7 @@ export default function SanctionedShipsPanel({
     const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const panelRef = useRef<HTMLDivElement>(null);
     const listRef = useRef<HTMLDivElement>(null);
+    const abortControllerRef = useRef<AbortController | null>(null);
 
     useEffect(() => {
         if (panelRef.current) {
@@ -122,12 +123,20 @@ export default function SanctionedShipsPanel({
         // Defer to avoid synchronous setState warning in useEffect
         await Promise.resolve();
         setLoading(true);
+
+        if (abortControllerRef.current) {
+            abortControllerRef.current.abort();
+        }
+        const controller = new AbortController();
+        abortControllerRef.current = controller;
+
         try {
             const response = await axios.get(`${API_BASE_URL}/vessels/sanctioned/list`, {
                 params: {
                     search: search.trim(),
                     limit: 100,
                 },
+                signal: controller.signal,
             });
             const sorted = (response.data.data || []).sort(
                 (a: SanctionedVessel, b: SanctionedVessel) => {
@@ -138,10 +147,13 @@ export default function SanctionedShipsPanel({
             );
             setSanctionedVessels(sorted);
         } catch (error) {
+            if (axios.isCancel(error)) return;
             console.error('Failed to fetch sanctioned vessels:', error);
             setSanctionedVessels([]);
         } finally {
-            setLoading(false);
+            if (!controller.signal.aborted) {
+                setLoading(false);
+            }
         }
     }, []);
 
@@ -163,6 +175,7 @@ export default function SanctionedShipsPanel({
 
         return () => {
             if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
+            if (abortControllerRef.current) abortControllerRef.current.abort();
         };
     }, [searchQuery, isOpen, fetchSanctionedVessels, sanctionedVessels.length]);
 

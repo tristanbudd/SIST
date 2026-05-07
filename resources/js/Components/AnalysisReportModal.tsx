@@ -1874,11 +1874,11 @@ export default function AnalysisReportModal({
                                                                             className={`text-[8px] font-black uppercase tracking-widest px-2 py-1 rounded-[1px] border ${
                                                                                 activity.severity ===
                                                                                 'high'
-                                                                                    ? 'bg-red-500/10 text-red-500 border-red-500/20'
+                                                                                    ? 'border-red-500 text-red-500'
                                                                                     : activity.severity ===
                                                                                         'medium'
-                                                                                      ? 'bg-amber-500/10 text-amber-500 border-amber-500/20'
-                                                                                      : 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'
+                                                                                      ? 'border-amber-500 text-amber-500'
+                                                                                      : 'border-emerald-500 text-emerald-500'
                                                                             }`}
                                                                         >
                                                                             {activity.severity}
