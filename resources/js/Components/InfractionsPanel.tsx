@@ -4,6 +4,7 @@ import axios from 'axios';
 import L from 'leaflet';
 import { API_BASE_URL } from '../constants';
 import { Vessel as MapVessel } from './MapDisplay';
+import { getRiskLevel } from '../utils';
 
 interface InfractionVessel {
     mmsi: number;
@@ -322,11 +323,12 @@ export default function InfractionsPanel({
                                         <div className="text-right whitespace-nowrap flex flex-col items-end gap-1">
                                             <div
                                                 className={`text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-sm border ${
-                                                    vessel.risk_score >= 75
-                                                        ? 'bg-red-500 border-red-500 text-white'
-                                                        : vessel.risk_score >= 50
-                                                          ? 'bg-amber-500 border-amber-500 text-black'
-                                                          : 'bg-emerald-500 border-emerald-500 text-white'
+                                                    getRiskLevel(vessel.risk_score) === 'high'
+                                                        ? 'border-red-500 text-red-500'
+                                                        : getRiskLevel(vessel.risk_score) ===
+                                                            'medium'
+                                                          ? 'border-amber-500 text-amber-500'
+                                                          : 'border-emerald-500 text-emerald-500'
                                                 }`}
                                             >
                                                 {vessel.infractions_count} INFRACTIONS
@@ -335,9 +337,10 @@ export default function InfractionsPanel({
                                                 RISK SCORE:{' '}
                                                 <span
                                                     className={
-                                                        vessel.risk_score >= 75
+                                                        getRiskLevel(vessel.risk_score) === 'high'
                                                             ? 'text-red-500'
-                                                            : vessel.risk_score >= 50
+                                                            : getRiskLevel(vessel.risk_score) ===
+                                                                'medium'
                                                               ? 'text-amber-500'
                                                               : 'text-emerald-500'
                                                     }

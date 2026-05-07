@@ -865,10 +865,10 @@ export default function ShipDetailsSidebar({
                                     <div
                                         className={`w-8 h-8 rounded-full border flex items-center justify-center text-[10px] font-black ${
                                             activityStats.riskLevel === 'high'
-                                                ? 'bg-red-500 border-red-500 text-white'
+                                                ? 'border-red-500 text-red-500'
                                                 : activityStats.riskLevel === 'medium'
-                                                  ? 'bg-amber-500 border-amber-500 text-black'
-                                                  : 'bg-emerald-500 border-emerald-500 text-white'
+                                                  ? 'border-amber-500 text-amber-500'
+                                                  : 'border-emerald-500 text-emerald-500'
                                         }`}
                                     >
                                         {activityStats.score}

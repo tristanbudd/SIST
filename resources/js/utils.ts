@@ -135,6 +135,15 @@ export function truncate(str: string, length: number = 40): string {
 import type { VesselActivity } from './Components/ShipDetailsSidebar';
 
 /**
+ * Determines the risk level string based on a numeric risk score.
+ */
+export function getRiskLevel(score: number): 'low' | 'medium' | 'high' {
+    if (score >= 75) return 'high';
+    if (score >= 50) return 'medium';
+    return 'low';
+}
+
+/**
  * Calculates risk statistics based on a vessel's recent activity.
  */
 export function calculateActivityStats(activities: VesselActivity[]) {
@@ -158,9 +167,7 @@ export function calculateActivityStats(activities: VesselActivity[]) {
         }, 0)
     );
 
-    let riskLevel: 'low' | 'medium' | 'high' = 'low';
-    if (score >= 75) riskLevel = 'high';
-    else if (score >= 50) riskLevel = 'medium';
+    const riskLevel = getRiskLevel(score);
 
     return { total, highRiskCount, score, riskLevel };
 }
