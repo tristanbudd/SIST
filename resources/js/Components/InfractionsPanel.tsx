@@ -86,9 +86,7 @@ export default function InfractionsPanel({
             const controller = new AbortController();
             abortControllerRef.current = controller;
 
-            if (page === 1) {
-                setVessels([]);
-            }
+            setVessels([]);
 
             try {
                 const response = await axios.get(`${API_BASE_URL}/vessels/infractions`, {

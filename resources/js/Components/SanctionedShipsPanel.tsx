@@ -130,6 +130,8 @@ export default function SanctionedShipsPanel({
         const controller = new AbortController();
         abortControllerRef.current = controller;
 
+        setSanctionedVessels([]);
+
         try {
             const response = await axios.get(`${API_BASE_URL}/vessels/sanctioned/list`, {
                 params: {
