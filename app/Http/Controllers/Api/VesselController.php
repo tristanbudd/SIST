@@ -9,6 +9,7 @@ use App\Services\SanctionsService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 
 /**
@@ -631,43 +632,49 @@ class VesselController extends Controller
         $cutoff = now()->subDays(30);
 
         $query = Vessel::query()
-            ->select(['mmsi', 'imo', 'name', 'lat', 'lng', 'course', 'last_seen_at'])
-            ->whereHas('activities', function ($q) use ($severity, $cutoff) {
-                $q->where('started_at', '>=', $cutoff);
-                if ($severity && $severity !== 'all') {
-                    $q->where('severity', $severity);
-                }
-            })
-            ->withCount(['activities' => function ($q) use ($severity, $cutoff) {
-                $q->where('started_at', '>=', $cutoff);
-                if ($severity && $severity !== 'all') {
-                    $q->where('severity', $severity);
-                }
-            }])
-            ->with(['activities' => function ($q) use ($cutoff) {
-                $q->where('started_at', '>=', $cutoff)->select(['mmsi', 'severity', 'started_at']);
-            }])
-            ->orderBy('activities_count', 'desc');
+            ->join('vessel_activities', 'vessels.mmsi', '=', 'vessel_activities.mmsi')
+            ->select([
+                'vessels.mmsi',
+                'vessels.imo',
+                'vessels.name',
+                'vessels.lat',
+                'vessels.lng',
+                'vessels.course',
+                'vessels.last_seen_at',
+                DB::raw('COUNT(vessel_activities.id) as activities_count'),
+                DB::raw("SUM(CASE WHEN vessel_activities.severity = 'high' THEN 10 WHEN vessel_activities.severity = 'medium' THEN 3 ELSE 1 END) as raw_score"),
+                DB::raw("MAX(CASE WHEN vessel_activities.severity = 'high' THEN 3 WHEN vessel_activities.severity = 'medium' THEN 2 ELSE 1 END) as max_severity_level"),
+            ])
+            ->where('vessel_activities.started_at', '>=', $cutoff);
+
+        if ($severity && $severity !== 'all') {
+            $query->where('vessel_activities.severity', $severity);
+        }
 
         if ($search) {
             $query->where(function ($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
-                    ->orWhere('mmsi', 'like', "{$search}%")
-                    ->orWhere('imo', 'like', "{$search}%");
+                $q->where('vessels.name', 'like', "%{$search}%")
+                    ->orWhere('vessels.mmsi', 'like', "{$search}%")
+                    ->orWhere('vessels.imo', 'like', "{$search}%");
             });
         }
 
         if ($status && $status !== 'all') {
             $onlineThreshold = now()->subMinutes(5);
             if ($status === 'online') {
-                $query->where('last_seen_at', '>=', $onlineThreshold);
+                $query->where('vessels.last_seen_at', '>=', $onlineThreshold);
             } elseif ($status === 'offline') {
                 $query->where(function ($q) use ($onlineThreshold) {
-                    $q->where('last_seen_at', '<', $onlineThreshold)
-                        ->orWhereNull('last_seen_at');
+                    $q->where('vessels.last_seen_at', '<', $onlineThreshold)
+                        ->orWhereNull('vessels.last_seen_at');
                 });
             }
         }
+
+        $query->groupBy([
+            'vessels.mmsi', 'vessels.imo', 'vessels.name',
+            'vessels.lat', 'vessels.lng', 'vessels.course', 'vessels.last_seen_at',
+        ])->orderBy('activities_count', 'desc');
 
         $paginator = $query->paginate($perPage);
 
@@ -677,25 +684,11 @@ class VesselController extends Controller
             ], 404);
         }
 
-        $items = collect($paginator->items())->map(function (Vessel $vessel) {
-            $activities = $vessel->activities;
-
-            $score = $activities->reduce(function ($acc, $activity) {
-                $severity = $activity->severity;
-                if ($severity === 'high') {
-                    return $acc + 10;
-                }
-                if ($severity === 'medium') {
-                    return $acc + 3;
-                }
-
-                return $acc + 1;
-            }, 0);
-
+        $items = collect($paginator->items())->map(function ($vessel) {
             $highestSeverity = 'low';
-            if ($activities->contains('severity', 'high')) {
+            if ($vessel->max_severity_level == 3) {
                 $highestSeverity = 'high';
-            } elseif ($activities->contains('severity', 'medium')) {
+            } elseif ($vessel->max_severity_level == 2) {
                 $highestSeverity = 'medium';
             }
 
@@ -708,7 +701,7 @@ class VesselController extends Controller
                 'course' => (float) $vessel->course,
                 'infractions_count' => (int) $vessel->activities_count,
                 'highest_severity' => $highestSeverity,
-                'risk_score' => min(100, (int) $score),
+                'risk_score' => min(100, (int) $vessel->raw_score),
             ];
         });
 
