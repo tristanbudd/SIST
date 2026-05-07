@@ -38,6 +38,7 @@ import {
     generateExternalLinks,
     formatShortDate,
     calculateActivityStats,
+    getRiskMetadata,
     truncate,
 } from '../utils';
 import ExternalProviderIcon from './shared/ExternalProviderIcon';
@@ -540,11 +541,9 @@ export default function AnalysisReportModal({
                                             tab.id === 'sanctions'
                                                 ? 'bg-red-500 text-white'
                                                 : tab.id === 'activity'
-                                                  ? activityStats.riskLevel === 'high'
-                                                      ? 'bg-red-500 text-white'
-                                                      : activityStats.riskLevel === 'medium'
-                                                        ? 'bg-amber-500 text-white'
-                                                        : 'bg-emerald-500 text-white'
+                                                  ? getRiskMetadata(activityStats.riskLevel)
+                                                        .colorClass.replace('text-', 'bg-')
+                                                        .replace('-500', '-600') + ' text-white'
                                                   : 'bg-white text-zinc-950'
                                         }`}
                                     >
@@ -614,11 +613,7 @@ export default function AnalysisReportModal({
                                         className={`p-6 border flex flex-col justify-center items-center text-center gap-3 ${
                                             loading.activities
                                                 ? 'bg-zinc-900 border-zinc-800'
-                                                : activityStats.riskLevel === 'high'
-                                                  ? 'bg-red-500/5 border-red-500/20'
-                                                  : activityStats.riskLevel === 'medium'
-                                                    ? 'bg-amber-500/5 border-amber-500/10'
-                                                    : 'bg-emerald-500/5 border-emerald-500/10'
+                                                : `${getRiskMetadata(activityStats.riskLevel).bgClass} ${getRiskMetadata(activityStats.riskLevel).softBorderClass}`
                                         }`}
                                     >
                                         <div className="text-[11px] text-zinc-500 uppercase font-bold tracking-widest">
@@ -638,20 +633,14 @@ export default function AnalysisReportModal({
                                                 className={`text-2xl font-black uppercase tracking-tight ${
                                                     loading.activities
                                                         ? 'text-zinc-700'
-                                                        : activityStats.riskLevel === 'high'
-                                                          ? 'text-red-500'
-                                                          : activityStats.riskLevel === 'medium'
-                                                            ? 'text-amber-500'
-                                                            : 'text-emerald-500'
+                                                        : getRiskMetadata(activityStats.riskLevel)
+                                                              .colorClass
                                                 }`}
                                             >
                                                 {loading.activities
                                                     ? 'Analyzing...'
-                                                    : activityStats.riskLevel === 'high'
-                                                      ? 'High Risk'
-                                                      : activityStats.riskLevel === 'medium'
-                                                        ? 'Medium Risk'
-                                                        : 'Low Risk'}
+                                                    : getRiskMetadata(activityStats.riskLevel)
+                                                          .label}
                                             </span>
                                         </div>
                                     </div>
@@ -1779,19 +1768,13 @@ export default function AnalysisReportModal({
                                                             Risk Level
                                                         </span>
                                                         <div
-                                                            className={`text-xl font-black uppercase tracking-tight ${
-                                                                activityStats.score > 70
-                                                                    ? 'text-red-500'
-                                                                    : activityStats.score > 30
-                                                                      ? 'text-amber-500'
-                                                                      : 'text-emerald-500'
-                                                            }`}
+                                                            className={`text-xl font-black uppercase tracking-tight ${getRiskMetadata(activityStats.riskLevel).colorClass}`}
                                                         >
-                                                            {activityStats.score > 70
-                                                                ? 'High Risk'
-                                                                : activityStats.score > 30
-                                                                  ? 'Medium Risk'
-                                                                  : 'Low Risk'}
+                                                            {
+                                                                getRiskMetadata(
+                                                                    activityStats.riskLevel
+                                                                ).label
+                                                            }
                                                         </div>
                                                         <div className="text-[9px] text-zinc-600 uppercase font-bold tracking-tight">
                                                             Current Status
@@ -1872,14 +1855,10 @@ export default function AnalysisReportModal({
                                                                         </div>
                                                                         <span
                                                                             className={`text-[8px] font-black uppercase tracking-widest px-2 py-1 rounded-[1px] border ${
-                                                                                activity.severity ===
-                                                                                'high'
-                                                                                    ? 'border-red-500 text-red-500'
-                                                                                    : activity.severity ===
-                                                                                        'medium'
-                                                                                      ? 'border-amber-500 text-amber-500'
-                                                                                      : 'border-emerald-500 text-emerald-500'
-                                                                            }`}
+                                                                                getRiskMetadata(
+                                                                                    activity.severity
+                                                                                ).borderClass
+                                                                            } ${getRiskMetadata(activity.severity).colorClass}`}
                                                                         >
                                                                             {activity.severity}
                                                                             <span className="hidden sm:inline">

@@ -32,6 +32,7 @@ import {
     formatLondonTime,
     formatShortDate,
     calculateActivityStats,
+    getRiskMetadata,
 } from '../utils';
 import ExternalProviderIcon from './shared/ExternalProviderIcon';
 import LoadingSpinner from './shared/LoadingSpinner';
@@ -851,11 +852,7 @@ export default function ShipDetailsSidebar({
                             className={`mt-4 p-4 border flex items-center justify-between gap-4 ${
                                 loading.activities
                                     ? 'bg-zinc-900 border-zinc-800'
-                                    : activityStats.riskLevel === 'high'
-                                      ? 'bg-red-500/5 border-red-500/20'
-                                      : activityStats.riskLevel === 'medium'
-                                        ? 'bg-amber-500/5 border-amber-500/10'
-                                        : 'bg-emerald-500/5 border-emerald-500/10'
+                                    : `${getRiskMetadata(activityStats.riskLevel).bgClass} ${getRiskMetadata(activityStats.riskLevel).softBorderClass}`
                             }`}
                         >
                             <div className="flex items-center gap-3 min-w-0">
@@ -864,11 +861,11 @@ export default function ShipDetailsSidebar({
                                 ) : (
                                     <div
                                         className={`w-8 h-8 rounded-full border flex items-center justify-center text-[10px] font-black ${
-                                            activityStats.riskLevel === 'high'
-                                                ? 'border-red-500 text-red-500'
-                                                : activityStats.riskLevel === 'medium'
-                                                  ? 'border-amber-500 text-amber-500'
-                                                  : 'border-emerald-500 text-emerald-500'
+                                            getRiskMetadata(
+                                                activityStats.riskLevel
+                                            ).colorClass.replace('text-', 'border-') +
+                                            ' ' +
+                                            getRiskMetadata(activityStats.riskLevel).colorClass
                                         }`}
                                     >
                                         {activityStats.score}
@@ -879,20 +876,13 @@ export default function ShipDetailsSidebar({
                                         className={`text-sm font-black uppercase tracking-tight ${
                                             loading.activities
                                                 ? 'text-zinc-500'
-                                                : activityStats.riskLevel === 'high'
-                                                  ? 'text-red-500'
-                                                  : activityStats.riskLevel === 'medium'
-                                                    ? 'text-amber-500'
-                                                    : 'text-emerald-500'
+                                                : getRiskMetadata(activityStats.riskLevel)
+                                                      .colorClass
                                         }`}
                                     >
                                         {loading.activities
                                             ? 'Analyzing...'
-                                            : activityStats.riskLevel === 'high'
-                                              ? 'High Risk'
-                                              : activityStats.riskLevel === 'medium'
-                                                ? 'Medium Risk'
-                                                : 'Low Risk'}
+                                            : getRiskMetadata(activityStats.riskLevel).label}
                                     </div>
                                     <div className="text-[10px] text-zinc-500 font-bold uppercase tracking-tight">
                                         {loading.activities
