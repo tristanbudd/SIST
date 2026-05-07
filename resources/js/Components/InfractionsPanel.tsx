@@ -53,6 +53,7 @@ export default function InfractionsPanel({
     const [currentPage, setCurrentPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
     const [totalVessels, setTotalVessels] = useState(0);
+    const [checkingVesselMmsi, setCheckingVesselMmsi] = useState<number | null>(null);
     const ITEMS_PER_PAGE = 20;
 
     const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -143,19 +144,27 @@ export default function InfractionsPanel({
         return set;
     }, [trackedVessels]);
 
-    const handleVesselClick = (vessel: InfractionVessel) => {
-        if (onVesselSelect) {
-            onVesselSelect({
-                mmsi: vessel.mmsi,
-                imo: vessel.imo || undefined,
-                name: vessel.name,
-                lat: vessel.lat,
-                lng: vessel.lng,
-                course: vessel.course,
-            });
-        }
-        if (onNavigate) {
-            onNavigate(vessel.lat, vessel.lng, 14);
+    const handleVesselClick = async (vessel: InfractionVessel) => {
+        setCheckingVesselMmsi(vessel.mmsi);
+        try {
+            // Artificial delay to match the "intelligence verification" feel of the sanctions panel
+            await new Promise((resolve) => setTimeout(resolve, 600));
+
+            if (onVesselSelect) {
+                onVesselSelect({
+                    mmsi: vessel.mmsi,
+                    imo: vessel.imo || undefined,
+                    name: vessel.name,
+                    lat: vessel.lat,
+                    lng: vessel.lng,
+                    course: vessel.course,
+                });
+            }
+            if (onNavigate) {
+                onNavigate(vessel.lat, vessel.lng, 14);
+            }
+        } finally {
+            setCheckingVesselMmsi(null);
         }
     };
 
@@ -288,6 +297,9 @@ export default function InfractionsPanel({
                                                     <span className="text-[8px] bg-zinc-800 text-zinc-400 px-1.5 py-0.5 whitespace-nowrap font-semibold tracking-wider">
                                                         OFFLINE
                                                     </span>
+                                                )}
+                                                {checkingVesselMmsi === vessel.mmsi && (
+                                                    <div className="w-3 h-3 border-2 border-white/20 border-t-white/60 rounded-full animate-spin" />
                                                 )}
                                             </div>
                                             <div className="flex items-center gap-2 text-[9px] font-semibold text-zinc-500">
