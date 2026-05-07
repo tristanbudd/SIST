@@ -58,6 +58,7 @@ export default function InfractionsPanel({
     const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const panelRef = useRef<HTMLDivElement>(null);
     const listRef = useRef<HTMLDivElement>(null);
+    const abortControllerRef = useRef<AbortController | null>(null);
 
     useEffect(() => {
         if (panelRef.current) {
@@ -74,6 +75,13 @@ export default function InfractionsPanel({
             page: number = 1
         ) => {
             setLoading(true);
+            if (abortControllerRef.current) {
+                abortControllerRef.current.abort();
+            }
+
+            const controller = new AbortController();
+            abortControllerRef.current = controller;
+
             try {
                 const response = await axios.get(`${API_BASE_URL}/vessels/infractions`, {
                     params: {
@@ -83,11 +91,13 @@ export default function InfractionsPanel({
                         per_page: ITEMS_PER_PAGE,
                         page: page,
                     },
+                    signal: controller.signal,
                 });
                 setVessels(response.data.data || []);
                 setTotalPages(response.data.meta?.last_page || 1);
                 setTotalVessels(response.data.meta?.total || 0);
             } catch (error) {
+                if (axios.isCancel(error)) return;
                 console.error('Failed to fetch infractions vessels:', error);
                 setVessels([]);
                 setTotalPages(1);
@@ -110,6 +120,9 @@ export default function InfractionsPanel({
 
         searchTimeoutRef.current = setTimeout(
             () => {
+                if (abortControllerRef.current) {
+                    abortControllerRef.current.abort();
+                }
                 fetchVessels(searchQuery, severityFilter, statusFilter, currentPage);
             },
             searchQuery ? 300 : 0
@@ -117,6 +130,7 @@ export default function InfractionsPanel({
 
         return () => {
             if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
+            if (abortControllerRef.current) abortControllerRef.current.abort();
         };
     }, [searchQuery, severityFilter, statusFilter, isOpen, fetchVessels, currentPage]);
 
@@ -296,11 +310,11 @@ export default function InfractionsPanel({
                                         <div className="text-right whitespace-nowrap flex flex-col items-end gap-1">
                                             <div
                                                 className={`text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-sm border ${
-                                                    vessel.highest_severity === 'high'
-                                                        ? 'bg-red-500/10 text-red-500 border-red-500/20'
-                                                        : vessel.highest_severity === 'medium'
-                                                          ? 'bg-amber-500/10 text-amber-500 border-amber-500/20'
-                                                          : 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'
+                                                    vessel.risk_score >= 75
+                                                        ? 'bg-red-500 border-red-500 text-white'
+                                                        : vessel.risk_score >= 50
+                                                          ? 'bg-amber-500 border-amber-500 text-black'
+                                                          : 'bg-emerald-500 border-emerald-500 text-white'
                                                 }`}
                                             >
                                                 {vessel.infractions_count} INFRACTIONS

@@ -863,12 +863,12 @@ export default function ShipDetailsSidebar({
                                     <LoadingSpinner size="lg" />
                                 ) : (
                                     <div
-                                        className={`w-8 h-8 rounded-full border-2 flex items-center justify-center text-[10px] font-black ${
+                                        className={`w-8 h-8 rounded-full border flex items-center justify-center text-[10px] font-black ${
                                             activityStats.riskLevel === 'high'
-                                                ? 'border-red-500 text-red-500'
+                                                ? 'bg-red-500 border-red-500 text-white'
                                                 : activityStats.riskLevel === 'medium'
-                                                  ? 'border-amber-500 text-amber-500'
-                                                  : 'border-emerald-500 text-emerald-500'
+                                                  ? 'bg-amber-500 border-amber-500 text-black'
+                                                  : 'bg-emerald-500 border-emerald-500 text-white'
                                         }`}
                                     >
                                         {activityStats.score}

@@ -257,11 +257,15 @@ export default function HeaderBar({
     const [remoteVessels, setRemoteVessels] = useState<Vessel[]>([]);
     const [isSearching, setIsSearching] = useState(false);
     const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const abortControllerRef = useRef<AbortController | null>(null);
 
     useEffect(() => {
         if (isSearchEmpty || activeQuery.trim().length < 2) {
             const clearTimer = setTimeout(() => {
                 setIsSearching(false);
+                if (abortControllerRef.current) {
+                    abortControllerRef.current.abort();
+                }
                 setRemoteVessels([]);
             }, 0);
             return () => clearTimeout(clearTimer);
@@ -273,9 +277,16 @@ export default function HeaderBar({
 
         const startTimer = setTimeout(() => setIsSearching(true), 0);
         searchTimeoutRef.current = setTimeout(async () => {
+            if (abortControllerRef.current) {
+                abortControllerRef.current.abort();
+            }
+            const controller = new AbortController();
+            abortControllerRef.current = controller;
+
             try {
                 const res = await axios.get(`${API_BASE_URL}/vessels/search`, {
                     params: { q: activeQuery.trim() },
+                    signal: controller.signal,
                 });
 
                 const fetched = res.data.data || [];
@@ -305,9 +316,12 @@ export default function HeaderBar({
                 );
                 setRemoteVessels(parsed);
             } catch (err) {
+                if (axios.isCancel(err)) return;
                 console.error('Failed to search remote vessels', err);
             } finally {
-                setIsSearching(false);
+                if (!controller.signal.aborted) {
+                    setIsSearching(false);
+                }
             }
         }, 400);
 
@@ -315,6 +329,9 @@ export default function HeaderBar({
             clearTimeout(startTimer);
             if (searchTimeoutRef.current) {
                 clearTimeout(searchTimeoutRef.current);
+            }
+            if (abortControllerRef.current) {
+                abortControllerRef.current.abort();
             }
         };
     }, [activeQuery, isSearchEmpty]);
