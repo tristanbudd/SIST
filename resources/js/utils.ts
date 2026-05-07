@@ -171,3 +171,43 @@ export function calculateActivityStats(activities: VesselActivity[]) {
 
     return { total, highRiskCount, score, riskLevel };
 }
+
+/**
+ * Returns visual metadata (labels, colors) for a risk level to ensure UI consistency.
+ */
+export function getRiskMetadata(level: 'low' | 'medium' | 'high') {
+    switch (level) {
+        case 'high':
+            return {
+                label: 'High Risk',
+                colorClass: 'text-red-500',
+                borderClass: 'border-red-500',
+                bgClass: 'bg-red-500/5',
+                softBorderClass: 'border-red-500/10',
+            };
+        case 'medium':
+            return {
+                label: 'Medium Risk',
+                colorClass: 'text-amber-500',
+                borderClass: 'border-amber-500',
+                bgClass: 'bg-amber-500/5',
+                softBorderClass: 'border-amber-500/10',
+            };
+        case 'low':
+            return {
+                label: 'Low Risk',
+                colorClass: 'text-emerald-500',
+                borderClass: 'border-emerald-500',
+                bgClass: 'bg-emerald-500/5',
+                softBorderClass: 'border-emerald-500/10',
+            };
+        default:
+            return {
+                label: 'Unknown',
+                colorClass: 'text-zinc-500',
+                borderClass: 'border-zinc-500',
+                bgClass: 'bg-zinc-500/5',
+                softBorderClass: 'border-zinc-500/10',
+            };
+    }
+}

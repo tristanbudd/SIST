@@ -4,7 +4,7 @@ import axios from 'axios';
 import L from 'leaflet';
 import { API_BASE_URL } from '../constants';
 import { Vessel as MapVessel } from './MapDisplay';
-import { getRiskLevel } from '../utils';
+import { getRiskLevel, getRiskMetadata } from '../utils';
 
 interface InfractionVessel {
     mmsi: number;
@@ -219,26 +219,34 @@ export default function InfractionsPanel({
 
                             <div className="flex flex-col gap-2">
                                 <div className="flex bg-zinc-950 border border-white/20 divide-x divide-white/10 overflow-hidden w-full">
-                                    {(['low', 'medium', 'high'] as const).map((sev) => (
-                                        <button
-                                            key={sev}
-                                            onClick={() => {
-                                                if (severityFilter !== sev) {
-                                                    setVessels([]);
-                                                    setLoading(true);
-                                                }
-                                                setSeverityFilter(sev);
-                                                setCurrentPage(1);
-                                            }}
-                                            className={`flex-1 text-[9px] font-bold uppercase tracking-widest px-2 py-2 transition-all ${
-                                                severityFilter === sev
-                                                    ? 'bg-zinc-800 text-white'
-                                                    : 'bg-transparent text-zinc-500 hover:bg-white/5 hover:text-zinc-300'
-                                            }`}
-                                        >
-                                            {sev}
-                                        </button>
-                                    ))}
+                                    {(['low', 'medium', 'high'] as const).map((sev) => {
+                                        const meta = getRiskMetadata(sev);
+                                        return (
+                                            <button
+                                                key={sev}
+                                                onClick={() => {
+                                                    if (severityFilter !== sev) {
+                                                        setVessels([]);
+                                                        setLoading(true);
+                                                    }
+                                                    setSeverityFilter(sev);
+                                                    setCurrentPage(1);
+                                                }}
+                                                className={`flex-1 text-[9px] font-bold uppercase tracking-widest px-2 py-3 transition-all relative ${
+                                                    severityFilter === sev
+                                                        ? meta.colorClass
+                                                        : 'bg-transparent text-zinc-500 hover:bg-white/5 hover:text-zinc-300'
+                                                }`}
+                                            >
+                                                {sev}
+                                                {severityFilter === sev && (
+                                                    <div
+                                                        className={`absolute bottom-0 left-0 right-0 h-0.5 ${meta.colorClass.replace('text-', 'bg-')}`}
+                                                    />
+                                                )}
+                                            </button>
+                                        );
+                                    })}
                                 </div>
                                 <div className="flex bg-zinc-950 border border-white/20 divide-x divide-white/10 overflow-hidden w-full">
                                     {(['all', 'online', 'offline'] as const).map((status) => (
@@ -336,13 +344,9 @@ export default function InfractionsPanel({
                                         <div className="text-right whitespace-nowrap flex flex-col items-end gap-1">
                                             <div
                                                 className={`text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-sm border ${
-                                                    getRiskLevel(vessel.risk_score) === 'high'
-                                                        ? 'border-red-500 text-red-500'
-                                                        : getRiskLevel(vessel.risk_score) ===
-                                                            'medium'
-                                                          ? 'border-amber-500 text-amber-500'
-                                                          : 'border-emerald-500 text-emerald-500'
-                                                }`}
+                                                    getRiskMetadata(getRiskLevel(vessel.risk_score))
+                                                        .borderClass
+                                                } ${getRiskMetadata(getRiskLevel(vessel.risk_score)).colorClass}`}
                                             >
                                                 {vessel.infractions_count} INFRACTIONS
                                             </div>
@@ -350,12 +354,9 @@ export default function InfractionsPanel({
                                                 RISK SCORE:{' '}
                                                 <span
                                                     className={
-                                                        getRiskLevel(vessel.risk_score) === 'high'
-                                                            ? 'text-red-500'
-                                                            : getRiskLevel(vessel.risk_score) ===
-                                                                'medium'
-                                                              ? 'text-amber-500'
-                                                              : 'text-emerald-500'
+                                                        getRiskMetadata(
+                                                            getRiskLevel(vessel.risk_score)
+                                                        ).colorClass
                                                     }
                                                 >
                                                     {vessel.risk_score}
