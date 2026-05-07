@@ -541,9 +541,10 @@ export default function AnalysisReportModal({
                                             tab.id === 'sanctions'
                                                 ? 'bg-red-500 text-white'
                                                 : tab.id === 'activity'
-                                                  ? getRiskMetadata(activityStats.riskLevel)
-                                                        .colorClass.replace('text-', 'bg-')
-                                                        .replace('-500', '-600') + ' text-white'
+                                                  ? getRiskMetadata(
+                                                        activityStats.riskLevel
+                                                    ).colorClass.replace('text-', 'bg-') +
+                                                    ' text-white'
                                                   : 'bg-white text-zinc-950'
                                         }`}
                                     >
