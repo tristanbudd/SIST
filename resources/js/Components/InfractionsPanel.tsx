@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { FaEye, FaXmark, FaMagnifyingGlass, FaChevronLeft, FaChevronRight } from 'react-icons/fa6';
 import axios from 'axios';
 import L from 'leaflet';
@@ -16,6 +16,7 @@ interface InfractionVessel {
     infractions_count: number;
     highest_severity: 'low' | 'medium' | 'high';
     risk_score: number;
+    last_seen_at: string;
 }
 
 interface InfractionsPanelProps {
@@ -26,7 +27,6 @@ interface InfractionsPanelProps {
     onOpen?: () => void;
     onClose?: () => void;
     hideTrigger?: boolean;
-    trackedVessels?: MapVessel[];
     isCompact?: boolean;
 }
 
@@ -38,7 +38,6 @@ export default function InfractionsPanel({
     onOpen,
     onClose,
     hideTrigger = false,
-    trackedVessels = [],
     isCompact = false,
 }: InfractionsPanelProps) {
     const [isOpenInternal, setIsOpenInternal] = useState(false);
@@ -47,7 +46,7 @@ export default function InfractionsPanel({
     const closePanel = onClose ?? (() => setIsOpenInternal(false));
 
     const [searchQuery, setSearchQuery] = useState('');
-    const [severityFilter, setSeverityFilter] = useState<'all' | 'low' | 'medium' | 'high'>('all');
+    const [severityFilter, setSeverityFilter] = useState<'low' | 'medium' | 'high'>('high');
     const [statusFilter, setStatusFilter] = useState<'all' | 'online' | 'offline'>('all');
     const [vessels, setVessels] = useState<InfractionVessel[]>([]);
     const [loading, setLoading] = useState(false);
@@ -55,6 +54,7 @@ export default function InfractionsPanel({
     const [totalPages, setTotalPages] = useState(1);
     const [totalVessels, setTotalVessels] = useState(0);
     const [checkingVesselMmsi, setCheckingVesselMmsi] = useState<number | null>(null);
+    const [currentTime, setCurrentTime] = useState(() => Date.now());
     const ITEMS_PER_PAGE = 20;
 
     const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -67,6 +67,8 @@ export default function InfractionsPanel({
             L.DomEvent.disableScrollPropagation(panelRef.current);
             L.DomEvent.disableClickPropagation(panelRef.current);
         }
+        const interval = setInterval(() => setCurrentTime(Date.now()), 60000);
+        return () => clearInterval(interval);
     }, [isOpen]);
 
     const fetchVessels = useCallback(
@@ -83,6 +85,10 @@ export default function InfractionsPanel({
 
             const controller = new AbortController();
             abortControllerRef.current = controller;
+
+            if (page === 1) {
+                setVessels([]);
+            }
 
             try {
                 const response = await axios.get(`${API_BASE_URL}/vessels/infractions`, {
@@ -135,20 +141,9 @@ export default function InfractionsPanel({
             if (abortControllerRef.current) abortControllerRef.current.abort();
         };
     }, [searchQuery, severityFilter, statusFilter, isOpen, fetchVessels, currentPage]);
-
-    const onlineMmsis = useMemo(() => {
-        const set = new Set<number>();
-        trackedVessels.forEach((v) => {
-            const val = Number(v.mmsi);
-            if (!isNaN(val)) set.add(val);
-        });
-        return set;
-    }, [trackedVessels]);
-
     const handleVesselClick = async (vessel: InfractionVessel) => {
         setCheckingVesselMmsi(vessel.mmsi);
         try {
-            // Artificial delay to match the "intelligence verification" feel of the sanctions panel
             await new Promise((resolve) => setTimeout(resolve, 600));
 
             if (onVesselSelect) {
@@ -224,10 +219,11 @@ export default function InfractionsPanel({
 
                             <div className="flex flex-col gap-2">
                                 <div className="flex bg-zinc-950 border border-white/20 divide-x divide-white/10 overflow-hidden w-full">
-                                    {(['all', 'low', 'medium', 'high'] as const).map((sev) => (
+                                    {(['low', 'medium', 'high'] as const).map((sev) => (
                                         <button
                                             key={sev}
                                             onClick={() => {
+                                                if (severityFilter !== sev) setVessels([]);
                                                 setSeverityFilter(sev);
                                                 setCurrentPage(1);
                                             }}
@@ -246,6 +242,7 @@ export default function InfractionsPanel({
                                         <button
                                             key={status}
                                             onClick={() => {
+                                                if (statusFilter !== status) setVessels([]);
                                                 setStatusFilter(status);
                                                 setCurrentPage(1);
                                             }}
@@ -278,7 +275,9 @@ export default function InfractionsPanel({
 
                         <div className="space-y-1">
                             {vessels.map((vessel) => {
-                                const isOnline = onlineMmsis.has(vessel.mmsi);
+                                const isOnline =
+                                    new Date(vessel.last_seen_at).getTime() >=
+                                    currentTime - 15 * 60 * 1000;
                                 return (
                                     <button
                                         key={vessel.mmsi}
