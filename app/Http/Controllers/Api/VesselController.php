@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Vessel;
 use App\Models\VesselPosition;
 use App\Services\SanctionsService;
+use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -648,7 +649,14 @@ class VesselController extends Controller
             ->where('vessel_activities.started_at', '>=', $cutoff);
 
         if ($severity && $severity !== 'all') {
-            $query->where('vessel_activities.severity', $severity);
+            if ($severity === 'high') {
+                $query->havingRaw("SUM(CASE WHEN vessel_activities.severity = 'high' THEN 10 WHEN vessel_activities.severity = 'medium' THEN 3 ELSE 1 END) >= 75");
+            } elseif ($severity === 'medium') {
+                $query->havingRaw("SUM(CASE WHEN vessel_activities.severity = 'high' THEN 10 WHEN vessel_activities.severity = 'medium' THEN 3 ELSE 1 END) >= 50");
+                $query->havingRaw("SUM(CASE WHEN vessel_activities.severity = 'high' THEN 10 WHEN vessel_activities.severity = 'medium' THEN 3 ELSE 1 END) < 75");
+            } elseif ($severity === 'low') {
+                $query->havingRaw("SUM(CASE WHEN vessel_activities.severity = 'high' THEN 10 WHEN vessel_activities.severity = 'medium' THEN 3 ELSE 1 END) < 50");
+            }
         }
 
         if ($search) {
@@ -660,7 +668,7 @@ class VesselController extends Controller
         }
 
         if ($status && $status !== 'all') {
-            $onlineThreshold = now()->subMinutes(5);
+            $onlineThreshold = now()->subMinutes(15);
             if ($status === 'online') {
                 $query->where('vessels.last_seen_at', '>=', $onlineThreshold);
             } elseif ($status === 'offline') {
@@ -699,6 +707,7 @@ class VesselController extends Controller
                 'lat' => (float) $vessel->lat,
                 'lng' => (float) $vessel->lng,
                 'course' => (float) $vessel->course,
+                'last_seen_at' => Carbon::parse($vessel->last_seen_at)->toIso8601String(),
                 'infractions_count' => (int) $vessel->activities_count,
                 'highest_severity' => $highestSeverity,
                 'risk_score' => min(100, (int) $vessel->raw_score),
