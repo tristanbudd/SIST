@@ -147,6 +147,7 @@ export default function Index() {
     const [showVessels, setShowVessels] = useState(true);
     const [showPorts, setShowPorts] = useState(false);
     const [showCities, setShowCities] = useState(false);
+    const [showPois, setShowPois] = useState(true);
     const [isSearchActive, setIsSearchActive] = useState(false);
 
     return (
@@ -226,6 +227,8 @@ export default function Index() {
                 setShowPorts={setShowPorts}
                 showCities={showCities}
                 setShowCities={setShowCities}
+                showPois={showPois}
+                setShowPois={setShowPois}
             />
             <ShipDetailsSidebar
                 vessel={selectedVessel}
@@ -266,6 +269,8 @@ export default function Index() {
                 setShowPorts={setShowPorts}
                 showCities={showCities}
                 setShowCities={setShowCities}
+                showPois={showPois}
+                setShowPois={setShowPois}
                 isSearchActive={isSearchActive}
                 trackedVessels={trackedVessels}
             />

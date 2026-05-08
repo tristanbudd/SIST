@@ -7,6 +7,8 @@ interface LayerControlProps {
     setShowPorts: (v: boolean) => void;
     showCities: boolean;
     setShowCities: (v: boolean) => void;
+    showPois: boolean;
+    setShowPois: (v: boolean) => void;
     isOpen: boolean;
     onClose: () => void;
 }
@@ -18,6 +20,8 @@ export default function LayerControl({
     setShowPorts,
     showCities,
     setShowCities,
+    showPois,
+    setShowPois,
     isOpen,
     onClose,
 }: LayerControlProps) {
@@ -78,7 +82,6 @@ export default function LayerControl({
                                 />
                             </div>
                         </button>
-
                         <button
                             onClick={() => setShowCities(!showCities)}
                             className="flex items-center justify-between group cursor-pointer"
@@ -93,6 +96,24 @@ export default function LayerControl({
                             >
                                 <div
                                     className={`absolute top-0.5 bottom-0.5 w-3 transition-all ${showCities ? 'right-0.5 bg-black' : 'left-0.5 bg-zinc-800'}`}
+                                />
+                            </div>
+                        </button>
+
+                        <button
+                            onClick={() => setShowPois(!showPois)}
+                            className="flex items-center justify-between group cursor-pointer"
+                        >
+                            <span
+                                className={`text-[11px] font-bold uppercase tracking-wider transition-colors ${showPois ? 'text-white' : 'text-zinc-600'}`}
+                            >
+                                Ports of Interest
+                            </span>
+                            <div
+                                className={`w-8 h-4 border transition-colors relative ${showPois ? 'bg-white border-white' : 'border-zinc-800 bg-transparent'}`}
+                            >
+                                <div
+                                    className={`absolute top-0.5 bottom-0.5 w-3 transition-all ${showPois ? 'right-0.5 bg-black' : 'left-0.5 bg-zinc-800'}`}
                                 />
                             </div>
                         </button>
@@ -135,6 +156,14 @@ export default function LayerControl({
                             </div>
                             <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-tight">
                                 City / Town
+                            </span>
+                        </div>
+                        <div className="flex items-center gap-3">
+                            <div className="w-5 h-5 bg-zinc-900 border border-white/10 flex items-center justify-center">
+                                <div className="w-2.5 h-2.5 rounded-full border border-red-500 shadow-[0_0_8px_rgba(239,68,68,0.4)]" />
+                            </div>
+                            <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-tight">
+                                Port of Interest (POI)
                             </span>
                         </div>
                     </div>

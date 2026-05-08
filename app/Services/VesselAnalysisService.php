@@ -13,6 +13,9 @@ use Illuminate\Support\Facades\Log;
 
 class VesselAnalysisService
 {
+    /** @var array|null */
+    private $monitoredZones = null;
+
     /**
      * Perform behavioral analysis on vessels with pending updates.
      *
@@ -50,8 +53,9 @@ class VesselAnalysisService
             Vessel::query()->update(['last_analyzed_at' => null]);
         });
 
-        Vessel::chunk(100, function ($vessels) {
+        Vessel::query()->chunk(100, function ($vessels) {
             foreach ($vessels as $vessel) {
+                /** @var Vessel $vessel */
                 $this->processVesselMetrics($vessel);
             }
         });
@@ -69,6 +73,7 @@ class VesselAnalysisService
             $this->detectTransmissionGaps($vessel);
             $this->detectLoiteringPatterns($vessel);
             $this->detectKinematicAnomalies($vessel);
+            $this->detectPortInteractions($vessel);
 
             $vessel->update(['last_analyzed_at' => now()]);
             DB::commit();
@@ -202,6 +207,60 @@ class VesselAnalysisService
     }
 
     /**
+     * Detects interactions with monitored ports of interest.
+     */
+    private function detectPortInteractions(Vessel $vessel): void
+    {
+        if ($this->monitoredZones === null) {
+            $path = resource_path('data/ports_of_interest.json');
+            if (file_exists($path)) {
+                $this->monitoredZones = json_decode(file_get_contents($path), true);
+            } else {
+                $this->monitoredZones = [];
+            }
+        }
+
+        if (empty($this->monitoredZones)) {
+            return;
+        }
+
+        $positions = $vessel->positions()
+            ->where('recorded_at', '>=', now()->subDays(30))
+            ->orderBy('recorded_at', 'desc')
+            ->get();
+
+        if ($positions->isEmpty()) {
+            return;
+        }
+
+        foreach ($this->monitoredZones as $zone) {
+            $matchingPositions = $positions->filter(function ($pos) use ($zone) {
+                // Radius of 2km for high accuracy (visit detection)
+                return $this->calculateDistance($pos->lat, $pos->lng, $zone['lat'], $zone['lng']) <= 2.0;
+            });
+
+            // If we have 3 or more points within the radius, it's a high-confidence visit/interaction
+            if ($matchingPositions->count() >= 3) {
+                $start = $matchingPositions->min('recorded_at');
+                $end = $matchingPositions->max('recorded_at');
+                $durationMinutes = $start->diffInMinutes($end);
+
+                // Only flag if they stayed for at least 30 minutes to filter out slow bypasses
+                if ($durationMinutes >= 30) {
+                    $this->persistActivity($vessel, 'port_of_interest', $zone['severity'], [
+                        'port_name' => $zone['name'],
+                        'port_type' => $zone['type'],
+                        'source' => $zone['source'] ?? 'Unknown',
+                        'visit_duration_minutes' => $durationMinutes,
+                        'point_count' => $matchingPositions->count(),
+                        'coordinates' => ['lat' => $zone['lat'], 'lng' => $zone['lng']],
+                    ], $start, $end);
+                }
+            }
+        }
+    }
+
+    /**
      * Logs or updates a detected behavioral event.
      */
     private function persistActivity(
@@ -251,6 +310,7 @@ class VesselAnalysisService
             'ais_gap' => 'AIS transmission interruption detected ('.MaritimeFormatter::formatDuration($details['duration_minutes'] ?? 0).').',
             'loitering' => 'Stationary residency pattern in open-sea transit area.',
             'speed_anomaly' => 'Kinematic violation: speed exceeds physical capability ('.round($details['reported_speed'] ?? 0, 1).' kn).',
+            'port_of_interest' => 'Vessel interaction detected at high-risk maritime hub: '.($details['port_name'] ?? 'Unknown Port').'.',
             default => 'Anomalous behavioral event detected.',
         };
     }

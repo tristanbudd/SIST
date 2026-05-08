@@ -17,6 +17,7 @@ interface InfractionVessel {
     highest_severity: 'low' | 'medium' | 'high';
     risk_score: number;
     last_seen_at: string;
+    source?: string;
 }
 
 interface InfractionsPanelProps {
@@ -337,6 +338,11 @@ export default function InfractionsPanel({
                                                         <span className="text-zinc-400">
                                                             {vessel.imo}
                                                         </span>
+                                                    </span>
+                                                )}
+                                                {vessel.source && (
+                                                    <span className="text-zinc-600 bg-white/5 px-1 rounded-[1px] border border-white/5">
+                                                        SOURCE: {vessel.source.toUpperCase()}
                                                     </span>
                                                 )}
                                             </div>
