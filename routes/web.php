@@ -37,7 +37,6 @@ Route::prefix('api')->middleware('throttle:api')->group(function () {
             Route::get('/{mmsi}/history', [VesselController::class, 'history'])->name('history');
             Route::get('/{mmsi}/sanctions', [VesselController::class, 'checkSanctions'])->name('sanctions');
             Route::get('/{mmsi}/activities', [VesselController::class, 'activities'])->name('activities');
-            Route::get('/ports-of-interest', [VesselController::class, 'portsOfInterest'])->name('ports-of-interest');
         });
     });
 });

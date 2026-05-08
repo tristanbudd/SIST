@@ -73,8 +73,6 @@ interface SanctionedShipsPanelWithToolsProps {
     setShowPorts?: (v: boolean) => void;
     showCities?: boolean;
     setShowCities?: (v: boolean) => void;
-    showPois?: boolean;
-    setShowPois?: (v: boolean) => void;
     isSearchActive?: boolean;
     trackedVessels?: MapVessel[];
 }

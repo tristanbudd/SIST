@@ -908,102 +908,6 @@ function CityLayer() {
     );
 }
 
-interface PortOfInterest {
-    name: string;
-    lat: number;
-    lng: number;
-    severity: 'low' | 'medium' | 'high';
-    type: string;
-}
-
-function PortOfInterestLayer() {
-    const [zones, setZones] = useState<PortOfInterest[]>([]);
-
-    useEffect(() => {
-        axios.get(`${API_BASE_URL}/vessels/ports-of-interest`).then((res) => {
-            setZones(res.data.data || []);
-        });
-    }, []);
-
-    return (
-        <>
-            {zones.map((zone, idx) => (
-                <div key={`${zone.name}-${idx}`}>
-                    <CircleMarker
-                        center={[zone.lat, zone.lng]}
-                        radius={8}
-                        pathOptions={{
-                            color:
-                                zone.severity === 'high'
-                                    ? '#ef4444'
-                                    : zone.severity === 'medium'
-                                      ? '#f59e0b'
-                                      : '#10b981',
-                            fillColor:
-                                zone.severity === 'high'
-                                    ? '#ef4444'
-                                    : zone.severity === 'medium'
-                                      ? '#f59e0b'
-                                      : '#10b981',
-                            fillOpacity: 0.1,
-                            weight: 1,
-                        }}
-                    />
-                    <Marker
-                        position={[zone.lat, zone.lng]}
-                        icon={L.divIcon({
-                            className: 'poi-icon',
-                            html: renderToString(
-                                <div className="relative flex items-center justify-center">
-                                    <div
-                                        className={`w-2 h-2 rounded-full border border-white/50 ${zone.severity === 'high' ? 'bg-red-500 shadow-[0_0_10px_#ef4444]' : zone.severity === 'medium' ? 'bg-amber-500 shadow-[0_0_10px_#f59e0b]' : 'bg-emerald-500 shadow-[0_0_10px_#10b981]'}`}
-                                    />
-                                </div>
-                            ),
-                            iconSize: [20, 20],
-                            iconAnchor: [10, 10],
-                        })}
-                    >
-                        <Popup closeButton={false}>
-                            <div className="bg-zinc-950 border border-white/20 p-4 min-w-50 shadow-2xl">
-                                <div className="flex flex-col gap-1 border-b border-white/10 pb-2 mb-2">
-                                    <span
-                                        className={`text-[10px] font-black uppercase tracking-[0.2em] ${zone.severity === 'high' ? 'text-red-500' : zone.severity === 'medium' ? 'text-amber-500' : 'text-emerald-500'}`}
-                                    >
-                                        Port of Interest
-                                    </span>
-                                    <span className="text-xs font-bold text-white uppercase tracking-wider">
-                                        {zone.name}
-                                    </span>
-                                </div>
-                                <div className="flex flex-col gap-2">
-                                    <div className="flex flex-col gap-0.5">
-                                        <span className="text-[8px] text-zinc-600 uppercase font-black">
-                                            Classification
-                                        </span>
-                                        <span className="text-[10px] font-bold text-zinc-300">
-                                            {zone.type}
-                                        </span>
-                                    </div>
-                                    <div className="flex flex-col gap-0.5">
-                                        <span className="text-[8px] text-zinc-600 uppercase font-black">
-                                            Threat Level
-                                        </span>
-                                        <span
-                                            className={`text-[10px] font-bold uppercase ${zone.severity === 'high' ? 'text-red-500' : zone.severity === 'medium' ? 'text-amber-500' : 'text-emerald-500'}`}
-                                        >
-                                            {zone.severity} Severity
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
-                        </Popup>
-                    </Marker>
-                </div>
-            ))}
-        </>
-    );
-}
 
 function ZoomControls() {
     const map = useMap();
@@ -1077,8 +981,6 @@ interface MapDisplayProps {
     setShowPorts: (v: boolean) => void;
     showCities: boolean;
     setShowCities: (v: boolean) => void;
-    showPois: boolean;
-    setShowPois: (v: boolean) => void;
 }
 
 export default function MapDisplay({
@@ -1110,8 +1012,6 @@ export default function MapDisplay({
     setShowPorts,
     showCities,
     setShowCities,
-    showPois,
-    setShowPois,
 }: MapDisplayProps) {
     const [isCompact, setIsCompact] = useState(
         typeof window !== 'undefined' ? window.innerWidth < 640 || window.innerHeight < 840 : false
@@ -1146,7 +1046,6 @@ export default function MapDisplay({
 
                 {showPorts && <PortLayer />}
                 {showCities && <CityLayer />}
-                {showPois && <PortOfInterestLayer />}
                 <FleetLayer
                     onUpdate={onFleetUpdate}
                     selectedMmsi={selectedMmsi}
@@ -1182,8 +1081,6 @@ export default function MapDisplay({
                                 setShowPorts={setShowPorts}
                                 showCities={showCities}
                                 setShowCities={setShowCities}
-                                showPois={showPois}
-                                setShowPois={setShowPois}
                                 isOpen={isLayersOpen}
                                 onClose={() => onLayersOpenChange(false)}
                             />
