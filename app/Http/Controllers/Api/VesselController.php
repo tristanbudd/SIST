@@ -624,7 +624,19 @@ class VesselController extends Controller
 
         $data = $activities->map(function ($activity) {
             $details = $activity->details;
-            $source = $details['source'] ?? 'FleetLeaks';
+            $source = null;
+
+            if ($activity->type === 'port_of_interest') {
+                static $poiData = null;
+                if ($poiData === null) {
+                    $path = resource_path('data/ports_of_interest.json');
+                    $poiData = file_exists($path) ? json_decode(file_get_contents($path), true) : [];
+                }
+
+                $portName = $details['port_name'] ?? null;
+                $matchingPoi = collect($poiData)->firstWhere('name', $portName);
+                $source = $matchingPoi['source'] ?? ($details['source'] ?? 'FleetLeaks');
+            }
 
             return [
                 'id' => $activity->id,
@@ -756,7 +768,6 @@ class VesselController extends Controller
                 'infractions_count' => (int) $vessel->activities_count,
                 'highest_severity' => $highestSeverity,
                 'risk_score' => min(100, (int) $vessel->raw_score),
-                'source' => 'FleetLeaks',
             ];
         });
 
