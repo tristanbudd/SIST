@@ -95,7 +95,6 @@ export default function LayerControl({
                                 />
                             </div>
                         </button>
-
                     </div>
                 </div>
 
