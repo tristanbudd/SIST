@@ -55,6 +55,7 @@ interface AnalysisReportModalProps {
     history: HistoryPosition[];
     activities: VesselActivity[];
     isOffline: boolean;
+    onNavigate?: (lat: number, lng: number, zoom: number) => void;
     initialTab?: TabType;
     loading?: {
         details: boolean;
@@ -229,6 +230,7 @@ export default function AnalysisReportModal({
     history = [],
     activities = [],
     isOffline = false,
+    onNavigate,
     initialTab,
     loading = {
         details: false,
@@ -1885,97 +1887,46 @@ export default function AnalysisReportModal({
                                                                     </div>
 
                                                                     <p className="text-[11px] text-zinc-400 font-medium leading-relaxed mb-4">
-                                                                        {activity.description.replace(
-                                                                            /\(([\d.]+)\s*(?:min|minutes)\)/g,
-                                                                            (match, minutes) => {
-                                                                                const totalSeconds =
-                                                                                    Math.round(
+                                                                        {activity.description
+                                                                            .split(
+                                                                                /(\[[\d.-]+,\s*[\d.-]+\])/g
+                                                                            )
+                                                                            .map((part, i) => {
+                                                                                const match =
+                                                                                    part.match(
+                                                                                        /\[([\d.-]+),\s*([\d.-]+)\]/
+                                                                                    );
+                                                                                if (
+                                                                                    match &&
+                                                                                    onNavigate
+                                                                                ) {
+                                                                                    const lat =
                                                                                         parseFloat(
-                                                                                            minutes
-                                                                                        ) * 60
+                                                                                            match[1]
+                                                                                        );
+                                                                                    const lng =
+                                                                                        parseFloat(
+                                                                                            match[2]
+                                                                                        );
+                                                                                    return (
+                                                                                        <button
+                                                                                            key={i}
+                                                                                            onClick={() => {
+                                                                                                onNavigate(
+                                                                                                    lat,
+                                                                                                    lng,
+                                                                                                    14
+                                                                                                );
+                                                                                                onClose();
+                                                                                            }}
+                                                                                            className="text-zinc-200 hover:text-white underline decoration-zinc-500 hover:decoration-white font-mono transition-colors"
+                                                                                        >
+                                                                                            {part}
+                                                                                        </button>
                                                                                     );
-
-                                                                                if (
-                                                                                    totalSeconds <
-                                                                                    60
-                                                                                )
-                                                                                    return `(${totalSeconds} seconds)`;
-                                                                                if (
-                                                                                    totalSeconds <
-                                                                                    3600
-                                                                                ) {
-                                                                                    const m =
-                                                                                        Math.floor(
-                                                                                            totalSeconds /
-                                                                                                60
-                                                                                        );
-                                                                                    return `(${m} minute${m !== 1 ? 's' : ''})`;
                                                                                 }
-                                                                                if (
-                                                                                    totalSeconds <
-                                                                                    86400
-                                                                                ) {
-                                                                                    const h =
-                                                                                        Math.floor(
-                                                                                            totalSeconds /
-                                                                                                3600
-                                                                                        );
-                                                                                    const m =
-                                                                                        Math.floor(
-                                                                                            (totalSeconds %
-                                                                                                3600) /
-                                                                                                60
-                                                                                        );
-                                                                                    return `(${h} hour${h !== 1 ? 's' : ''}${m > 0 ? `, ${m} minute${m !== 1 ? 's' : ''}` : ''})`;
-                                                                                }
-                                                                                if (
-                                                                                    totalSeconds <
-                                                                                    2592000
-                                                                                ) {
-                                                                                    const d =
-                                                                                        Math.floor(
-                                                                                            totalSeconds /
-                                                                                                86400
-                                                                                        );
-                                                                                    const h =
-                                                                                        Math.floor(
-                                                                                            (totalSeconds %
-                                                                                                86400) /
-                                                                                                3600
-                                                                                        );
-                                                                                    return `(${d} day${d !== 1 ? 's' : ''}${h > 0 ? `, ${h} hour${h !== 1 ? 's' : ''}` : ''})`;
-                                                                                }
-                                                                                if (
-                                                                                    totalSeconds <
-                                                                                    31536000
-                                                                                ) {
-                                                                                    const mo =
-                                                                                        Math.floor(
-                                                                                            totalSeconds /
-                                                                                                2592000
-                                                                                        );
-                                                                                    const d =
-                                                                                        Math.floor(
-                                                                                            (totalSeconds %
-                                                                                                2592000) /
-                                                                                                86400
-                                                                                        );
-                                                                                    return `(${mo} month${mo !== 1 ? 's' : ''}${d > 0 ? `, ${d} day${d !== 1 ? 's' : ''}` : ''})`;
-                                                                                }
-                                                                                const y =
-                                                                                    Math.floor(
-                                                                                        totalSeconds /
-                                                                                            31536000
-                                                                                    );
-                                                                                const mo =
-                                                                                    Math.floor(
-                                                                                        (totalSeconds %
-                                                                                            31536000) /
-                                                                                            2592000
-                                                                                    );
-                                                                                return `(${y} year${y !== 1 ? 's' : ''}${mo > 0 ? `, ${mo} month${mo !== 1 ? 's' : ''}` : ''})`;
-                                                                            }
-                                                                        )}
+                                                                                return part;
+                                                                            })}
                                                                     </p>
 
                                                                     {activity.details && (
@@ -2088,10 +2039,17 @@ export default function AnalysisReportModal({
                                                                                                     1
                                                                                                 )
                                                                                               : typeof value ===
-                                                                                                  'object'
-                                                                                                ? JSON.stringify(
+                                                                                                      'object' &&
+                                                                                                  value !==
+                                                                                                      null
+                                                                                                ? 'lat' in
+                                                                                                      value &&
+                                                                                                  'lng' in
                                                                                                       value
-                                                                                                  )
+                                                                                                    ? `${(value as { lat: number; lng: number }).lat}, ${(value as { lat: number; lng: number }).lng}`
+                                                                                                    : JSON.stringify(
+                                                                                                          value
+                                                                                                      )
                                                                                                 : String(
                                                                                                       value
                                                                                                   );
@@ -2109,11 +2067,43 @@ export default function AnalysisReportModal({
                                                                                                     ' '
                                                                                                 )}
                                                                                             </span>
-                                                                                            <span className="text-[10px] text-zinc-400 font-mono">
-                                                                                                {
-                                                                                                    displayValue
-                                                                                                }
-                                                                                            </span>
+                                                                                            {onNavigate &&
+                                                                                            typeof value ===
+                                                                                                'object' &&
+                                                                                            value !==
+                                                                                                null &&
+                                                                                            'lat' in
+                                                                                                value &&
+                                                                                            'lng' in
+                                                                                                value ? (
+                                                                                                <button
+                                                                                                    onClick={() => {
+                                                                                                        const coord =
+                                                                                                            value as {
+                                                                                                                lat: number;
+                                                                                                                lng: number;
+                                                                                                            };
+                                                                                                        onNavigate(
+                                                                                                            coord.lat,
+                                                                                                            coord.lng,
+                                                                                                            14
+                                                                                                        );
+                                                                                                        onClose();
+                                                                                                    }}
+                                                                                                    className="text-[10px] text-zinc-400 font-mono hover:text-white transition-colors flex items-center gap-1 group/coord text-left"
+                                                                                                >
+                                                                                                    {
+                                                                                                        displayValue
+                                                                                                    }
+                                                                                                    <FaArrowUpRightFromSquare className="w-2 h-2 text-zinc-600 group-hover/coord:text-zinc-400 transition-colors" />
+                                                                                                </button>
+                                                                                            ) : (
+                                                                                                <span className="text-[10px] text-zinc-400 font-mono">
+                                                                                                    {
+                                                                                                        displayValue
+                                                                                                    }
+                                                                                                </span>
+                                                                                            )}
                                                                                         </div>
                                                                                     );
                                                                                 }

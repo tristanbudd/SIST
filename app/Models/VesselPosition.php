@@ -2,9 +2,20 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 
+/**
+ * @property int $mmsi
+ * @property float $lat
+ * @property float $lng
+ * @property float|null $speed
+ * @property float|null $course
+ * @property int|null $heading
+ * @property int|null $navigational_status
+ * @property Carbon $recorded_at
+ */
 class VesselPosition extends Model
 {
     protected $guarded = [];

@@ -340,11 +340,6 @@ export default function InfractionsPanel({
                                                         </span>
                                                     </span>
                                                 )}
-                                                {vessel.source && (
-                                                    <span className="text-zinc-600 bg-white/5 px-1 rounded-[1px] border border-white/5">
-                                                        SOURCE: {vessel.source.toUpperCase()}
-                                                    </span>
-                                                )}
                                             </div>
                                         </div>
                                         <div className="text-right whitespace-nowrap flex flex-col items-end gap-1">
