@@ -495,7 +495,7 @@ class VesselController extends Controller
         $search = strtolower($request->input('search', ''));
         $limit = min((int) $request->input('limit', 100), 500);
 
-        $sanctioned = [];
+        $sanctionedData = [];
         $count = 0;
 
         foreach ($vessels as $vessel) {
@@ -505,6 +505,34 @@ class VesselController extends Controller
                 continue;
             }
 
+            $sanctionedData[] = $vessel;
+
+            $count++;
+            if ($count >= $limit) {
+                break;
+            }
+        }
+
+        if (empty($sanctionedData)) {
+            return response()->json([
+                'message' => 'No sanctioned vessels found in the current records.',
+            ], 404);
+        }
+
+        // Pre-fetch local vessel data to cross-reference ONLY for the limited result set
+        $mmsis = collect($sanctionedData)->pluck('mmsi')->filter()->toArray();
+        $imos = collect($sanctionedData)->pluck('imo')->filter()->toArray();
+
+        $localVessels = Vessel::whereIn('mmsi', $mmsis)
+            ->orWhereIn('imo', $imos)
+            ->get(['mmsi', 'imo', 'last_seen_at']);
+
+        $localByMmsi = $localVessels->whereNotNull('mmsi')->keyBy('mmsi');
+        $localByImo = $localVessels->whereNotNull('imo')->keyBy('imo');
+
+        $sanctioned = [];
+        foreach ($sanctionedData as $vessel) {
+            $name = $vessel['name'] ?? '';
             $sanctioners = $vessel['sanctioners'] ?? [];
             $sanctions_count = is_array($sanctioners) ? count($sanctioners) : 0;
 
@@ -515,32 +543,33 @@ class VesselController extends Controller
                 $risk_level = 'low';
             }
 
+            $mmsi = isset($vessel['mmsi']) ? (int) $vessel['mmsi'] : null;
+            $imo = isset($vessel['imo']) ? (int) $vessel['imo'] : null;
+
+            $localMatch = null;
+            if ($mmsi && isset($localByMmsi[$mmsi])) {
+                $localMatch = $localByMmsi[$mmsi];
+            } elseif ($imo && isset($localByImo[$imo])) {
+                $localMatch = $localByImo[$imo];
+            }
+
             // Using fleetleaks data to construct standardized response
             $sanctioned[] = [
                 'id' => $vessel['id'] ?? null,
-                'mmsi' => isset($vessel['mmsi']) ? (int) $vessel['mmsi'] : (int) ($vessel['imo'] ?? 0), // fallback for matching
-                'imo' => isset($vessel['imo']) ? (int) $vessel['imo'] : null,
+                'mmsi' => $mmsi ?: (int) ($vessel['imo'] ?? 0), // fallback for matching
+                'imo' => $imo,
                 'name' => $name,
                 'lat' => (float) ($vessel['latitude'] ?? 0),
                 'lng' => (float) ($vessel['longitude'] ?? 0),
                 'course' => (float) ($vessel['course_degrees'] ?? 0),
-                'last_seen_at' => $vessel['location_last_updated'] ?? now()->toIso8601String(),
+                'last_seen_at' => $vessel['location_last_updated'] ?? null,
+                'sist_last_seen_at' => $localMatch ? $localMatch->last_seen_at?->toIso8601String() : null,
+                'in_sist' => ! is_null($localMatch),
                 'is_sanctioned' => true,
                 'risk_level' => $risk_level,
                 'sanctions_count' => $sanctions_count,
                 'sanctioners' => $sanctioners,
             ];
-
-            $count++;
-            if ($count >= $limit) {
-                break;
-            }
-        }
-
-        if (empty($sanctioned)) {
-            return response()->json([
-                'message' => 'No sanctioned vessels found in the current records.',
-            ], 404);
         }
 
         return response()->json(['data' => $sanctioned]);

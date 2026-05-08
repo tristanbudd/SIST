@@ -3,7 +3,7 @@ WORKDIR /app
 COPY composer.json composer.lock ./
 RUN composer install --no-dev --prefer-dist --no-interaction --no-scripts --optimize-autoloader
 
-FROM node:20-alpine AS frontend_build
+FROM node:22-alpine AS frontend_build
 WORKDIR /app
 COPY package.json pnpm-lock.yaml ./
 RUN corepack enable && pnpm install --frozen-lockfile
