@@ -98,13 +98,28 @@ class VesselAnalysisService
 
             $delta = $current->recorded_at->diffInMinutes($next->recorded_at);
 
-            if ($delta > 360) {
-                // Ignore if vessel is explicitly anchored or moored (safe power down)
-                if (in_array($vessel->navigational_status, [1, 5, 6])) {
+            // Ignore if vessel is explicitly anchored or moored (safe power down)
+            if (in_array($vessel->navigational_status, [1, 5, 6])) {
+                continue;
+            }
+
+            // High-confidence gap: > 12 hours (720 min)
+            // Low-confidence/Noise gap: 4-12 hours (240-720 min)
+            if ($delta >= 240) {
+                $severity = $delta >= 720 ? 'medium' : 'low';
+
+                // Distance check: If the vessel hasn't moved much, it's likely just poor receiver coverage while drifting/stationary
+                $distanceKm = $this->calculateDistance($current->lat, $current->lng, $next->lat, $next->lng);
+                $distanceNm = $distanceKm / 1.852;
+
+                // If moving at less than 1.5 knots effective speed over the gap, it's less suspicious
+                $effectiveSpeed = ($delta > 0) ? ($distanceNm / ($delta / 60)) : 0;
+
+                if ($effectiveSpeed < 1.5 && $distanceNm < 5) {
                     continue;
                 }
 
-                if (($current->speed ?? 0) > 1.0 || ($next->speed ?? 0) > 1.0) {
+                if (($current->speed ?? 0) > 1.0 || ($next->speed ?? 0) > 1.0 || $distanceNm > 10) {
                     $hasGlobalActivity = VesselPosition::whereBetween('recorded_at', [
                         $current->recorded_at->addMinute(),
                         $next->recorded_at->subMinute(),
@@ -116,8 +131,10 @@ class VesselAnalysisService
                         continue;
                     }
 
-                    $this->persistActivity($vessel, 'ais_gap', 'medium', [
+                    $this->persistActivity($vessel, 'ais_gap', $severity, [
                         'duration_minutes' => $delta,
+                        'distance_nm' => round($distanceNm, 2),
+                        'effective_speed' => round($effectiveSpeed, 2),
                         'gap_start' => $current->recorded_at->toIso8601String(),
                         'gap_end' => $next->recorded_at->toIso8601String(),
                         'start_speed' => $current->speed,
@@ -138,25 +155,29 @@ class VesselAnalysisService
             ->orderBy('recorded_at', 'desc')
             ->get();
 
-        if ($positions->count() < 10) {
+        if ($positions->count() < 15) {
             return;
         }
 
         $recent = $positions->where('recorded_at', '>=', now()->subDays(7));
-        if ($recent->count() > 5) {
+        if ($recent->count() > 10) {
             $avgSpeed = $recent->avg('speed');
+            $durationHours = $recent->last()->recorded_at->diffInHours($recent->first()->recorded_at);
 
-            if ($avgSpeed >= 1.0 && $avgSpeed < 5.0) {
+            // Loitering requires at least 24 hours of consistent low-speed presence
+            if ($avgSpeed >= 0.1 && $avgSpeed < 3.0 && $durationHours >= 24) {
                 $latRange = $recent->max('lat') - $recent->min('lat');
                 $lngRange = $recent->max('lng') - $recent->min('lng');
 
-                if ($latRange < 0.005 && $lngRange < 0.005 && ($latRange > 0 || $lngRange > 0)) {
+                // Residency within a ~2nm box
+                if ($latRange < 0.03 && $lngRange < 0.03 && ($latRange > 0 || $lngRange > 0)) {
                     if (in_array($vessel->navigational_status, [1, 5, 6, 7])) {
                         return;
                     }
 
                     $this->persistActivity($vessel, 'loitering', 'low', [
                         'avg_speed' => round($avgSpeed, 2),
+                        'duration_hours' => $durationHours,
                         'lat_span' => round($latRange, 6),
                         'lng_span' => round($lngRange, 6),
                     ], $recent->last()->recorded_at, $recent->first()->recorded_at);
@@ -232,5 +253,23 @@ class VesselAnalysisService
             'speed_anomaly' => 'Kinematic violation: speed exceeds physical capability ('.round($details['reported_speed'] ?? 0, 1).' kn).',
             default => 'Anomalous behavioral event detected.',
         };
+    }
+
+    /**
+     * Calculates the great-circle distance between two points in km.
+     */
+    private function calculateDistance(float $lat1, float $lng1, float $lat2, float $lng2): float
+    {
+        $earthRadius = 6371;
+        $dLat = deg2rad($lat2 - $lat1);
+        $dLon = deg2rad($lng2 - $lng1);
+
+        $a = sin($dLat / 2) * sin($dLat / 2) +
+            cos(deg2rad($lat1)) * cos(deg2rad($lat2)) *
+            sin($dLon / 2) * sin($dLon / 2);
+
+        $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
+
+        return $earthRadius * $c;
     }
 }

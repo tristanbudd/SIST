@@ -643,19 +643,19 @@ class VesselController extends Controller
                 'vessels.course',
                 'vessels.last_seen_at',
                 DB::raw('COUNT(vessel_activities.id) as activities_count'),
-                DB::raw("SUM(CASE WHEN vessel_activities.severity = 'high' THEN 10 WHEN vessel_activities.severity = 'medium' THEN 3 ELSE 1 END) as raw_score"),
+                DB::raw("SUM(CASE WHEN vessel_activities.severity = 'high' THEN 8 WHEN vessel_activities.severity = 'medium' THEN 2 ELSE 0.5 END) as raw_score"),
                 DB::raw("MAX(CASE WHEN vessel_activities.severity = 'high' THEN 3 WHEN vessel_activities.severity = 'medium' THEN 2 ELSE 1 END) as max_severity_level"),
             ])
             ->where('vessel_activities.started_at', '>=', $cutoff);
 
         if ($severity && $severity !== 'all') {
             if ($severity === 'high') {
-                $query->havingRaw("SUM(CASE WHEN vessel_activities.severity = 'high' THEN 10 WHEN vessel_activities.severity = 'medium' THEN 3 ELSE 1 END) >= 75");
+                $query->havingRaw("SUM(CASE WHEN vessel_activities.severity = 'high' THEN 8 WHEN vessel_activities.severity = 'medium' THEN 2 ELSE 0.5 END) >= 80");
             } elseif ($severity === 'medium') {
-                $query->havingRaw("SUM(CASE WHEN vessel_activities.severity = 'high' THEN 10 WHEN vessel_activities.severity = 'medium' THEN 3 ELSE 1 END) >= 50");
-                $query->havingRaw("SUM(CASE WHEN vessel_activities.severity = 'high' THEN 10 WHEN vessel_activities.severity = 'medium' THEN 3 ELSE 1 END) < 75");
+                $query->havingRaw("SUM(CASE WHEN vessel_activities.severity = 'high' THEN 8 WHEN vessel_activities.severity = 'medium' THEN 2 ELSE 0.5 END) >= 40");
+                $query->havingRaw("SUM(CASE WHEN vessel_activities.severity = 'high' THEN 8 WHEN vessel_activities.severity = 'medium' THEN 2 ELSE 0.5 END) < 80");
             } elseif ($severity === 'low') {
-                $query->havingRaw("SUM(CASE WHEN vessel_activities.severity = 'high' THEN 10 WHEN vessel_activities.severity = 'medium' THEN 3 ELSE 1 END) < 50");
+                $query->havingRaw("SUM(CASE WHEN vessel_activities.severity = 'high' THEN 8 WHEN vessel_activities.severity = 'medium' THEN 2 ELSE 0.5 END) < 40");
             }
         }
 

@@ -138,8 +138,8 @@ import type { VesselActivity } from './Components/ShipDetailsSidebar';
  * Determines the risk level string based on a numeric risk score.
  */
 export function getRiskLevel(score: number): 'low' | 'medium' | 'high' {
-    if (score >= 75) return 'high';
-    if (score >= 50) return 'medium';
+    if (score >= 80) return 'high';
+    if (score >= 40) return 'medium';
     return 'low';
 }
 
@@ -157,13 +157,13 @@ export function calculateActivityStats(activities: VesselActivity[]) {
     const total = displayActivities.length;
     const highRiskCount = displayActivities.filter((a) => a.severity === 'high').length;
 
-    // Scoring System: High 10 pts, Medium 3 pts, Low 1 pt. Max score is capped at 100
+    // Scoring System: High 8 pts, Medium 2 pts, Low 0.5 pt. Max score is capped at 100
     const score = Math.min(
         100,
         displayActivities.reduce((acc, a) => {
-            if (a.severity === 'high') return acc + 10;
-            if (a.severity === 'medium') return acc + 3;
-            return acc + 1;
+            if (a.severity === 'high') return acc + 8;
+            if (a.severity === 'medium') return acc + 2;
+            return acc + 0.5;
         }, 0)
     );
 
