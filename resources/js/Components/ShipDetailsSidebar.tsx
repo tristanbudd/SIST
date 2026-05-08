@@ -554,7 +554,7 @@ export default function ShipDetailsSidebar({
                         id="vessel-details-title"
                         className="text-2xl font-black text-white tracking-tight uppercase leading-tight"
                     >
-                        {details?.name || vessel.name || 'Unknown Vessel'}
+                        {details?.name || vessel.name || 'UNKNOWN VESSEL'}
                     </h2>
                     <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 mt-2 text-[11px] text-zinc-400 font-mono">
                         <span>MMSI: {vessel.mmsi}</span>
@@ -869,7 +869,7 @@ export default function ShipDetailsSidebar({
                                             getRiskMetadata(activityStats.riskLevel).colorClass
                                         }`}
                                     >
-                                        {activityStats.score}
+                                        {Math.floor(activityStats.score)}
                                     </div>
                                 )}
                                 <div className="min-w-0">

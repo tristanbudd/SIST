@@ -28,7 +28,6 @@ if [ "${RUN_DEPLOY_TASKS_ON_STARTUP:-true}" = "true" ]; then
 	php artisan route:cache
 	php artisan view:cache
 	php artisan scribe:generate
-	php artisan sist:rebuild-analysis
 fi
 
 exec "$@"

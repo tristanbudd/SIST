@@ -47,7 +47,7 @@ export default function InfractionsPanel({
     const closePanel = onClose ?? (() => setIsOpenInternal(false));
 
     const [searchQuery, setSearchQuery] = useState('');
-    const [severityFilter, setSeverityFilter] = useState<'low' | 'medium' | 'high'>('high');
+    const [severityFilter, setSeverityFilter] = useState<'all' | 'low' | 'medium' | 'high'>('all');
     const [statusFilter, setStatusFilter] = useState<'all' | 'online' | 'offline'>('all');
     const [vessels, setVessels] = useState<InfractionVessel[]>([]);
     const [loading, setLoading] = useState(true);
@@ -220,8 +220,14 @@ export default function InfractionsPanel({
 
                             <div className="flex flex-col gap-2">
                                 <div className="flex bg-zinc-950 border border-white/20 divide-x divide-white/10 overflow-hidden w-full">
-                                    {(['low', 'medium', 'high'] as const).map((sev) => {
-                                        const meta = getRiskMetadata(sev);
+                                    {(['all', 'low', 'medium', 'high'] as const).map((sev) => {
+                                        const isAll = sev === 'all';
+                                        const meta = isAll ? null : getRiskMetadata(sev);
+                                        const colorClass = isAll ? 'text-white' : meta!.colorClass;
+                                        const bgClass = isAll
+                                            ? 'bg-white'
+                                            : meta!.colorClass.replace('text-', 'bg-');
+
                                         return (
                                             <button
                                                 key={sev}
@@ -235,14 +241,14 @@ export default function InfractionsPanel({
                                                 }}
                                                 className={`flex-1 text-[9px] font-bold uppercase tracking-widest px-2 py-3 transition-all relative ${
                                                     severityFilter === sev
-                                                        ? meta.colorClass
+                                                        ? colorClass
                                                         : 'bg-transparent text-zinc-500 hover:bg-white/5 hover:text-zinc-300'
                                                 }`}
                                             >
                                                 {sev}
                                                 {severityFilter === sev && (
                                                     <div
-                                                        className={`absolute bottom-0 left-0 right-0 h-0.5 ${meta.colorClass.replace('text-', 'bg-')}`}
+                                                        className={`absolute bottom-0 left-0 right-0 h-0.5 ${bgClass}`}
                                                     />
                                                 )}
                                             </button>
@@ -310,7 +316,7 @@ export default function InfractionsPanel({
                                         <div className="flex-1 min-w-0">
                                             <div className="flex items-center gap-2 mb-1">
                                                 <span className="text-xs font-bold text-white truncate">
-                                                    {vessel.name}
+                                                    {vessel.name?.trim() || 'UNKNOWN VESSEL'}
                                                 </span>
                                                 {isOnline ? (
                                                     <span className="text-[8px] bg-emerald-500/10 text-emerald-500 px-1.5 py-0.5 whitespace-nowrap font-semibold tracking-wider border border-emerald-500/20">
@@ -360,7 +366,7 @@ export default function InfractionsPanel({
                                                         ).colorClass
                                                     }
                                                 >
-                                                    {vessel.risk_score}
+                                                    {Math.floor(vessel.risk_score)}
                                                 </span>
                                             </div>
                                         </div>

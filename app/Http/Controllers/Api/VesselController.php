@@ -781,34 +781,4 @@ class VesselController extends Controller
             ],
         ]);
     }
-
-    /**
-     * List Ports of Interest
-     *
-     * Retrieve the list of high-risk maritime hubs and ports being monitored by SIST.
-     *
-     * @response 200 scenario="Success" {
-     * "data": [
-     * {
-     * "name": "CPC Marine Terminal",
-     * "lat": 44.6300,
-     * "lng": 37.6400,
-     * "severity": "high",
-     * "type": "Major export hub",
-     * "source": "FleetLeaks"
-     * }
-     * ]
-     * }
-     */
-    public function portsOfInterest(): JsonResponse
-    {
-        $path = resource_path('data/ports_of_interest.json');
-        if (! file_exists($path)) {
-            return response()->json(['data' => []]);
-        }
-
-        $zones = json_decode(file_get_contents($path), true);
-
-        return response()->json(['data' => $zones]);
-    }
 }
