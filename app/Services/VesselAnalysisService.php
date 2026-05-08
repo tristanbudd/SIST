@@ -187,6 +187,7 @@ class VesselAnalysisService
                         'duration_hours' => $durationHours,
                         'lat_span' => round($latRange, 6),
                         'lng_span' => round($lngRange, 6),
+                        'coordinates' => ['lat' => round($recent->avg('lat'), 6), 'lng' => round($recent->avg('lng'), 6)],
                     ], $recent->last()->recorded_at, $recent->first()->recorded_at);
                 }
             }
@@ -312,9 +313,14 @@ class VesselAnalysisService
             'ais_gap' => 'AIS transmission interruption detected. From '.
                          (isset($details['start_pos']) ? "[{$details['start_pos']['lat']}, {$details['start_pos']['lng']}] to [{$details['end_pos']['lat']}, {$details['end_pos']['lng']}]" : 'unknown position').
                          ' ('.MaritimeFormatter::formatDuration($details['duration_minutes'] ?? 0).').',
-            'loitering' => 'Stationary residency pattern in open-sea transit area.',
-            'speed_anomaly' => 'Kinematic violation: speed exceeds physical capability ('.round($details['reported_speed'] ?? 0, 1).' kn).',
-            'port_of_interest' => 'Vessel interaction detected at high-risk maritime hub: '.($details['port_name'] ?? 'Unknown Port').'.',
+            'loitering' => 'Stationary residency pattern detected at '.
+                           (isset($details['coordinates']) ? "[{$details['coordinates']['lat']}, {$details['coordinates']['lng']}]" : 'unknown area').
+                           ' for '.($details['duration_hours'] ?? 0).' hours.',
+            'speed_anomaly' => 'Kinematic violation at '.
+                               (isset($details['coordinates']) ? "[{$details['coordinates']['lat']}, {$details['coordinates']['lng']}]" : 'unknown location').
+                               ': speed exceeds physical capability ('.round($details['reported_speed'] ?? 0, 1).' kn).',
+            'port_of_interest' => 'Vessel interaction detected at high-risk maritime hub: '.($details['port_name'] ?? 'Unknown Port').
+                                  ' '.(isset($details['coordinates']) ? "[{$details['coordinates']['lat']}, {$details['coordinates']['lng']}]" : '').'.',
             default => 'Anomalous behavioral event detected.',
         };
     }
