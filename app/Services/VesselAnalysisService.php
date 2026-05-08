@@ -47,20 +47,11 @@ class VesselAnalysisService
     {
         Log::info('SIST | REBUILD: Starting full fleet analysis rebuild...');
 
-        DB::transaction(function () {
-            VesselActivity::truncate();
+        VesselActivity::truncate();
 
-            Vessel::query()->update(['last_analyzed_at' => null]);
-        });
+        Vessel::query()->update(['last_analyzed_at' => null]);
 
-        Vessel::query()->chunk(100, function ($vessels) {
-            foreach ($vessels as $vessel) {
-                /** @var Vessel $vessel */
-                $this->processVesselMetrics($vessel);
-            }
-        });
-
-        Log::info('SIST | REBUILD: Full fleet analysis rebuild completed.');
+        Log::info('SIST | REBUILD: Full fleet analysis rebuild flags reset.');
     }
 
     /**
