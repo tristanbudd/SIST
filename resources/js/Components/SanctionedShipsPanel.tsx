@@ -73,6 +73,8 @@ interface SanctionedShipsPanelWithToolsProps {
     setShowPorts?: (v: boolean) => void;
     showCities?: boolean;
     setShowCities?: (v: boolean) => void;
+    showPois?: boolean;
+    setShowPois?: (v: boolean) => void;
     isSearchActive?: boolean;
     trackedVessels?: MapVessel[];
 }
@@ -162,24 +164,24 @@ export default function SanctionedShipsPanel({
     // Initial fetch handled by debounced effect below
 
     useEffect(() => {
+        if (!isOpen) return;
+
         if (searchTimeoutRef.current) {
             clearTimeout(searchTimeoutRef.current);
         }
 
         searchTimeoutRef.current = setTimeout(
             () => {
-                if (isOpen) {
-                    fetchSanctionedVessels(searchQuery);
-                }
+                fetchSanctionedVessels(searchQuery);
             },
-            sanctionedVessels.length === 0 ? 0 : 300
+            searchQuery ? 300 : 0
         );
 
         return () => {
             if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
             if (abortControllerRef.current) abortControllerRef.current.abort();
         };
-    }, [searchQuery, isOpen, fetchSanctionedVessels, sanctionedVessels.length]);
+    }, [searchQuery, isOpen, fetchSanctionedVessels]);
 
     const onlineMmsis = useMemo(() => {
         const set = new Set<number>();

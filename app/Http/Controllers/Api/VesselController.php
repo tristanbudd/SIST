@@ -593,9 +593,25 @@ class VesselController extends Controller
             ->orderBy('started_at', 'desc')
             ->get();
 
+        $data = $activities->map(function ($activity) {
+            $details = $activity->details;
+            $source = $details['source'] ?? 'FleetLeaks';
+
+            return [
+                'id' => $activity->id,
+                'type' => $activity->type,
+                'severity' => $activity->severity,
+                'description' => $activity->description,
+                'details' => $details,
+                'source' => $source,
+                'started_at' => $activity->started_at,
+                'ended_at' => $activity->ended_at,
+            ];
+        });
+
         return response()->json([
             'mmsi' => (int) $mmsi,
-            'data' => $activities,
+            'data' => $data,
         ]);
     }
 
@@ -643,19 +659,19 @@ class VesselController extends Controller
                 'vessels.course',
                 'vessels.last_seen_at',
                 DB::raw('COUNT(vessel_activities.id) as activities_count'),
-                DB::raw("SUM(CASE WHEN vessel_activities.severity = 'high' THEN 10 WHEN vessel_activities.severity = 'medium' THEN 3 ELSE 1 END) as raw_score"),
+                DB::raw("SUM(CASE WHEN vessel_activities.severity = 'high' THEN 8 WHEN vessel_activities.severity = 'medium' THEN 2 ELSE 0.5 END) as raw_score"),
                 DB::raw("MAX(CASE WHEN vessel_activities.severity = 'high' THEN 3 WHEN vessel_activities.severity = 'medium' THEN 2 ELSE 1 END) as max_severity_level"),
             ])
             ->where('vessel_activities.started_at', '>=', $cutoff);
 
         if ($severity && $severity !== 'all') {
             if ($severity === 'high') {
-                $query->havingRaw("SUM(CASE WHEN vessel_activities.severity = 'high' THEN 10 WHEN vessel_activities.severity = 'medium' THEN 3 ELSE 1 END) >= 75");
+                $query->havingRaw("SUM(CASE WHEN vessel_activities.severity = 'high' THEN 8 WHEN vessel_activities.severity = 'medium' THEN 2 ELSE 0.5 END) >= 80");
             } elseif ($severity === 'medium') {
-                $query->havingRaw("SUM(CASE WHEN vessel_activities.severity = 'high' THEN 10 WHEN vessel_activities.severity = 'medium' THEN 3 ELSE 1 END) >= 50");
-                $query->havingRaw("SUM(CASE WHEN vessel_activities.severity = 'high' THEN 10 WHEN vessel_activities.severity = 'medium' THEN 3 ELSE 1 END) < 75");
+                $query->havingRaw("SUM(CASE WHEN vessel_activities.severity = 'high' THEN 8 WHEN vessel_activities.severity = 'medium' THEN 2 ELSE 0.5 END) >= 40");
+                $query->havingRaw("SUM(CASE WHEN vessel_activities.severity = 'high' THEN 8 WHEN vessel_activities.severity = 'medium' THEN 2 ELSE 0.5 END) < 80");
             } elseif ($severity === 'low') {
-                $query->havingRaw("SUM(CASE WHEN vessel_activities.severity = 'high' THEN 10 WHEN vessel_activities.severity = 'medium' THEN 3 ELSE 1 END) < 50");
+                $query->havingRaw("SUM(CASE WHEN vessel_activities.severity = 'high' THEN 8 WHEN vessel_activities.severity = 'medium' THEN 2 ELSE 0.5 END) < 40");
             }
         }
 
@@ -711,6 +727,7 @@ class VesselController extends Controller
                 'infractions_count' => (int) $vessel->activities_count,
                 'highest_severity' => $highestSeverity,
                 'risk_score' => min(100, (int) $vessel->raw_score),
+                'source' => 'FleetLeaks',
             ];
         });
 
@@ -723,5 +740,35 @@ class VesselController extends Controller
                 'per_page' => $paginator->perPage(),
             ],
         ]);
+    }
+
+    /**
+     * List Ports of Interest
+     *
+     * Retrieve the list of high-risk maritime hubs and ports being monitored by SIST.
+     *
+     * @response 200 scenario="Success" {
+     * "data": [
+     * {
+     * "name": "CPC Marine Terminal",
+     * "lat": 44.6300,
+     * "lng": 37.6400,
+     * "severity": "high",
+     * "type": "Major export hub",
+     * "source": "FleetLeaks"
+     * }
+     * ]
+     * }
+     */
+    public function portsOfInterest(): JsonResponse
+    {
+        $path = resource_path('data/ports_of_interest.json');
+        if (! file_exists($path)) {
+            return response()->json(['data' => []]);
+        }
+
+        $zones = json_decode(file_get_contents($path), true);
+
+        return response()->json(['data' => $zones]);
     }
 }

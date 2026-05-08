@@ -541,9 +541,10 @@ export default function AnalysisReportModal({
                                             tab.id === 'sanctions'
                                                 ? 'bg-red-500 text-white'
                                                 : tab.id === 'activity'
-                                                  ? getRiskMetadata(activityStats.riskLevel)
-                                                        .colorClass.replace('text-', 'bg-')
-                                                        .replace('-500', '-600') + ' text-white'
+                                                  ? getRiskMetadata(
+                                                        activityStats.riskLevel
+                                                    ).colorClass.replace('text-', 'bg-') +
+                                                    ' text-white'
                                                   : 'bg-white text-zinc-950'
                                         }`}
                                     >
@@ -1853,19 +1854,34 @@ export default function AnalysisReportModal({
                                                                                 </div>
                                                                             </div>
                                                                         </div>
-                                                                        <span
-                                                                            className={`text-[8px] font-black uppercase tracking-widest px-2 py-1 rounded-[1px] border ${
-                                                                                getRiskMetadata(
-                                                                                    activity.severity
-                                                                                ).borderClass
-                                                                            } ${getRiskMetadata(activity.severity).colorClass}`}
-                                                                        >
-                                                                            {activity.severity}
-                                                                            <span className="hidden sm:inline">
-                                                                                {' '}
-                                                                                Severity
+                                                                        <div className="flex items-center gap-2">
+                                                                            {activity.source && (
+                                                                                <span className="text-[8px] font-black uppercase tracking-widest px-2 py-1 rounded-[1px] border border-white/10 bg-white/5 text-zinc-400 flex items-center gap-1.5">
+                                                                                    <ExternalProviderIcon
+                                                                                        name={
+                                                                                            activity.source
+                                                                                        }
+                                                                                        className="w-2.5 h-2.5"
+                                                                                    />
+                                                                                    {
+                                                                                        activity.source
+                                                                                    }
+                                                                                </span>
+                                                                            )}
+                                                                            <span
+                                                                                className={`text-[8px] font-black uppercase tracking-widest px-2 py-1 rounded-[1px] border ${
+                                                                                    getRiskMetadata(
+                                                                                        activity.severity
+                                                                                    ).borderClass
+                                                                                } ${getRiskMetadata(activity.severity).colorClass}`}
+                                                                            >
+                                                                                {activity.severity}
+                                                                                <span className="hidden sm:inline">
+                                                                                    {' '}
+                                                                                    Severity
+                                                                                </span>
                                                                             </span>
-                                                                        </span>
+                                                                        </div>
                                                                     </div>
 
                                                                     <p className="text-[11px] text-zinc-400 font-medium leading-relaxed mb-4">

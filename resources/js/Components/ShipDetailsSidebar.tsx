@@ -145,6 +145,7 @@ export interface VesselActivity {
     severity: 'low' | 'medium' | 'high';
     description: string;
     details: Record<string, unknown>;
+    source?: string;
     started_at: string;
     ended_at: string | null;
 }

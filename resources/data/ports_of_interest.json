@@ -1,0 +1,338 @@
+[
+    {
+        "name": "CPC Marine Terminal (off Yuzhnaya Ozereevka)",
+        "lat": 44.6300,
+        "lng": 37.6400,
+        "severity": "high",
+        "type": "Major export hub",
+        "source": "FleetLeaks"
+    },
+    {
+        "name": "Primorsk",
+        "lat": 60.3272,
+        "lng": 28.7193,
+        "severity": "high",
+        "type": "Major export hub",
+        "source": "FleetLeaks"
+    },
+    {
+        "name": "Kozmino",
+        "lat": 42.7186,
+        "lng": 133.0093,
+        "severity": "high",
+        "type": "Major export hub",
+        "source": "FleetLeaks"
+    },
+    {
+        "name": "Ust-Luga",
+        "lat": 59.7007,
+        "lng": 28.4266,
+        "severity": "high",
+        "type": "Major export hub",
+        "source": "FleetLeaks"
+    },
+    {
+        "name": "Novorossiysk (Sheskharis)",
+        "lat": 44.7302,
+        "lng": 37.7842,
+        "severity": "high",
+        "type": "Major export hub",
+        "source": "FleetLeaks"
+    },
+    {
+        "name": "Sabetta",
+        "lat": 71.2734,
+        "lng": 72.0966,
+        "severity": "high",
+        "type": "Major export hub",
+        "source": "FleetLeaks"
+    },
+    {
+        "name": "St. Petersburg",
+        "lat": 59.8838,
+        "lng": 30.1646,
+        "severity": "medium",
+        "type": "Regional / secondary port",
+        "source": "FleetLeaks"
+    },
+    {
+        "name": "Taman",
+        "lat": 45.1283,
+        "lng": 36.6688,
+        "severity": "medium",
+        "type": "Regional / secondary port",
+        "source": "FleetLeaks"
+    },
+    {
+        "name": "Batumi Oil Terminal",
+        "lat": 41.6496,
+        "lng": 41.6497,
+        "severity": "medium",
+        "type": "Regional / secondary port",
+        "source": "FleetLeaks"
+    },
+    {
+        "name": "Murmansk (Kola Bay)",
+        "lat": 69.0806,
+        "lng": 33.2407,
+        "severity": "medium",
+        "type": "Regional / secondary port",
+        "source": "FleetLeaks"
+    },
+    {
+        "name": "Nakhodka",
+        "lat": 42.8240,
+        "lng": 132.8930,
+        "severity": "medium",
+        "type": "Regional / secondary port",
+        "source": "FleetLeaks"
+    },
+    {
+        "name": "Vanino",
+        "lat": 49.0860,
+        "lng": 140.2540,
+        "severity": "medium",
+        "type": "Regional / secondary port",
+        "source": "FleetLeaks"
+    },
+    {
+        "name": "Vostochny",
+        "lat": 42.8520,
+        "lng": 133.0500,
+        "severity": "medium",
+        "type": "Regional / secondary port",
+        "source": "FleetLeaks"
+    },
+    {
+        "name": "Aktau Oil Terminal",
+        "lat": 43.6005,
+        "lng": 51.2287,
+        "severity": "medium",
+        "type": "Regional / secondary port",
+        "source": "FleetLeaks"
+    },
+    {
+        "name": "De-Kastri (Sakhalin-1)",
+        "lat": 51.4760,
+        "lng": 140.7840,
+        "severity": "medium",
+        "type": "Regional / secondary port",
+        "source": "FleetLeaks"
+    },
+    {
+        "name": "Port Kavkaz",
+        "lat": 45.3407,
+        "lng": 36.6747,
+        "severity": "medium",
+        "type": "Regional / secondary port",
+        "source": "FleetLeaks"
+    },
+    {
+        "name": "Varandey (Nenets)",
+        "lat": 69.1500,
+        "lng": 59.3000,
+        "severity": "medium",
+        "type": "Regional / secondary port",
+        "source": "FleetLeaks"
+    },
+    {
+        "name": "Tuapse",
+        "lat": 44.1140,
+        "lng": 39.0780,
+        "severity": "medium",
+        "type": "Regional / secondary port",
+        "source": "FleetLeaks"
+    },
+    {
+        "name": "Makhachkala",
+        "lat": 42.9840,
+        "lng": 47.5040,
+        "severity": "medium",
+        "type": "Regional / secondary port",
+        "source": "FleetLeaks"
+    },
+    {
+        "name": "Supsa Terminal",
+        "lat": 42.0800,
+        "lng": 41.7200,
+        "severity": "medium",
+        "type": "Regional / secondary port",
+        "source": "FleetLeaks"
+    },
+    {
+        "name": "Arkhangelsk",
+        "lat": 64.5431,
+        "lng": 40.5375,
+        "severity": "medium",
+        "type": "Regional / secondary port",
+        "source": "FleetLeaks"
+    },
+    {
+        "name": "Astrakhan",
+        "lat": 46.2444,
+        "lng": 47.9306,
+        "severity": "medium",
+        "type": "Regional / secondary port",
+        "source": "FleetLeaks"
+    },
+    {
+        "name": "Baltiysk (Kaliningrad Oblast)",
+        "lat": 54.6380,
+        "lng": 19.9050,
+        "severity": "medium",
+        "type": "Regional / secondary port",
+        "source": "FleetLeaks"
+    },
+    {
+        "name": "Vladivostok",
+        "lat": 43.1050,
+        "lng": 131.8730,
+        "severity": "medium",
+        "type": "Regional / secondary port",
+        "source": "FleetLeaks"
+    },
+    {
+        "name": "Prigorodnoye (Sakhalin-2)",
+        "lat": 46.8630,
+        "lng": 142.7180,
+        "severity": "low",
+        "type": "Local / minor port",
+        "source": "FleetLeaks"
+    },
+    {
+        "name": "Kulevi Terminal",
+        "lat": 42.1800,
+        "lng": 41.7500,
+        "severity": "low",
+        "type": "Local / minor port",
+        "source": "FleetLeaks"
+    },
+    {
+        "name": "Dikson",
+        "lat": 73.5070,
+        "lng": 80.5450,
+        "severity": "low",
+        "type": "Local / minor port",
+        "source": "FleetLeaks"
+    },
+    {
+        "name": "Dudinka",
+        "lat": 69.4000,
+        "lng": 86.1600,
+        "severity": "low",
+        "type": "Local / minor port",
+        "source": "FleetLeaks"
+    },
+    {
+        "name": "Port Olya",
+        "lat": 46.5700,
+        "lng": 48.8000,
+        "severity": "low",
+        "type": "Local / minor port",
+        "source": "FleetLeaks"
+    },
+    {
+        "name": "Rostov-on-Don",
+        "lat": 47.2270,
+        "lng": 39.7180,
+        "severity": "low",
+        "type": "Local / minor port",
+        "source": "FleetLeaks"
+    },
+    {
+        "name": "Temryuk",
+        "lat": 45.3150,
+        "lng": 37.3690,
+        "severity": "low",
+        "type": "Local / minor port",
+        "source": "FleetLeaks"
+    },
+    {
+        "name": "Vitino (Kandalaksha Gulf)",
+        "lat": 67.0810,
+        "lng": 32.4020,
+        "severity": "low",
+        "type": "Local / minor port",
+        "source": "FleetLeaks"
+    },
+    {
+        "name": "Yeisk",
+        "lat": 46.7130,
+        "lng": 38.2760,
+        "severity": "low",
+        "type": "Local / minor port",
+        "source": "FleetLeaks"
+    },
+    {
+        "name": "Kholmsk",
+        "lat": 47.0403,
+        "lng": 142.0431,
+        "severity": "low",
+        "type": "Local / minor port",
+        "source": "FleetLeaks"
+    },
+    {
+        "name": "Vyborg",
+        "lat": 60.5360,
+        "lng": 28.6520,
+        "severity": "low",
+        "type": "Local / minor port",
+        "source": "FleetLeaks"
+    },
+    {
+        "name": "Kaspiysk",
+        "lat": 42.8950,
+        "lng": 47.6480,
+        "severity": "low",
+        "type": "Local / minor port",
+        "source": "FleetLeaks"
+    },
+    {
+        "name": "Sovetskaya Gavan",
+        "lat": 48.9650,
+        "lng": 140.2850,
+        "severity": "low",
+        "type": "Local / minor port",
+        "source": "FleetLeaks"
+    },
+    {
+        "name": "Azov (Azovproduct)",
+        "lat": 47.1110,
+        "lng": 39.4230,
+        "severity": "low",
+        "type": "Local / minor port",
+        "source": "FleetLeaks"
+    },
+    {
+        "name": "Vysotsk",
+        "lat": 60.6170,
+        "lng": 28.5830,
+        "severity": "low",
+        "type": "Local / minor port",
+        "source": "FleetLeaks"
+    },
+    {
+        "name": "Severodvinsk",
+        "lat": 64.5722,
+        "lng": 39.8150,
+        "severity": "low",
+        "type": "Local / minor port",
+        "source": "FleetLeaks"
+    },
+    {
+        "name": "Pevek",
+        "lat": 69.7015,
+        "lng": 170.2996,
+        "severity": "low",
+        "type": "Local / minor port",
+        "source": "FleetLeaks"
+    },
+    {
+        "name": "Slavyanka",
+        "lat": 42.8650,
+        "lng": 131.3850,
+        "severity": "low",
+        "type": "Local / minor port",
+        "source": "FleetLeaks"
+    }
+]
