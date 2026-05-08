@@ -749,7 +749,7 @@ export default function AnalysisReportModal({
                                             <DataRow
                                                 label="Vessel Name"
                                                 value={
-                                                    details?.name || vessel.name || 'Unknown Vessel'
+                                                    details?.name || vessel.name || 'UNKNOWN VESSEL'
                                                 }
                                             />
                                             <DataRow label="MMSI Number" value={vessel.mmsi} />
@@ -1790,7 +1790,7 @@ export default function AnalysisReportModal({
                                                             Risk Score
                                                         </span>
                                                         <div className="text-4xl font-black text-white">
-                                                            {activityStats.score}%
+                                                            {Math.floor(activityStats.score)}
                                                         </div>
                                                         <div className="text-[9px] text-zinc-600 uppercase font-bold tracking-tight">
                                                             Profile Analysis
