@@ -310,7 +310,7 @@ export default function InfractionsPanel({
                                         <div className="flex-1 min-w-0">
                                             <div className="flex items-center gap-2 mb-1">
                                                 <span className="text-xs font-bold text-white truncate">
-                                                    {vessel.name}
+                                                    {vessel.name?.trim() || 'Unknown Vessel'}
                                                 </span>
                                                 {isOnline ? (
                                                     <span className="text-[8px] bg-emerald-500/10 text-emerald-500 px-1.5 py-0.5 whitespace-nowrap font-semibold tracking-wider border border-emerald-500/20">

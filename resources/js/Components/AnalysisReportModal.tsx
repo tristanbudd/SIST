@@ -748,7 +748,9 @@ export default function AnalysisReportModal({
                                         <div className="space-y-1">
                                             <DataRow
                                                 label="Vessel Name"
-                                                value={details?.name || vessel.name}
+                                                value={
+                                                    details?.name || vessel.name || 'Unknown Vessel'
+                                                }
                                             />
                                             <DataRow label="MMSI Number" value={vessel.mmsi} />
                                             <DataRow
