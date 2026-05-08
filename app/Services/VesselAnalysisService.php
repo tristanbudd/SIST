@@ -142,6 +142,8 @@ class VesselAnalysisService
                         'effective_speed' => round($effectiveSpeed, 2),
                         'gap_start' => $current->recorded_at->toIso8601String(),
                         'gap_end' => $next->recorded_at->toIso8601String(),
+                        'start_pos' => ['lat' => round($current->lat, 6), 'lng' => round($current->lng, 6)],
+                        'end_pos' => ['lat' => round($next->lat, 6), 'lng' => round($next->lng, 6)],
                         'start_speed' => $current->speed,
                         'end_speed' => $next->speed,
                     ], $current->recorded_at, $next->recorded_at);
@@ -307,7 +309,9 @@ class VesselAnalysisService
     private function resolveDescription(string $type, array $details): string
     {
         return match ($type) {
-            'ais_gap' => 'AIS transmission interruption detected ('.MaritimeFormatter::formatDuration($details['duration_minutes'] ?? 0).').',
+            'ais_gap' => 'AIS transmission interruption detected. From '.
+                         (isset($details['start_pos']) ? "[{$details['start_pos']['lat']}, {$details['start_pos']['lng']}] to [{$details['end_pos']['lat']}, {$details['end_pos']['lng']}]" : 'unknown position').
+                         ' ('.MaritimeFormatter::formatDuration($details['duration_minutes'] ?? 0).').',
             'loitering' => 'Stationary residency pattern in open-sea transit area.',
             'speed_anomaly' => 'Kinematic violation: speed exceeds physical capability ('.round($details['reported_speed'] ?? 0, 1).' kn).',
             'port_of_interest' => 'Vessel interaction detected at high-risk maritime hub: '.($details['port_name'] ?? 'Unknown Port').'.',

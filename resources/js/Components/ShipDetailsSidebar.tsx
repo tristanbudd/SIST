@@ -1490,6 +1490,7 @@ export default function ShipDetailsSidebar({
                 history={history}
                 activities={activities}
                 isOffline={isOffline}
+                onNavigate={onNavigate}
                 initialTab={reportTab}
                 loading={loading}
             />

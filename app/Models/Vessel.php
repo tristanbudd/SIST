@@ -12,8 +12,18 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property int $mmsi
  * @property int|null $imo
  * @property string|null $name
+ * @property string|null $call_sign
+ * @property int|null $type
+ * @property int|null $navigational_status
  * @property float|null $lat
  * @property float|null $lng
+ * @property float|null $speed
+ * @property float|null $course
+ * @property int|null $heading
+ * @property float|null $draught
+ * @property string|null $destination
+ * @property Carbon|null $eta
+ * @property string|null $flag
  * @property Carbon|null $last_seen_at
  * @property Carbon|null $last_analyzed_at
  */
