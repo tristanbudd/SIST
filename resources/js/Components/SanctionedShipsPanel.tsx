@@ -287,7 +287,7 @@ export default function SanctionedShipsPanel({
                 onVesselSelect({
                     mmsi: mmsiToUse,
                     imo: vessel.imo || undefined,
-                    name: vessel.name,
+                    name: vessel.name?.toUpperCase(),
                     lat: vessel.lat,
                     lng: vessel.lng,
                     course: vessel.course,
@@ -411,7 +411,7 @@ export default function SanctionedShipsPanel({
                                 <span className="text-[10px] font-bold text-red-500 uppercase tracking-wider leading-tight">
                                     Vessel Not Found in SIST Database
                                 </span>
-                                <span className="text-[9px] font-semibold text-red-400/80 mt-0.5">
+                                <span className="text-[9px] font-semibold text-red-400/80 mt-0.5 uppercase">
                                     {databaseError.name} (IMO: {databaseError.imo || 'N/A'})
                                 </span>
                             </div>
@@ -444,7 +444,7 @@ export default function SanctionedShipsPanel({
                                     >
                                         <div className="flex-1 min-w-0">
                                             <div className="flex items-center gap-2 mb-1">
-                                                <span className="text-xs font-bold text-white truncate">
+                                                <span className="text-xs font-bold text-white truncate uppercase">
                                                     {vessel.name?.trim() || 'UNKNOWN VESSEL'}
                                                 </span>
                                                 {offline ? (

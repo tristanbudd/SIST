@@ -149,7 +149,7 @@ export default function InfractionsPanel({
                 onVesselSelect({
                     mmsi: vessel.mmsi,
                     imo: vessel.imo || undefined,
-                    name: vessel.name,
+                    name: vessel.name?.toUpperCase(),
                     lat: vessel.lat,
                     lng: vessel.lng,
                     course: vessel.course,
@@ -315,7 +315,7 @@ export default function InfractionsPanel({
                                     >
                                         <div className="flex-1 min-w-0">
                                             <div className="flex items-center gap-2 mb-1">
-                                                <span className="text-xs font-bold text-white truncate">
+                                                <span className="text-xs font-bold text-white truncate uppercase">
                                                     {vessel.name?.trim() || 'UNKNOWN VESSEL'}
                                                 </span>
                                                 {isOnline ? (
