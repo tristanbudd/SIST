@@ -1582,11 +1582,23 @@ export default function AnalysisReportModal({
                                                                     </span>
                                                                 </td>
                                                                 <td className="px-4 py-3">
-                                                                    <span className="text-[10px] text-zinc-500 font-mono">
+                                                                    <button
+                                                                        onClick={() => {
+                                                                            onNavigate?.(
+                                                                                Number(pos.lat),
+                                                                                Number(pos.lng),
+                                                                                14
+                                                                            );
+                                                                            onClose();
+                                                                        }}
+                                                                        className="text-[10px] text-zinc-500 font-mono hover:text-white transition-colors flex items-center gap-1.5 group/coord"
+                                                                        title="Navigate to this position"
+                                                                    >
                                                                         {Number(pos.lat).toFixed(4)}
                                                                         ,{' '}
                                                                         {Number(pos.lng).toFixed(4)}
-                                                                    </span>
+                                                                        <FaArrowUpRightFromSquare className="w-2 h-2 text-zinc-600 group-hover/coord:text-zinc-400 transition-colors" />
+                                                                    </button>
                                                                 </td>
                                                                 <td className="px-4 py-3 text-right">
                                                                     <div className="flex items-center justify-end gap-2">
@@ -1678,10 +1690,22 @@ export default function AnalysisReportModal({
                                                                 </div>
                                                             </div>
                                                             <div className="flex justify-between items-center text-[9px]">
-                                                                <span className="text-zinc-500 font-mono">
+                                                                <button
+                                                                    onClick={() => {
+                                                                        onNavigate?.(
+                                                                            Number(pos.lat),
+                                                                            Number(pos.lng),
+                                                                            14
+                                                                        );
+                                                                        onClose();
+                                                                    }}
+                                                                    className="text-zinc-500 font-mono hover:text-zinc-300 transition-colors flex items-center gap-1 group/coord"
+                                                                    title="Navigate to this position"
+                                                                >
                                                                     {Number(pos.lat).toFixed(4)},{' '}
                                                                     {Number(pos.lng).toFixed(4)}
-                                                                </span>
+                                                                    <FaArrowUpRightFromSquare className="w-1.5 h-1.5 text-zinc-600 group-hover/coord:text-zinc-400 transition-colors" />
+                                                                </button>
                                                                 <div className="flex items-center gap-1.5">
                                                                     <span className="text-zinc-400 font-mono">
                                                                         {Number(pos.course).toFixed(
