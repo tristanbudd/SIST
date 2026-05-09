@@ -84,21 +84,24 @@ export default function MapToolsPanel({
     return (
         <div className="flex flex-col items-start gap-2 pointer-events-auto">
             {isOpen && (
-                <div className="fixed inset-x-0 bottom-[calc(2rem+env(safe-area-inset-bottom))] bg-zinc-950 border-t border-white/20 p-3 pb-3 shadow-2xl flex flex-col gap-3 max-h-[45vh] overflow-y-auto animate-in slide-in-from-bottom-2 duration-200 sm:static sm:max-h-none sm:overflow-visible sm:w-56 sm:border sm:border-white/20 sm:pb-3">
-                    <div className="flex items-center justify-between border-b border-white/10 pb-2">
-                        <span className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em]">
-                            Map Tools
-                        </span>
+                <div className="fixed inset-x-0 bottom-[calc(2rem+env(safe-area-inset-bottom))] bg-zinc-950 border-t border-white/20 shadow-2xl flex flex-col max-h-[45vh] overflow-y-auto animate-in slide-in-from-bottom-2 duration-200 sm:static sm:max-h-none sm:overflow-visible sm:w-56 sm:border sm:border-white/20 sm:pb-3">
+                    <div className="flex items-center justify-between border-b border-white/10 px-4 pt-4 pb-3">
+                        <div className="flex items-center gap-3">
+                            <FaToolbox className="text-white w-4 h-4" />
+                            <span className="text-xs font-bold text-white tracking-wider uppercase">
+                                MAP TOOLS
+                            </span>
+                        </div>
                         <button
                             onClick={closePanel}
-                            className="text-zinc-500 hover:text-white transition-colors w-7 h-7 flex items-center justify-center rounded hover:bg-white/10"
+                            className="text-zinc-500 hover:text-white transition-colors p-2 hover:bg-white/5"
                             title="Close"
                         >
                             <FaXmark className="w-4 h-4" />
                         </button>
                     </div>
 
-                    <div className="flex flex-col gap-3 sm:grid sm:grid-cols-[1fr,1fr] sm:items-start sm:gap-4">
+                    <div className="flex flex-col gap-3 px-4 pt-2 sm:grid sm:grid-cols-1 sm:items-start sm:gap-4">
                         <div className="flex flex-col gap-2">
                             <button
                                 onClick={() => {
