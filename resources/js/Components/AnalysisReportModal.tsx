@@ -242,6 +242,10 @@ export default function AnalysisReportModal({
     },
 }: AnalysisReportModalProps) {
     const [activeTab, setActiveTab] = useState<TabType>(initialTab || 'overview');
+    const [currentPage, setCurrentPage] = useState(1);
+    const pageSize = 10;
+    const [activityPage, setActivityPage] = useState(1);
+    const activityPageSize = 5;
     const [prevInitialTab, setPrevInitialTab] = useState(initialTab);
 
     if (initialTab !== prevInitialTab) {
@@ -256,7 +260,16 @@ export default function AnalysisReportModal({
         setPrevIsOpen(isOpen);
         if (isOpen) {
             setActiveTab(initialTab || 'overview');
+            setCurrentPage(1);
+            setActivityPage(1);
         }
+    }
+
+    const [prevVesselMmsi, setPrevVesselMmsi] = useState(vessel?.mmsi);
+    if (vessel?.mmsi !== prevVesselMmsi) {
+        setPrevVesselMmsi(vessel?.mmsi);
+        setCurrentPage(1);
+        setActivityPage(1);
     }
 
     const [now] = useState(() => Date.now());
@@ -270,10 +283,6 @@ export default function AnalysisReportModal({
         customStart: '',
         customEnd: '',
     });
-    const [currentPage, setCurrentPage] = useState(1);
-    const pageSize = 10;
-    const [activityPage, setActivityPage] = useState(1);
-    const activityPageSize = 5;
 
     const handleFilterUpdate = (update: Partial<typeof waypointFilters>) => {
         setWaypointFilters((prev) => ({ ...prev, ...update }));
