@@ -76,6 +76,10 @@ interface ClusteredVessel extends Vessel {
     clusterCount: number;
     sumLat: number;
     sumLng: number;
+    minLat: number;
+    maxLat: number;
+    minLng: number;
+    maxLng: number;
 }
 
 const IGNORED_VESSEL_NAMES = ['--'];
@@ -348,6 +352,10 @@ function FleetLayer({
                 clusterCount: 1,
                 sumLat: v.lat,
                 sumLng: v.lng,
+                minLat: v.lat,
+                maxLat: v.lat,
+                minLng: v.lng,
+                maxLng: v.lng,
             }));
         }
 
@@ -360,6 +368,10 @@ function FleetLayer({
                     clusterCount: 1,
                     sumLat: vessel.lat,
                     sumLng: vessel.lng,
+                    minLat: vessel.lat,
+                    maxLat: vessel.lat,
+                    minLng: vessel.lng,
+                    maxLng: vessel.lng,
                 });
                 return;
             }
@@ -377,6 +389,10 @@ function FleetLayer({
                 filtered[clusterIndex].clusterCount++;
                 filtered[clusterIndex].sumLat += vessel.lat;
                 filtered[clusterIndex].sumLng += vessel.lng;
+                filtered[clusterIndex].minLat = Math.min(filtered[clusterIndex].minLat, vessel.lat);
+                filtered[clusterIndex].maxLat = Math.max(filtered[clusterIndex].maxLat, vessel.lat);
+                filtered[clusterIndex].minLng = Math.min(filtered[clusterIndex].minLng, vessel.lng);
+                filtered[clusterIndex].maxLng = Math.max(filtered[clusterIndex].maxLng, vessel.lng);
             } else {
                 filtered.push({
                     ...vessel,
@@ -384,6 +400,10 @@ function FleetLayer({
                     clusterCount: 1,
                     sumLat: vessel.lat,
                     sumLng: vessel.lng,
+                    minLat: vessel.lat,
+                    maxLat: vessel.lat,
+                    minLng: vessel.lng,
+                    maxLng: vessel.lng,
                 });
             }
         });
@@ -568,11 +588,27 @@ function FleetLayer({
             suppressNextMapClickRef.current = true;
             if (onVesselSelect) onVesselSelect(null);
             if (onClusterZoomNotice) onClusterZoomNotice();
-            const nextZoom = Math.min(Math.max(map.getZoom() + 2, 11), 16);
-            map.flyTo([vessel.lat, vessel.lng], nextZoom, {
-                duration: 0.7,
-                easeLinearity: 0.25,
-            });
+
+            // Zoom to the bounds of the vessels in the cluster for better precision
+            if (vessel.minLat !== vessel.maxLat || vessel.minLng !== vessel.maxLng) {
+                const bounds = L.latLngBounds(
+                    [vessel.minLat, vessel.minLng],
+                    [vessel.maxLat, vessel.maxLng]
+                );
+                map.fitBounds(bounds, {
+                    padding: [50, 50],
+                    maxZoom: 16,
+                    animate: true,
+                    duration: 1.5,
+                });
+            } else {
+                // Fallback for overlapping vessels at the same location
+                const nextZoom = Math.min(Math.max(map.getZoom() + 4, 13), 16);
+                map.flyTo([vessel.lat, vessel.lng], nextZoom, {
+                    duration: 1.5,
+                    easeLinearity: 0.25,
+                });
+            }
         },
         [map, onVesselSelect, onClusterZoomNotice]
     );
@@ -657,6 +693,10 @@ function FleetLayer({
                                     clusterCount: 1,
                                     sumLat: selectedVessel.lat,
                                     sumLng: selectedVessel.lng,
+                                    minLat: selectedVessel.lat,
+                                    maxLat: selectedVessel.lat,
+                                    minLng: selectedVessel.lng,
+                                    maxLng: selectedVessel.lng,
                                 } as ClusteredVessel,
                                 e
                             ),
@@ -668,6 +708,10 @@ function FleetLayer({
                                     clusterCount: 1,
                                     sumLat: selectedVessel.lat,
                                     sumLng: selectedVessel.lng,
+                                    minLat: selectedVessel.lat,
+                                    maxLat: selectedVessel.lat,
+                                    minLng: selectedVessel.lng,
+                                    maxLng: selectedVessel.lng,
                                 } as ClusteredVessel,
                                 e
                             ),
