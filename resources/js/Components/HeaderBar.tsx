@@ -738,7 +738,7 @@ export default function HeaderBar({
                 </div>
 
                 {error && (
-                    <div className="absolute top-full left-0 right-0 bg-red-500/10 border border-red-500/50 px-4 py-2 mt-px shadow-2xl">
+                    <div className="absolute top-full left-0 right-0 bg-red-500/10 border border-red-500/50 px-4 py-2 mt-px shadow-2xl flex items-center">
                         <span className="text-[10px] text-red-400 font-bold uppercase tracking-wider">
                             {error}
                         </span>
@@ -1057,7 +1057,7 @@ export default function HeaderBar({
                         </div>
 
                         {showClusterZoomNotice && (
-                            <div className="px-4 py-2 border-t border-white/10 bg-zinc-900/80">
+                            <div className="px-4 py-2 border-t border-white/10 bg-zinc-900/80 flex items-center">
                                 <span className="text-[10px] text-zinc-300 font-semibold uppercase tracking-wider">
                                     Grouped ships detected, zooming in...
                                 </span>
@@ -1067,7 +1067,7 @@ export default function HeaderBar({
                 )}
 
                 {showClusterZoomNotice && !showSuggestionsPanel && (
-                    <div className="absolute top-full left-0 right-0 bg-zinc-900/90 border border-white/20 px-4 py-2 mt-px shadow-2xl">
+                    <div className="absolute top-full left-0 right-0 bg-zinc-900/90 border border-white/20 px-4 py-2 mt-px shadow-2xl flex items-center">
                         <span className="text-[10px] text-zinc-300 font-semibold uppercase tracking-wider">
                             Grouped ships detected, zooming in...
                         </span>
