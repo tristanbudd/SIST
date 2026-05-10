@@ -193,7 +193,7 @@ class VesselAnalysisService
         $latest = $vessel->positions()->latest('recorded_at')->first();
 
         if ($latest && $latest->speed > 50) {
-            $this->persistActivity($vessel, 'speed_anomaly', 'high', [
+            $this->persistActivity($vessel, 'speed_anomaly', 'low', [
                 'reported_speed' => $latest->speed,
                 'coordinates' => ['lat' => $latest->lat, 'lng' => $latest->lng],
             ], $latest->recorded_at);

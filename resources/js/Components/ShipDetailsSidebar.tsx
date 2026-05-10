@@ -186,7 +186,7 @@ export default function ShipDetailsSidebar({
     const [sanctions, setSanctions] = useState<SanctionsData | null>(null);
     const [history, setHistory] = useState<HistoryPosition[]>([]);
     const [activities, setActivities] = useState<VesselActivity[]>([]);
-    const [historyHours, setHistoryHours] = useState(1);
+    const [historyHours, setHistoryHours] = useState(24);
     const [historyMode, setHistoryMode] = useState<'hours' | 'window'>('hours');
     const [historyStart, setHistoryStart] = useState<string>(() => {
         const d = new Date();

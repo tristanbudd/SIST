@@ -242,6 +242,10 @@ export default function AnalysisReportModal({
     },
 }: AnalysisReportModalProps) {
     const [activeTab, setActiveTab] = useState<TabType>(initialTab || 'overview');
+    const [currentPage, setCurrentPage] = useState(1);
+    const pageSize = 10;
+    const [activityPage, setActivityPage] = useState(1);
+    const activityPageSize = 5;
     const [prevInitialTab, setPrevInitialTab] = useState(initialTab);
 
     if (initialTab !== prevInitialTab) {
@@ -256,7 +260,16 @@ export default function AnalysisReportModal({
         setPrevIsOpen(isOpen);
         if (isOpen) {
             setActiveTab(initialTab || 'overview');
+            setCurrentPage(1);
+            setActivityPage(1);
         }
+    }
+
+    const [prevVesselMmsi, setPrevVesselMmsi] = useState(vessel?.mmsi);
+    if (vessel?.mmsi !== prevVesselMmsi) {
+        setPrevVesselMmsi(vessel?.mmsi);
+        setCurrentPage(1);
+        setActivityPage(1);
     }
 
     const [now] = useState(() => Date.now());
@@ -270,10 +283,6 @@ export default function AnalysisReportModal({
         customStart: '',
         customEnd: '',
     });
-    const [currentPage, setCurrentPage] = useState(1);
-    const pageSize = 10;
-    const [activityPage, setActivityPage] = useState(1);
-    const activityPageSize = 5;
 
     const handleFilterUpdate = (update: Partial<typeof waypointFilters>) => {
         setWaypointFilters((prev) => ({ ...prev, ...update }));
@@ -1573,11 +1582,23 @@ export default function AnalysisReportModal({
                                                                     </span>
                                                                 </td>
                                                                 <td className="px-4 py-3">
-                                                                    <span className="text-[10px] text-zinc-500 font-mono">
+                                                                    <button
+                                                                        onClick={() => {
+                                                                            onNavigate?.(
+                                                                                Number(pos.lat),
+                                                                                Number(pos.lng),
+                                                                                14
+                                                                            );
+                                                                            onClose();
+                                                                        }}
+                                                                        className="text-[10px] text-zinc-500 font-mono hover:text-white transition-colors flex items-center gap-1.5 group/coord"
+                                                                        title="Navigate to this position"
+                                                                    >
                                                                         {Number(pos.lat).toFixed(4)}
                                                                         ,{' '}
                                                                         {Number(pos.lng).toFixed(4)}
-                                                                    </span>
+                                                                        <FaArrowUpRightFromSquare className="w-2 h-2 text-zinc-600 group-hover/coord:text-zinc-400 transition-colors" />
+                                                                    </button>
                                                                 </td>
                                                                 <td className="px-4 py-3 text-right">
                                                                     <div className="flex items-center justify-end gap-2">
@@ -1669,10 +1690,22 @@ export default function AnalysisReportModal({
                                                                 </div>
                                                             </div>
                                                             <div className="flex justify-between items-center text-[9px]">
-                                                                <span className="text-zinc-500 font-mono">
+                                                                <button
+                                                                    onClick={() => {
+                                                                        onNavigate?.(
+                                                                            Number(pos.lat),
+                                                                            Number(pos.lng),
+                                                                            14
+                                                                        );
+                                                                        onClose();
+                                                                    }}
+                                                                    className="text-zinc-500 font-mono hover:text-zinc-300 transition-colors flex items-center gap-1 group/coord"
+                                                                    title="Navigate to this position"
+                                                                >
                                                                     {Number(pos.lat).toFixed(4)},{' '}
                                                                     {Number(pos.lng).toFixed(4)}
-                                                                </span>
+                                                                    <FaArrowUpRightFromSquare className="w-1.5 h-1.5 text-zinc-600 group-hover/coord:text-zinc-400 transition-colors" />
+                                                                </button>
                                                                 <div className="flex items-center gap-1.5">
                                                                     <span className="text-zinc-400 font-mono">
                                                                         {Number(pos.course).toFixed(
