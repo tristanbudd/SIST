@@ -2194,6 +2194,19 @@ export default function AnalysisReportModal({
                                                         )}
                                                     </>
                                                 )}
+
+                                                {displayActivities.some(
+                                                    (a) => a.type.toLowerCase() === 'ais_gap'
+                                                ) && (
+                                                    <div className="mt-4 p-3 bg-white/5 border border-white/5 flex items-start gap-2">
+                                                        <FaCircleInfo className="w-3 h-3 text-zinc-500 shrink-0 mt-0.5" />
+                                                        <span className="text-[11px] text-zinc-500 uppercase font-bold tracking-tight">
+                                                            Disclaimer: ais gaps can be caused due
+                                                            to lack of coverage rather than the ship
+                                                            actually turning it off.
+                                                        </span>
+                                                    </div>
+                                                )}
                                             </div>
                                         );
                                     })()}
