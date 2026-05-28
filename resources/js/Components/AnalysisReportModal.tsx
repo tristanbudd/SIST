@@ -527,7 +527,6 @@ export default function AnalysisReportModal({
                         <FaXmark className="w-5 h-5" />
                     </button>
                 </div>
-
                 {/* Content */}
                 <div className="flex-1 overflow-hidden flex flex-col md:flex-row">
                     {/* Navigation Sidebar */}
@@ -535,7 +534,17 @@ export default function AnalysisReportModal({
                         {tabs.map((tab) => (
                             <button
                                 key={tab.id}
-                                onClick={() => setActiveTab(tab.id)}
+                                onClick={() => {
+                                    setActiveTab(tab.id);
+                                    // @ts-expect-error - GTM dataLayer
+                                    window.dataLayer = window.dataLayer || [];
+                                    // @ts-expect-error - GTM dataLayer
+                                    window.dataLayer.push({
+                                        event: 'report_tab_view',
+                                        tab_name: tab.id,
+                                        vessel_mmsi: vessel?.mmsi,
+                                    });
+                                }}
                                 className={`flex items-center gap-3 px-4 py-3 text-left uppercase text-[11px] font-black tracking-widest transition-colors whitespace-nowrap ${activeTab === tab.id ? 'bg-white/10 text-white border-l-2 border-white' : 'text-zinc-500 hover:text-zinc-300 hover:bg-white/5 border-l-2 border-transparent'}`}
                             >
                                 <span

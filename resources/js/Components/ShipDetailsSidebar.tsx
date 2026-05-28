@@ -955,9 +955,18 @@ export default function ShipDetailsSidebar({
                                                 </span>
                                             </div>
                                             <button
-                                                onClick={() =>
-                                                    onShowWaypointsChange?.(!showWaypoints)
-                                                }
+                                                onClick={() => {
+                                                    const newVal = !showWaypoints;
+                                                    onShowWaypointsChange?.(newVal);
+                                                    // @ts-expect-error - GTM dataLayer
+                                                    window.dataLayer = window.dataLayer || [];
+                                                    // @ts-expect-error - GTM dataLayer
+                                                    window.dataLayer.push({
+                                                        event: 'waypoints_toggle',
+                                                        waypoints_enabled: newVal,
+                                                        vessel_mmsi: vessel.mmsi,
+                                                    });
+                                                }}
                                                 className={`relative inline-flex h-4 w-7 items-center transition-colors focus:outline-none ${
                                                     showWaypoints ? 'bg-zinc-400' : 'bg-zinc-800'
                                                 }`}
@@ -1006,11 +1015,19 @@ export default function ShipDetailsSidebar({
                                                         max="168"
                                                         step="1"
                                                         value={historyHours}
-                                                        onChange={(e) =>
-                                                            setHistoryHours(
-                                                                parseInt(e.target.value)
-                                                            )
-                                                        }
+                                                        onChange={(e) => {
+                                                            const val = parseInt(e.target.value);
+                                                            setHistoryHours(val);
+                                                            // @ts-expect-error - GTM dataLayer
+                                                            window.dataLayer =
+                                                                window.dataLayer || [];
+                                                            // @ts-expect-error - GTM dataLayer
+                                                            window.dataLayer.push({
+                                                                event: 'history_timeframe_change',
+                                                                history_hours: val,
+                                                                vessel_mmsi: vessel.mmsi,
+                                                            });
+                                                        }}
                                                         className="w-full h-1 bg-zinc-800 appearance-none cursor-pointer accent-white"
                                                     />
                                                     <div className="flex justify-between text-[8px] text-zinc-600 font-black uppercase tracking-widest">
