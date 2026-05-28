@@ -958,6 +958,7 @@ export default function ShipDetailsSidebar({
                                                 onClick={() => {
                                                     const newVal = !showWaypoints;
                                                     onShowWaypointsChange?.(newVal);
+                                                    // prettier-ignore
                                                     // @ts-expect-error - GTM dataLayer
                                                     window.dataLayer = window.dataLayer || [];
                                                     // @ts-expect-error - GTM dataLayer
@@ -1018,9 +1019,9 @@ export default function ShipDetailsSidebar({
                                                         onChange={(e) => {
                                                             const val = parseInt(e.target.value);
                                                             setHistoryHours(val);
+                                                            // prettier-ignore
                                                             // @ts-expect-error - GTM dataLayer
-                                                            window.dataLayer =
-                                                                window.dataLayer || [];
+                                                            window.dataLayer = window.dataLayer || [];
                                                             // @ts-expect-error - GTM dataLayer
                                                             window.dataLayer.push({
                                                                 event: 'history_timeframe_change',
