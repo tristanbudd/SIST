@@ -584,16 +584,33 @@ export default function ShipDetailsSidebar({
                 </div>
 
                 <div className="flex-1 overflow-y-auto p-6 space-y-8">
+                    {!isOffline && details?.navigational_status === 14 && (
+                        <div className="bg-red-500/20 border border-red-500/50 p-4 mb-4 flex items-start gap-3">
+                            <FaCircleInfo className="text-red-500 w-5 h-5 shrink-0 mt-0.5" />
+                            <div className="flex flex-col">
+                                <h3 className="text-red-400 font-black uppercase tracking-widest text-xs mb-1">
+                                    Emergency Transponder Active
+                                </h3>
+                                <p className="text-red-400/80 text-[10px] leading-relaxed font-medium">
+                                    This vessel is transmitting an active emergency status
+                                    (AIS-SART, MOB, or EPIRB).
+                                </p>
+                            </div>
+                        </div>
+                    )}
                     {isOffline && (
-                        <div className="bg-red-500/10 border border-red-500/50 p-4 mb-4">
-                            <h3 className="text-red-400 font-bold uppercase tracking-widest text-xs mb-1">
-                                Offline / Historical Data Only
-                            </h3>
-                            <p className="text-red-400/80 text-[10px] leading-relaxed">
-                                This vessel has not transmitted AIS data in the last 15 minutes. The
-                                status shown is outdated. Historical trajectory analysis remains
-                                available.
-                            </p>
+                        <div className="bg-red-500/20 border border-red-500/50 p-4 mb-4 flex items-start gap-3">
+                            <FaCircleInfo className="text-red-500 w-5 h-5 shrink-0 mt-0.5" />
+                            <div className="flex flex-col">
+                                <h3 className="text-red-400 font-black uppercase tracking-widest text-xs mb-1">
+                                    Offline / Historical Data Only
+                                </h3>
+                                <p className="text-red-400/80 text-[10px] leading-relaxed font-medium">
+                                    This vessel has not transmitted AIS data in the last 15 minutes.
+                                    The status shown is outdated. Historical trajectory analysis
+                                    remains available.
+                                </p>
+                            </div>
                         </div>
                     )}
                     <section

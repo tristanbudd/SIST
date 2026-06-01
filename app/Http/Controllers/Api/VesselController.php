@@ -80,6 +80,7 @@ class VesselController extends Controller
                 'lat',
                 'lng',
                 'course',
+                'navigational_status',
             ])
             ->map(fn ($vessel) => [
                 'mmsi' => (int) $vessel->mmsi,
@@ -88,6 +89,7 @@ class VesselController extends Controller
                 'lat' => (float) $vessel->lat,
                 'lng' => (float) $vessel->lng,
                 'course' => (float) $vessel->course,
+                'navigational_status' => $vessel->navigational_status,
             ]);
 
         if ($vessels->isEmpty()) {

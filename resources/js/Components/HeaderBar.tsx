@@ -17,6 +17,7 @@ interface Vessel {
     lng: number;
     last_seen_at?: string;
     isOffline?: boolean;
+    navigational_status?: number;
 }
 
 interface Port {
@@ -298,6 +299,7 @@ export default function HeaderBar({
                         lat: number;
                         lng: number;
                         last_seen_at: string;
+                        navigational_status?: number;
                     }) => {
                         const lastSeen = new Date(v.last_seen_at).getTime();
                         const ageMinutes = (Date.now() - lastSeen) / 60000;
@@ -311,6 +313,7 @@ export default function HeaderBar({
                             lng: v.lng,
                             last_seen_at: v.last_seen_at,
                             isOffline: ageMinutes > OFFLINE_THRESHOLD_MINUTES,
+                            navigational_status: v.navigational_status,
                         };
                     }
                 );
@@ -365,6 +368,7 @@ export default function HeaderBar({
             imo: String(v.imo || ''),
             lat: v.lat,
             lng: v.lng,
+            navigational_status: v.navigational_status,
         }));
 
         const liveMmsis = new Set(liveVessels.map((v) => v.mmsi));
@@ -816,6 +820,13 @@ export default function HeaderBar({
                                                                     Offline
                                                                 </span>
                                                             )}
+                                                        {item.category === 'vessel' &&
+                                                            item.navigational_status === 14 &&
+                                                            !isOfflineVessel && (
+                                                                <span className="ml-2 inline-flex items-center px-1.5 py-0.5 text-[8px] font-black uppercase tracking-widest bg-red-500/20 border border-red-500/50 text-red-400 rounded-sm">
+                                                                    Emergency
+                                                                </span>
+                                                            )}
                                                     </span>
                                                     <span
                                                         className={`text-[8px] font-mono uppercase ${isSelected ? 'text-zinc-300' : 'text-zinc-500'}`}
@@ -944,6 +955,13 @@ export default function HeaderBar({
                                                                 isOfflineVessel && (
                                                                     <span className="ml-2 inline-flex items-center px-1.5 py-0.5 text-[8px] font-black uppercase tracking-widest bg-zinc-800/50 border border-zinc-700/50 text-zinc-500 rounded-sm">
                                                                         Offline
+                                                                    </span>
+                                                                )}
+                                                            {item.category === 'vessel' &&
+                                                                item.navigational_status === 14 &&
+                                                                !isOfflineVessel && (
+                                                                    <span className="ml-2 inline-flex items-center px-1.5 py-0.5 text-[8px] font-black uppercase tracking-widest bg-red-500/20 border border-red-500/50 text-red-400 rounded-sm">
+                                                                        Emergency
                                                                     </span>
                                                                 )}
                                                         </span>
