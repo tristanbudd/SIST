@@ -225,6 +225,7 @@ export default function HeaderBar({
     const [query, setQuery] = useState('');
     const [showSuggestions, setShowSuggestions] = useState(false);
     const [categoryLimits, setCategoryLimits] = useState<Record<string, number>>({
+        emergency_vessel: 3,
         country: 5,
         continent: 3,
         ocean: 3,
@@ -452,28 +453,41 @@ export default function HeaderBar({
             items.push({ type: 'clear_recents' });
         }
 
-        ['country', 'city', 'continent', 'ocean', 'vessel', 'port'].forEach((cat) => {
-            const catItems = suggestions.filter((i) => i.category === cat);
-            const displayed = catItems.slice(0, categoryLimits[cat]);
+        ['country', 'city', 'continent', 'ocean', 'emergency_vessel', 'vessel', 'port'].forEach(
+            (cat) => {
+                const catItems =
+                    cat === 'emergency_vessel'
+                        ? suggestions.filter(
+                              (i) => i.category === 'vessel' && i.navigational_status === 14
+                          )
+                        : cat === 'vessel'
+                          ? suggestions.filter(
+                                (i) => i.category === 'vessel' && i.navigational_status !== 14
+                            )
+                          : suggestions.filter((i) => i.category === cat);
+                const displayed = catItems.slice(0, categoryLimits[cat]);
 
-            displayed.forEach((d) => items.push({ type: 'result', data: d }));
+                displayed.forEach((d) => items.push({ type: 'result', data: d }));
 
-            if (catItems.length > categoryLimits[cat]) {
-                const label =
-                    cat === 'vessel'
-                        ? 'Vessels'
-                        : cat === 'port'
-                          ? 'Ports'
-                          : cat === 'country'
-                            ? 'Countries'
-                            : cat === 'city'
-                              ? 'Cities / Towns'
-                              : cat === 'continent'
-                                ? 'Continents'
-                                : 'Oceans';
-                items.push({ type: 'expand', category: cat, label });
+                if (catItems.length > categoryLimits[cat]) {
+                    const label =
+                        cat === 'emergency_vessel'
+                            ? 'Emergency Transponders'
+                            : cat === 'vessel'
+                              ? 'Vessels'
+                              : cat === 'port'
+                                ? 'Ports'
+                                : cat === 'country'
+                                  ? 'Countries'
+                                  : cat === 'city'
+                                    ? 'Cities / Towns'
+                                    : cat === 'continent'
+                                      ? 'Continents'
+                                      : 'Oceans';
+                    items.push({ type: 'expand', category: cat, label });
+                }
             }
-        });
+        );
         return items;
     }, [suggestions, categoryLimits, isSearchEmpty, hasRecents, recentSearches, recentLimit]);
 
@@ -878,31 +892,56 @@ export default function HeaderBar({
                             </div>
                         )}
 
-                        {['country', 'city', 'continent', 'ocean', 'vessel', 'port'].map((cat) => {
-                            const catItems = suggestions.filter((i) => i.category === cat);
+                        {[
+                            'country',
+                            'city',
+                            'continent',
+                            'ocean',
+                            'emergency_vessel',
+                            'vessel',
+                            'port',
+                        ].map((cat) => {
+                            const catItems =
+                                cat === 'emergency_vessel'
+                                    ? suggestions.filter(
+                                          (i) =>
+                                              i.category === 'vessel' &&
+                                              i.navigational_status === 14
+                                      )
+                                    : cat === 'vessel'
+                                      ? suggestions.filter(
+                                            (i) =>
+                                                i.category === 'vessel' &&
+                                                i.navigational_status !== 14
+                                        )
+                                      : suggestions.filter((i) => i.category === cat);
                             if (catItems.length === 0) return null;
 
                             const displayed = catItems.slice(0, categoryLimits[cat]);
                             const label =
-                                cat === 'vessel'
-                                    ? 'Vessels'
-                                    : cat === 'port'
-                                      ? 'Ports'
-                                      : cat === 'country'
-                                        ? 'Countries'
-                                        : cat === 'city'
-                                          ? 'Cities / Towns'
-                                          : cat === 'continent'
-                                            ? 'Continents'
-                                            : 'Oceans';
+                                cat === 'emergency_vessel'
+                                    ? 'Emergency Transponders'
+                                    : cat === 'vessel'
+                                      ? 'Vessels'
+                                      : cat === 'port'
+                                        ? 'Ports'
+                                        : cat === 'country'
+                                          ? 'Countries'
+                                          : cat === 'city'
+                                            ? 'Cities / Towns'
+                                            : cat === 'continent'
+                                              ? 'Continents'
+                                              : 'Oceans';
                             const Icon =
-                                cat === 'vessel'
+                                cat === 'emergency_vessel'
                                     ? FaShip
-                                    : cat === 'port'
-                                      ? FaAnchor
-                                      : cat === 'city'
-                                        ? FaCity
-                                        : FaGlobe;
+                                    : cat === 'vessel'
+                                      ? FaShip
+                                      : cat === 'port'
+                                        ? FaAnchor
+                                        : cat === 'city'
+                                          ? FaCity
+                                          : FaGlobe;
 
                             return (
                                 <div key={cat}>
