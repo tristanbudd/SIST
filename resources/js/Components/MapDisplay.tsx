@@ -69,6 +69,7 @@ export interface Vessel {
     lat: number;
     lng: number;
     course: number;
+    navigational_status?: number;
 }
 
 interface ClusteredVessel extends Vessel {
@@ -242,6 +243,7 @@ function FleetLayer({
             }
 
             const normalized = normalizeVessels(allVessels);
+
             setTrackedCount(normalized.length);
             setTrackedSearchVessels(normalized);
         } catch (error) {
@@ -519,9 +521,19 @@ function FleetLayer({
         }
     }, [visibleVessels, trackedCount, mergedVessels, onUpdate, map, zoom, getAreaName]);
 
-    const createVesselIcon = (course: number, isCluster: boolean, isSelected: boolean) => {
-        const color = isSelected ? '#ef4444' : 'white';
-        const shadowColor = isSelected ? 'rgba(239, 68, 68, 0.4)' : 'rgba(255, 255, 255, 0.4)';
+    const createVesselIcon = (
+        course: number,
+        isCluster: boolean,
+        isSelected: boolean,
+        isEmergency: boolean = false
+    ) => {
+        const color = isEmergency || isSelected ? '#ef4444' : 'white';
+        const shadowColor =
+            isEmergency || isSelected ? 'rgba(239, 68, 68, 0.4)' : 'rgba(255, 255, 255, 0.4)';
+
+        const emergencyRing = isEmergency
+            ? `<div class="absolute inset-0 rounded-full border-[3px] border-red-500 animate-ping opacity-75" style="width: 100%; height: 100%; top: 0; left: 0;"></div>`
+            : '';
 
         const singleIconHtml = renderToString(
             <FaLocationArrow
@@ -567,10 +579,13 @@ function FleetLayer({
         );
 
         return L.divIcon({
-            className: 'vessel-icon-container',
+            className: `vessel-icon-container ${isEmergency ? 'z-[1000]' : ''}`,
             html: `
-                <div style="transform: rotate(${course}deg); display: flex; align-items: center; justify-content: center; width: 48px; height: 48px;">
-                    ${isCluster ? clusterIconHtml : singleIconHtml}
+                <div style="position: relative; width: 48px; height: 48px;">
+                    ${emergencyRing}
+                    <div style="transform: rotate(${course}deg); display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; position: absolute; top: 0; left: 0;">
+                        ${isCluster ? clusterIconHtml : singleIconHtml}
+                    </div>
                 </div>
             `,
             iconSize: [48, 48],
@@ -668,7 +683,8 @@ function FleetLayer({
                         icon={createVesselIcon(
                             vessel.course || 0,
                             vessel.isCluster,
-                            vessel.mmsi === selectedMmsi
+                            vessel.mmsi === selectedMmsi,
+                            vessel.navigational_status === 14
                         )}
                         eventHandlers={{
                             mousedown: (e) => handleMarkerClick(vessel, e),
@@ -683,7 +699,7 @@ function FleetLayer({
                     interactive={true}
                     bubblingMouseEvents={false}
                     riseOnHover={true}
-                    icon={createVesselIcon(selectedVessel.course || 0, false, true)}
+                    icon={createVesselIcon(selectedVessel.course || 0, false, true, false)}
                     eventHandlers={{
                         mousedown: (e) =>
                             handleMarkerClick(

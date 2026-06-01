@@ -588,17 +588,34 @@ export default function AnalysisReportModal({
                                 </div>
                             </div>
                         )}
+                        {!isOffline && details?.navigational_status === 14 && (
+                            <div className="bg-red-500/20 border border-red-500/50 p-4 mb-6 animate-in fade-in slide-in-from-top-2 duration-500 flex items-start gap-3">
+                                <FaCircleInfo className="text-red-500 w-5 h-5 shrink-0 mt-0.5" />
+                                <div className="flex flex-col">
+                                    <h4 className="text-red-400 font-black uppercase tracking-widest text-xs mb-1">
+                                        Emergency Transponder Active
+                                    </h4>
+                                    <p className="text-red-400/80 text-[11px] leading-relaxed font-medium">
+                                        This vessel is transmitting an active emergency status
+                                        (AIS-SART, MOB, or EPIRB).
+                                    </p>
+                                </div>
+                            </div>
+                        )}
                         {isOffline && (
-                            <div className="bg-red-500/10 border border-red-500/50 p-4 mb-6 animate-in fade-in slide-in-from-top-2 duration-500">
-                                <h4 className="text-red-400 font-bold uppercase tracking-widest text-xs mb-1">
-                                    Offline / Historical Data Only
-                                </h4>
-                                <p className="text-red-400/80 text-[11px] leading-relaxed">
-                                    This vessel has not transmitted AIS data in the last 15 minutes.
-                                    All situational intelligence and environmental analysis is based
-                                    on the last known coordinates and should be treated as
-                                    historical.
-                                </p>
+                            <div className="bg-red-500/20 border border-red-500/50 p-4 mb-6 animate-in fade-in slide-in-from-top-2 duration-500 flex items-start gap-3">
+                                <FaCircleInfo className="text-red-500 w-5 h-5 shrink-0 mt-0.5" />
+                                <div className="flex flex-col">
+                                    <h4 className="text-red-400 font-black uppercase tracking-widest text-xs mb-1">
+                                        Offline / Historical Data Only
+                                    </h4>
+                                    <p className="text-red-400/80 text-[11px] leading-relaxed font-medium">
+                                        This vessel has not transmitted AIS data in the last 15
+                                        minutes. All situational intelligence and environmental
+                                        analysis is based on the last known coordinates and should
+                                        be treated as historical.
+                                    </p>
+                                </div>
                             </div>
                         )}
 
@@ -731,15 +748,15 @@ export default function AnalysisReportModal({
                                 </section>
 
                                 {isOffline && (
-                                    <div className="mt-4 p-3 bg-white/5 border border-white/5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
-                                        <div className="flex items-center gap-2 text-[11px] text-zinc-500 uppercase font-bold tracking-tight">
-                                            <FaCircleInfo className="w-3 h-3 text-zinc-500 shrink-0" />
+                                    <div className="mt-4 p-3 bg-red-500/20 border border-red-500/50 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
+                                        <div className="flex items-center gap-2 text-[11px] text-red-400 uppercase font-bold tracking-tight">
+                                            <FaCircleInfo className="w-3 h-3 text-red-500 shrink-0" />
                                             <span>
                                                 Greyed out fields indicate stale data and are not
                                                 up-to-date.
                                             </span>
                                         </div>
-                                        <div className="text-[11px] text-zinc-500 font-mono font-bold uppercase tracking-widest sm:text-right w-full sm:w-auto border-t border-white/5 sm:border-0 pt-2 sm:pt-0">
+                                        <div className="text-[11px] text-red-400 font-mono font-bold uppercase tracking-widest sm:text-right w-full sm:w-auto border-t border-red-500/50 sm:border-0 pt-2 sm:pt-0">
                                             Last Seen:{' '}
                                             {details?.last_seen_at
                                                 ? new Date(details.last_seen_at).toLocaleString(
@@ -876,15 +893,15 @@ export default function AnalysisReportModal({
                                     </div>
                                 </section>
                                 {isOffline && (
-                                    <div className="mt-8 p-3 bg-white/5 border border-white/5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
-                                        <div className="flex items-center gap-2 text-[11px] text-zinc-500 uppercase font-bold tracking-tight">
-                                            <FaCircleInfo className="w-3 h-3 text-zinc-500 shrink-0" />
+                                    <div className="mt-8 p-3 bg-red-500/20 border border-red-500/50 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
+                                        <div className="flex items-center gap-2 text-[11px] text-red-400 uppercase font-bold tracking-tight">
+                                            <FaCircleInfo className="w-3 h-3 text-red-500 shrink-0" />
                                             <span>
                                                 Greyed out fields indicate stale data and are not
                                                 up-to-date.
                                             </span>
                                         </div>
-                                        <div className="text-[11px] text-zinc-500 font-mono font-bold uppercase tracking-widest sm:text-right w-full sm:w-auto border-t border-white/5 sm:border-0 pt-2 sm:pt-0">
+                                        <div className="text-[11px] text-red-400 font-mono font-bold uppercase tracking-widest sm:text-right w-full sm:w-auto border-t border-red-500/50 sm:border-0 pt-2 sm:pt-0">
                                             Last Seen:{' '}
                                             {details?.last_seen_at
                                                 ? formatShortDate(details.last_seen_at)
