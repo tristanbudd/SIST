@@ -193,6 +193,11 @@ class VesselAnalysisService
         $latest = $vessel->positions()->latest('recorded_at')->first();
 
         if ($latest && $latest->speed > 50) {
+            // Ignore default AIS error/unavailable values (e.g. 102.2, 102.3 knots)
+            if ($latest->speed >= 102 && $latest->speed <= 103) {
+                return;
+            }
+
             $this->persistActivity($vessel, 'speed_anomaly', 'low', [
                 'reported_speed' => round($latest->speed, 1),
                 'coordinates' => ['lat' => round($latest->lat, 6), 'lng' => round($latest->lng, 6)],
