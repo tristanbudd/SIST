@@ -135,8 +135,8 @@ class VesselAnalysisService
                         'gap_end' => $next->recorded_at->toIso8601String(),
                         'start_pos' => ['lat' => round($current->lat, 6), 'lng' => round($current->lng, 6)],
                         'end_pos' => ['lat' => round($next->lat, 6), 'lng' => round($next->lng, 6)],
-                        'start_speed' => $current->speed,
-                        'end_speed' => $next->speed,
+                        'start_speed' => round($current->speed, 1),
+                        'end_speed' => round($next->speed, 1),
                     ], $current->recorded_at, $next->recorded_at);
                 }
             }
@@ -175,7 +175,7 @@ class VesselAnalysisService
 
                     $this->persistActivity($vessel, 'loitering', 'low', [
                         'avg_speed' => round($avgSpeed, 2),
-                        'duration_hours' => $durationHours,
+                        'duration_hours' => round($durationHours, 1),
                         'lat_span' => round($latRange, 6),
                         'lng_span' => round($lngRange, 6),
                         'coordinates' => ['lat' => round($recent->avg('lat'), 6), 'lng' => round($recent->avg('lng'), 6)],
@@ -194,8 +194,8 @@ class VesselAnalysisService
 
         if ($latest && $latest->speed > 50) {
             $this->persistActivity($vessel, 'speed_anomaly', 'low', [
-                'reported_speed' => $latest->speed,
-                'coordinates' => ['lat' => $latest->lat, 'lng' => $latest->lng],
+                'reported_speed' => round($latest->speed, 1),
+                'coordinates' => ['lat' => round($latest->lat, 6), 'lng' => round($latest->lng, 6)],
             ], $latest->recorded_at);
         }
     }
@@ -245,9 +245,9 @@ class VesselAnalysisService
                         'port_name' => $zone['name'],
                         'port_type' => $zone['type'],
                         'source' => $zone['source'] ?? 'Unknown',
-                        'visit_duration_minutes' => $durationMinutes,
+                        'visit_duration_minutes' => round($durationMinutes, 1),
                         'point_count' => $matchingPositions->count(),
-                        'coordinates' => ['lat' => $zone['lat'], 'lng' => $zone['lng']],
+                        'coordinates' => ['lat' => round($zone['lat'], 6), 'lng' => round($zone['lng'], 6)],
                     ], $start, $end);
                 }
             }
@@ -302,16 +302,16 @@ class VesselAnalysisService
     {
         return match ($type) {
             'ais_gap' => 'AIS transmission interruption detected. From '.
-                         (isset($details['start_pos']) ? "[{$details['start_pos']['lat']}, {$details['start_pos']['lng']}] to [{$details['end_pos']['lat']}, {$details['end_pos']['lng']}]" : 'unknown position').
+                         (isset($details['start_pos']) ? '['.round($details['start_pos']['lat'], 6).', '.round($details['start_pos']['lng'], 6).'] to ['.round($details['end_pos']['lat'], 6).', '.round($details['end_pos']['lng'], 6).']' : 'unknown position').
                          ' ('.MaritimeFormatter::formatDuration($details['duration_minutes'] ?? 0).').',
             'loitering' => 'Stationary residency pattern detected at '.
-                           (isset($details['coordinates']) ? "[{$details['coordinates']['lat']}, {$details['coordinates']['lng']}]" : 'unknown area').
-                           ' for '.($details['duration_hours'] ?? 0).' hours.',
+                           (isset($details['coordinates']) ? '['.round($details['coordinates']['lat'], 6).', '.round($details['coordinates']['lng'], 6).']' : 'unknown area').
+                           ' for '.round($details['duration_hours'] ?? 0, 1).' hours.',
             'speed_anomaly' => 'Kinematic violation at '.
-                               (isset($details['coordinates']) ? "[{$details['coordinates']['lat']}, {$details['coordinates']['lng']}]" : 'unknown location').
+                               (isset($details['coordinates']) ? '['.round($details['coordinates']['lat'], 6).', '.round($details['coordinates']['lng'], 6).']' : 'unknown location').
                                ': speed exceeds physical capability ('.round($details['reported_speed'] ?? 0, 1).' kn).',
             'port_of_interest' => 'Vessel interaction detected at high-risk maritime hub: '.($details['port_name'] ?? 'Unknown Port').
-                                  ' '.(isset($details['coordinates']) ? "[{$details['coordinates']['lat']}, {$details['coordinates']['lng']}]" : '').'.',
+                                  ' '.(isset($details['coordinates']) ? '['.round($details['coordinates']['lat'], 6).', '.round($details['coordinates']['lng'], 6).']' : '').'.',
             default => 'Anomalous behavioral event detected.',
         };
     }
