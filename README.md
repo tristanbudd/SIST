@@ -66,6 +66,28 @@ Local docs: Available under `http://127.0.0.1:8000/docs` or `http://127.0.0.1:80
 
 ---
 
+## Preview Images
+
+### World Maritime Overview
+<img width="1920" height="945" alt="World Maritime Overview" src="https://github.com/user-attachments/assets/72e961e7-a249-42c8-8b95-4f31950da2f7" />
+
+### Viewing Vessel
+<img width="1920" height="945" alt="Viewing Vessel" src="https://github.com/user-attachments/assets/6c7f4f46-3e57-4a61-a918-b2f55d77f7ef" />
+
+### Vessel Sanctions & Information Panel
+<img width="1920" height="945" alt="Vessel Sanctions & Information Panel" src="https://github.com/user-attachments/assets/d2465e32-a788-4876-ac43-3979fbb27291" />
+
+### Environmental Snapshot
+<img width="1920" height="945" alt="Environmental Snapshot" src="https://github.com/user-attachments/assets/5af3065b-399e-4d0b-9a7b-7609acea7e51" />
+
+### Trajectory Analysis
+<img width="1920" height="945" alt="Trajectory Analysis" src="https://github.com/user-attachments/assets/da6a3880-356f-4d9b-8ab9-7135832f39e1" />
+
+### Map Tools
+<img width="1920" height="945" alt="Map Tools" src="https://github.com/user-attachments/assets/02eee798-b091-4467-88c1-1fd4cf026c9c" />
+
+---
+
 ## Tech Stack
 
 - **Backend:** Laravel (PHP ≥ 8.3)
