@@ -2,7 +2,7 @@
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
     <head>
         <!-- Google Tag Manager -->
-        <script nonce="{{ app('csp_nonce') }}">(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+        <script nonce="{{ app()->bound('csp_nonce') ? app('csp_nonce') : '' }}">(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
         new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
         j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
         'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
@@ -54,7 +54,7 @@
         <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@100..900&family=Geist:wght@100..900&display=swap" rel="stylesheet">
 
         <!-- Scripts -->
-        @routes(nonce: app('csp_nonce'))
+        @routes(nonce: app()->bound('csp_nonce') ? app('csp_nonce') : '')
         @viteReactRefresh
         @vite(['resources/js/app.tsx'])
         @inertiaHead
