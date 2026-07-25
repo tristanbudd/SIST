@@ -18,6 +18,7 @@
 
         <!-- Meta Tags: Compatibility -->
         <meta name="robots" content="index, follow">
+        <link rel="canonical" href="{{ url()->current() }}" />
         <meta name="apple-mobile-web-app-title" content="SIST" />
         <link rel="manifest" href="{{ asset('site.webmanifest') }}" />
 
