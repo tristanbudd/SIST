@@ -1,0 +1,41 @@
+# SIST (Ship Intelligence & Suspicion Tracker)
+> A modern AIS monitoring and analysis platform designed to detect suspicious vessel activity, anomalies, and patterns in maritime data.
+
+## Documentation & Links
+- [Main Application](https://sist.tristanbudd.com/): The main user interface for tracking and analyzing active vessels on a dynamic map.
+- [API Documentation](https://sist.tristanbudd.com/docs): Interactive API reference (Scalar) for building integrations and querying vessel data.
+- [GitHub Repository](https://github.com/tristanbudd/sist): Source code repository, setup guides, and contribution guidelines.
+
+## Key Features
+- **Real-Time Fleet Tracking**: View active vessels globally on a high-performance interactive map.
+- **Hybrid Search**: Instant query response for finding active and offline vessels by name, MMSI, or callsign.
+- **Detailed Vessel Profiles**: Deep insights into vessel specifications, current voyage, and historical trajectory data.
+- **Sanctions & Compliance Verification**: Automatic cross-referencing against official sanction lists and dark fleet registries.
+- **Historical Trajectory Analysis**: Custom window tracking for visualizing past movement patterns and waypoints.
+
+## API Reference (v1)
+All API endpoints are prefixed with `/api/v1/`.
+
+### Status & Health
+- `GET /api/v1/status`: General status info.
+- `GET /api/v1/status/ready`: Health check / readiness endpoint.
+
+### Environmental Conditions
+- `GET /api/v1/conditions/weather/{mmsi}`: Retrieve current weather conditions for the vessel's last reported coordinates.
+- `GET /api/v1/conditions/tides/{mmsi}`: Retrieve tidal information corresponding to the vessel's location.
+
+### Vessels & Intelligence
+- `GET /api/v1/vessels`: Paginated list of active vessels.
+- `GET /api/v1/vessels/search`: Search vessels by search term.
+- `GET /api/v1/vessels/sanctioned/list`: List of flagged and sanctioned vessels.
+- `GET /api/v1/vessels/infractions`: List of recorded infractions.
+- `GET /api/v1/vessels/{mmsi}`: Detailed metadata and current status for a specific vessel.
+- `GET /api/v1/vessels/{mmsi}/history`: Historical trajectory data for trajectory analysis.
+- `GET /api/v1/vessels/{mmsi}/sanctions`: Check sanctions status for a specific vessel.
+- `GET /api/v1/vessels/{mmsi}/activities`: Activity log of vessel stops, speed anomalies, and dark activity.
+
+## Architecture & Tech Stack
+- **Backend**: Laravel (PHP 8.3+) providing secure API services and data ingestion.
+- **Frontend**: React 18 + Inertia.js + Tailwind CSS, compiled using Vite.
+- **Database**: MySQL database storing vessel telemetry, metadata, and sanctions list data.
+- **API Docs**: Auto-generated OpenAPI specifications via Knuckles Scribe, interactive rendering by Scalar.
