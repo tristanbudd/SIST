@@ -1,2 +1,4 @@
 User-agent: *
 Disallow:
+
+Sitemap: https://sist.tristanbudd.com/sitemap.xml
