@@ -1411,9 +1411,7 @@ export default function AnalysisReportModal({
                                                         onChange={(e) =>
                                                             handleFilterUpdate({
                                                                 relativeUnit: e.target.value as
-                                                                    | 'm'
-                                                                    | 'h'
-                                                                    | 'd',
+                                                                    'm' | 'h' | 'd',
                                                             })
                                                         }
                                                         className="bg-zinc-900 border border-white/10 text-zinc-500 text-[9px] px-2 py-2 focus:outline-none font-black uppercase cursor-pointer hover:text-zinc-300 transition-colors w-24"
