@@ -156,7 +156,7 @@ class StatusController extends Controller
                         'latency_ms' => $latencyMs,
                         'last_message_age_seconds' => $secondsSinceLastPing,
                     ];
-                } elseif ($secondsSinceLastPing <= 300) {
+                } elseif ($secondsSinceLastPing <= 900) {
                     $healthy = false;
                     $reason = $reason ?? 'ais_stream_degraded';
                     $checks['ais_stream'] = [
