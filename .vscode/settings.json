@@ -35,5 +35,19 @@
   "[css]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"
   },
-  "css.lint.unknownAtRules": "ignore"
+  "css.lint.unknownAtRules": "ignore",
+  "intelephense.diagnostics.exclude": {
+    "**/_ide_helper.php": [
+      "P1009",
+      "P1013"
+    ],
+    "**/_ide_helper_models.php": [
+      "P1009",
+      "P1013"
+    ],
+    "**/.phpstorm.meta.php": [
+      "P1009",
+      "P1013"
+    ]
+  }
 }

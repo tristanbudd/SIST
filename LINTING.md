@@ -24,8 +24,12 @@ Because SIST combines a PHP backend with a React frontend in the same repository
 
 ### Laravel / Backend
 
-- **pnpm format:php** - Format all PHP files using Laravel Pint
-- **./vendor/bin/pint --test** - Check if PHP files are formatted correctly (used in CI)
+- **pnpm format:php** - Format all PHP files using Laravel Pint.
+- **./vendor/bin/pint --test** - Check if PHP files are formatted correctly (used in CI).
+- **Laravel IDE Helper** - Generates code helpers for VS Code / Intelephense autocomplete to resolve undefined function errors (e.g. `app()`, `config()`, `url()`, `asset()`):
+  - `php artisan ide-helper:generate` - Generates `_ide_helper.php` to resolve global helpers.
+  - `php artisan ide-helper:models -N` - Generates model docblocks.
+  - `php artisan ide-helper:meta` - Generates `.phpstorm.meta.php` for container/factory autocompletes.
 
 ## Key Features
 
