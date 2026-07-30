@@ -4,6 +4,7 @@ use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\SecurityHeaders;
 use App\Http\Middleware\TrustProxies;
 use App\Models\VesselActivity;
+use App\Models\VesselPosition;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -48,4 +49,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $schedule->call(function () {
             VesselActivity::where('started_at', '<', now()->subDays(30))->delete();
         })->daily();
+        $schedule->call(function () {
+            VesselPosition::where('recorded_at', '<', now()->subDays(30))->delete();
+        })->hourly();
     })->create();
