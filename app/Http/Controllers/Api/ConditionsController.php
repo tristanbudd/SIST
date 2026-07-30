@@ -7,6 +7,8 @@ use App\Models\Vessel;
 use App\Models\VesselPosition;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Http;
+use RuntimeException;
+use Throwable;
 
 /**
  * @group Conditions
@@ -305,7 +307,7 @@ class ConditionsController extends Controller
 
         try {
             $tideData = $this->fetchOpenMeteoMarine($coordinates['latitude'], $coordinates['longitude']);
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             return response()->json([
                 'error' => 'Unable to fetch tide data right now.',
                 'reason' => 'marine_provider_unavailable',
@@ -389,7 +391,7 @@ class ConditionsController extends Controller
         ]);
 
         if (! $response->successful()) {
-            throw new \RuntimeException('Open-Meteo Marine request failed.');
+            throw new RuntimeException('Open-Meteo Marine request failed.');
         }
 
         $payload = $response->json();

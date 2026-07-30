@@ -10,6 +10,7 @@ use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Throwable;
 
 class VesselAnalysisService
 {
@@ -68,7 +69,7 @@ class VesselAnalysisService
 
             $vessel->update(['last_analyzed_at' => now()]);
             DB::commit();
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             DB::rollBack();
             Log::error("Behavioral analysis failed for MMSI {$vessel->mmsi}: ".$e->getMessage());
         }

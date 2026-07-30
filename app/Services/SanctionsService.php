@@ -5,6 +5,7 @@ namespace App\Services;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Throwable;
 
 /**
  * Sanctions Checking Service
@@ -168,7 +169,7 @@ class SanctionsService
 
             return $result;
 
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             Log::error('sanctions.network check error', [
                 'error' => $e->getMessage(),
                 'vessel' => $vesselName,
@@ -311,7 +312,7 @@ class SanctionsService
 
             return $result;
 
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             Log::error('FleetLeaks check error', [
                 'error' => $e->getMessage(),
                 'vessel' => $vesselName,

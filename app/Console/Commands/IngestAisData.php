@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Models\Vessel;
 use App\Models\VesselPosition;
 use Carbon\Carbon;
+use Exception;
 use Illuminate\Console\Command;
 use WebSocket\Client;
 use WebSocket\ConnectionException;
@@ -64,13 +65,13 @@ class IngestAisData extends Command
                 } catch (ConnectionException $e) {
                     $this->warn('SIST | Connection lost. Reconnecting...');
                     break;
-                } catch (\Exception $e) {
+                } catch (Exception $e) {
                     $this->error('SIST | Error processing message: '.$e->getMessage());
 
                     continue;
                 }
             }
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->error('SIST | Fatal Error: '.$e->getMessage());
         }
     }
@@ -155,7 +156,7 @@ class IngestAisData extends Command
                         "{$year}-{$static['Eta']['Month']}-{$static['Eta']['Day']} {$static['Eta']['Hour']}:{$static['Eta']['Minute']}"
                     );
                     $vessel->eta = $etaDate;
-                } catch (\Exception $e) {
+                } catch (Exception $e) {
                     // Ignore invalid crew-entered dates (e.g., February 30th)
                 }
             }

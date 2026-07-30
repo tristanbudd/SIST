@@ -5,9 +5,11 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Vessel;
 use Carbon\Carbon;
+use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Throwable;
 
 /**
  * @group System Health
@@ -109,7 +111,7 @@ class StatusController extends Controller
                 'status' => 'ok',
                 'latency_ms' => (int) ((hrtime(true) - $start) / 1_000_000),
             ];
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             $healthy = false;
             $httpCode = 503;
             $reason = 'database_unavailable';
@@ -126,7 +128,7 @@ class StatusController extends Controller
                 'status' => 'ok',
                 'latency_ms' => (int) ((hrtime(true) - $start) / 1_000_000),
             ];
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             $healthy = false;
             $httpCode = 503;
             $reason = $reason ?? 'cache_unavailable';
@@ -143,7 +145,7 @@ class StatusController extends Controller
                 $latestPing = Vessel::max('last_seen_at');
 
                 if (! $latestPing) {
-                    throw new \Exception('No vessel data exists in the database.');
+                    throw new Exception('No vessel data exists in the database.');
                 }
 
                 $latestPingDate = Carbon::parse($latestPing);
@@ -166,10 +168,10 @@ class StatusController extends Controller
                         'message' => "AIS stream is lagging. Last message was {$secondsSinceLastPing} seconds ago.",
                     ];
                 } else {
-                    throw new \Exception('No AIS data received in the last 15 minutes.');
+                    throw new Exception('No AIS data received in the last 15 minutes.');
                 }
 
-            } catch (\Throwable $e) {
+            } catch (Throwable $e) {
                 $healthy = false;
                 $httpCode = 503;
                 $reason = $reason ?? 'ais_stream_stale';
