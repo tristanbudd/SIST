@@ -972,7 +972,7 @@ function ZoomControls() {
     const map = useMap();
 
     return (
-        <div className="absolute right-4 bottom-12 z-3000 flex flex-col gap-1 pointer-events-auto">
+        <div className="absolute right-4 bottom-24 z-3000 flex flex-col gap-1 pointer-events-auto">
             <button
                 onClick={() => map.zoomIn()}
                 className="w-10 h-10 bg-zinc-950 border border-white/20 flex items-center justify-center text-white hover:bg-zinc-900 transition-colors shadow-2xl active:scale-95"
@@ -1161,7 +1161,7 @@ export default function MapDisplay({
                 )}
             </MapContainer>
 
-            <div className="absolute bottom-0 right-0 z-[1000] bg-zinc-950/80 px-3 py-1 text-[10px] text-zinc-500 border-t border-l border-white/10 pointer-events-auto backdrop-blur-md flex items-center gap-3">
+            <div className="absolute bottom-12 right-0 z-[1000] bg-zinc-950/80 px-3 py-1 text-[10px] text-zinc-500 border-t border-l border-white/10 pointer-events-auto backdrop-blur-md flex items-center gap-3">
                 <span>
                     &copy;{' '}
                     <a
