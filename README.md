@@ -138,6 +138,9 @@ DB_PORT=3306
 DB_DATABASE=sist
 DB_USERNAME=root
 DB_PASSWORD=
+
+AISSTREAM_API_KEY=your_aisstream_api_key_here
+VITE_CARTO_API_KEY=your_carto_api_key_here
 ```
 
 ### 4. Generate app key

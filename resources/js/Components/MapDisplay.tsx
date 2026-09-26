@@ -1095,12 +1095,16 @@ export default function MapDisplay({
                 maxBounds={MAX_BOUNDS}
                 maxBoundsViscosity={1.0}
                 zoomControl={false}
+                attributionControl={false}
                 style={{ height: '100%', width: '100%', background: '#09090b' }}
                 className="sist-map"
             >
                 <TileLayer
-                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a> | Port Data: <a href="https://datacatalog.worldbank.org/search/dataset/0038118/global-international-ports">World Bank</a>'
-                    url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+                    url={
+                        import.meta.env.VITE_CARTO_API_KEY
+                            ? `https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png?api_key=${import.meta.env.VITE_CARTO_API_KEY}`
+                            : 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+                    }
                 />
 
                 {showPorts && <PortLayer />}
@@ -1156,6 +1160,43 @@ export default function MapDisplay({
                     </>
                 )}
             </MapContainer>
+
+            <div className="absolute bottom-0 right-0 z-[1000] bg-zinc-950/80 px-3 py-1 text-[10px] text-zinc-500 border-t border-l border-white/10 pointer-events-auto backdrop-blur-md flex items-center gap-3">
+                <span>
+                    &copy;{' '}
+                    <a
+                        href="https://www.openstreetmap.org/copyright"
+                        target="_blank"
+                        rel="noreferrer"
+                        className="hover:text-cyan-400 transition-colors"
+                    >
+                        OpenStreetMap
+                    </a>
+                </span>
+                <span>
+                    &copy;{' '}
+                    <a
+                        href="https://carto.com/attributions"
+                        target="_blank"
+                        rel="noreferrer"
+                        className="hover:text-cyan-400 transition-colors"
+                    >
+                        CARTO
+                    </a>
+                </span>
+                <span>
+                    Port Data:{' '}
+                    <a
+                        href="https://datacatalog.worldbank.org/search/dataset/0038118/global-international-ports"
+                        target="_blank"
+                        rel="noreferrer"
+                        className="hover:text-cyan-400 transition-colors"
+                    >
+                        World Bank
+                    </a>
+                </span>
+            </div>
+
             <div className="pointer-events-none absolute inset-0 z-1 shadow-[inset_0_0_150px_rgba(0,0,0,0.8)]" />
         </div>
     );
