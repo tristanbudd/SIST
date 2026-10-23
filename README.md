@@ -90,7 +90,7 @@ Local docs: Available under `http://127.0.0.1:8000/docs` or `http://127.0.0.1:80
 
 ## Tech Stack
 
-- **Backend:** Laravel (PHP ≥ 8.3)
+- **Backend:** Laravel (PHP ≥ 8.4)
 - **Frontend:** React 18 + Inertia.js
 - **Build Tooling:** Vite
 - **Styling:** Tailwind CSS

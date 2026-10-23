@@ -4,7 +4,7 @@ First off, thanks for taking the time to contribute! Whether you are fixing a bu
 
 ## Development Environment Setup
 
-SIST is a full-stack application. You will need both PHP 8.3+ and Node.js 20+ installed.
+SIST is a full-stack application. You will need both PHP 8.4+ and Node.js 20+ installed.
 
 1. **Fork and Clone** the repository:
    git clone https://github.com/your-username/SIST.git

@@ -12,7 +12,7 @@ COPY public ./public
 COPY vite.config.js tsconfig.json jsconfig.json eslint.config.js tailwind.config.js ./
 RUN pnpm run build
 
-FROM php:8.3-fpm-alpine AS app
+FROM php:8.4-fpm-alpine AS app
 
 RUN apk add --no-cache \
     nginx \
