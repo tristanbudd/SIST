@@ -23,10 +23,10 @@ importers:
     dependencies:
       '@headlessui/react':
         specifier: ^2.2.10
-        version: 2.2.10(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+        version: 2.2.10(react-dom@19.2.7(react@19.3.1))(react@19.3.1)
       '@inertiajs/react':
         specifier: 3.5.0
-        version: 3.5.0(axios@1.20.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+        version: 3.5.0(axios@1.20.0)(react-dom@19.2.7(react@19.3.1))(react@19.3.1)
       '@types/leaflet':
         specifier: ^1.9.21
         version: 1.9.21
@@ -37,17 +37,17 @@ importers:
         specifier: ^1.9.4
         version: 1.9.4
       react:
-        specifier: ^19.2.7
-        version: 19.2.7
+        specifier: ^19.3.1
+        version: 19.3.1
       react-dom:
         specifier: ^19.2.7
-        version: 19.2.7(react@19.2.7)
+        version: 19.2.7(react@19.3.1)
       react-icons:
         specifier: ^5.7.0
-        version: 5.7.0(react@19.2.7)
+        version: 5.7.0(react@19.3.1)
       react-leaflet:
         specifier: ^5.0.0
-        version: 5.0.0(leaflet@1.9.4)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+        version: 5.0.0(leaflet@1.9.4)(react-dom@19.2.7(react@19.3.1))(react@19.3.1)
     devDependencies:
       '@eslint/js':
         specifier: ^9.39.5
@@ -62,11 +62,11 @@ importers:
         specifier: ^26.0.1
         version: 26.1.2
       '@types/react':
-        specifier: ^19.2.17
-        version: 19.2.17
+        specifier: ^19.3.0
+        version: 19.3.0
       '@types/react-dom':
         specifier: ^19.2.3
-        version: 19.2.3(@types/react@19.2.17)
+        version: 19.2.3(@types/react@19.3.0)
       '@vitejs/plugin-react':
         specifier: ^6.0.2
         version: 6.0.2(vite@8.3.5(@types/node@26.1.2)(jiti@2.7.0)(yaml@2.9.0))
@@ -591,8 +591,8 @@ packages:
     peerDependencies:
       '@types/react': ^19.2.0
 
-  '@types/react@19.2.17':
-    resolution: {integrity: sha512-MXfmqaVPEVgkBT/aY0aGCkRWWtByiYQXo3xdQ8r5RzuFrPiRn8Gar2tQdXSUQ2GKV3bkXckek89V8wQBY2Q/Aw==}
+  '@types/react@19.3.0':
+    resolution: {integrity: sha512-N0rFCuH9YoxG9/m61l9MfpJKfmLOVU0em7ipIz6TRgSSkvReLB9vL85GB+yr8Bs5leqpvg96JSwF4ZS1s4viQg==}
 
   '@typescript-eslint/eslint-plugin@8.65.0':
     resolution: {integrity: sha512-IEgob78X12rHpUmtcwFsXhZdVGJtwTVP8FiCLZkR6GlYVrl2PcuB+KhCE5BlVC/eQpQnu8WXRtkHZuPar+gCRA==}
@@ -971,6 +971,7 @@ packages:
   eslint@9.39.4:
     resolution: {integrity: sha512-XoMjdBOwe/esVgEvLmNsD3IRHkm7fbKIUGvrleloJXUZgDHig2IPWNniv+GwjyJXzuNqVjlr5+4yVUZjycJwfQ==}
     engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
+    deprecated: This version is no longer supported. Please see https://eslint.org/version-support for other options.
     hasBin: true
     peerDependencies:
       jiti: '*'
@@ -1705,8 +1706,8 @@ packages:
     peerDependencies:
       react: ^16.8.0 || ^17.0.0-rc.1 || ^18.0.0 || ^19.0.0-rc.1
 
-  react@19.2.7:
-    resolution: {integrity: sha512-HNe9WslTbXmFK8o8cmwgAeJFSBvt1bPdHCVKtaaV+WlAN36mpT4hcRpwbf3fY56ar2oIXzsBpOAiIRHAdY0OlQ==}
+  react@19.3.1:
+    resolution: {integrity: sha512-QNhWdt7nrgVWWQG58QuGsAR3jv3Hbe4mb4vz7w2csnHavciZJgda1CPNaldF6eVxv90ud3jUXpKlHL69gO38yw==}
     engines: {node: '>=0.10.0'}
 
   reflect.getprototypeof@1.0.10:
@@ -2221,31 +2222,31 @@ snapshots:
       '@floating-ui/core': 1.7.5
       '@floating-ui/utils': 0.2.11
 
-  '@floating-ui/react-dom@2.1.8(react-dom@19.2.7(react@19.2.7))(react@19.2.7)':
+  '@floating-ui/react-dom@2.1.8(react-dom@19.2.7(react@19.3.1))(react@19.3.1)':
     dependencies:
       '@floating-ui/dom': 1.7.6
-      react: 19.2.7
-      react-dom: 19.2.7(react@19.2.7)
+      react: 19.3.1
+      react-dom: 19.2.7(react@19.3.1)
 
-  '@floating-ui/react@0.26.28(react-dom@19.2.7(react@19.2.7))(react@19.2.7)':
+  '@floating-ui/react@0.26.28(react-dom@19.2.7(react@19.3.1))(react@19.3.1)':
     dependencies:
-      '@floating-ui/react-dom': 2.1.8(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+      '@floating-ui/react-dom': 2.1.8(react-dom@19.2.7(react@19.3.1))(react@19.3.1)
       '@floating-ui/utils': 0.2.11
-      react: 19.2.7
-      react-dom: 19.2.7(react@19.2.7)
+      react: 19.3.1
+      react-dom: 19.2.7(react@19.3.1)
       tabbable: 6.4.0
 
   '@floating-ui/utils@0.2.11': {}
 
-  '@headlessui/react@2.2.10(react-dom@19.2.7(react@19.2.7))(react@19.2.7)':
+  '@headlessui/react@2.2.10(react-dom@19.2.7(react@19.3.1))(react@19.3.1)':
     dependencies:
-      '@floating-ui/react': 0.26.28(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
-      '@react-aria/focus': 3.22.0(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
-      '@react-aria/interactions': 3.28.0(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
-      '@tanstack/react-virtual': 3.13.24(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
-      react: 19.2.7
-      react-dom: 19.2.7(react@19.2.7)
-      use-sync-external-store: 1.6.0(react@19.2.7)
+      '@floating-ui/react': 0.26.28(react-dom@19.2.7(react@19.3.1))(react@19.3.1)
+      '@react-aria/focus': 3.22.0(react-dom@19.2.7(react@19.3.1))(react@19.3.1)
+      '@react-aria/interactions': 3.28.0(react-dom@19.2.7(react@19.3.1))(react@19.3.1)
+      '@tanstack/react-virtual': 3.13.24(react-dom@19.2.7(react@19.3.1))(react@19.3.1)
+      react: 19.3.1
+      react-dom: 19.2.7(react@19.3.1)
+      use-sync-external-store: 1.6.0(react@19.3.1)
 
   '@humanfs/core@0.19.2':
     dependencies:
@@ -2271,13 +2272,13 @@ snapshots:
     optionalDependencies:
       axios: 1.20.0
 
-  '@inertiajs/react@3.5.0(axios@1.20.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)':
+  '@inertiajs/react@3.5.0(axios@1.20.0)(react-dom@19.2.7(react@19.3.1))(react@19.3.1)':
     dependencies:
       '@inertiajs/core': 3.5.0(axios@1.20.0)
       es-toolkit: 1.47.0
       laravel-precognition: 2.0.0(axios@1.20.0)
-      react: 19.2.7
-      react-dom: 19.2.7(react@19.2.7)
+      react: 19.3.1
+      react-dom: 19.2.7(react@19.3.1)
     transitivePeerDependencies:
       - axios
 
@@ -2314,30 +2315,30 @@ snapshots:
 
   '@oxc-project/types@0.155.0': {}
 
-  '@react-aria/focus@3.22.0(react-dom@19.2.7(react@19.2.7))(react@19.2.7)':
+  '@react-aria/focus@3.22.0(react-dom@19.2.7(react@19.3.1))(react@19.3.1)':
     dependencies:
       '@swc/helpers': 0.5.21
-      react: 19.2.7
-      react-aria: 3.48.0(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
-      react-dom: 19.2.7(react@19.2.7)
+      react: 19.3.1
+      react-aria: 3.48.0(react-dom@19.2.7(react@19.3.1))(react@19.3.1)
+      react-dom: 19.2.7(react@19.3.1)
 
-  '@react-aria/interactions@3.28.0(react-dom@19.2.7(react@19.2.7))(react@19.2.7)':
+  '@react-aria/interactions@3.28.0(react-dom@19.2.7(react@19.3.1))(react@19.3.1)':
     dependencies:
-      '@react-types/shared': 3.34.0(react@19.2.7)
+      '@react-types/shared': 3.34.0(react@19.3.1)
       '@swc/helpers': 0.5.21
-      react: 19.2.7
-      react-aria: 3.48.0(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
-      react-dom: 19.2.7(react@19.2.7)
+      react: 19.3.1
+      react-aria: 3.48.0(react-dom@19.2.7(react@19.3.1))(react@19.3.1)
+      react-dom: 19.2.7(react@19.3.1)
 
-  '@react-leaflet/core@3.0.0(leaflet@1.9.4)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)':
+  '@react-leaflet/core@3.0.0(leaflet@1.9.4)(react-dom@19.2.7(react@19.3.1))(react@19.3.1)':
     dependencies:
       leaflet: 1.9.4
-      react: 19.2.7
-      react-dom: 19.2.7(react@19.2.7)
+      react: 19.3.1
+      react-dom: 19.2.7(react@19.3.1)
 
-  '@react-types/shared@3.34.0(react@19.2.7)':
+  '@react-types/shared@3.34.0(react@19.3.1)':
     dependencies:
-      react: 19.2.7
+      react: 19.3.1
 
   '@rolldown/binding-android-arm-eabi@1.2.15':
     optional: true
@@ -2463,11 +2464,11 @@ snapshots:
       tailwindcss: 4.3.3
       vite: 8.3.5(@types/node@26.1.2)(jiti@2.7.0)(yaml@2.9.0)
 
-  '@tanstack/react-virtual@3.13.24(react-dom@19.2.7(react@19.2.7))(react@19.2.7)':
+  '@tanstack/react-virtual@3.13.24(react-dom@19.2.7(react@19.3.1))(react@19.3.1)':
     dependencies:
       '@tanstack/virtual-core': 3.14.0
-      react: 19.2.7
-      react-dom: 19.2.7(react@19.2.7)
+      react: 19.3.1
+      react-dom: 19.2.7(react@19.3.1)
 
   '@tanstack/virtual-core@3.14.0': {}
 
@@ -2485,11 +2486,11 @@ snapshots:
     dependencies:
       undici-types: 8.3.0
 
-  '@types/react-dom@19.2.3(@types/react@19.2.17)':
+  '@types/react-dom@19.2.3(@types/react@19.3.0)':
     dependencies:
-      '@types/react': 19.2.17
+      '@types/react': 19.3.0
 
-  '@types/react@19.2.17':
+  '@types/react@19.3.0':
     dependencies:
       csstype: 3.2.3
 
@@ -3662,49 +3663,49 @@ snapshots:
 
   punycode@2.3.1: {}
 
-  react-aria@3.48.0(react-dom@19.2.7(react@19.2.7))(react@19.2.7):
+  react-aria@3.48.0(react-dom@19.2.7(react@19.3.1))(react@19.3.1):
     dependencies:
       '@internationalized/date': 3.12.1
       '@internationalized/number': 3.6.6
       '@internationalized/string': 3.2.8
-      '@react-types/shared': 3.34.0(react@19.2.7)
+      '@react-types/shared': 3.34.0(react@19.3.1)
       '@swc/helpers': 0.5.21
       aria-hidden: 1.2.6
       clsx: 2.1.1
-      react: 19.2.7
-      react-dom: 19.2.7(react@19.2.7)
-      react-stately: 3.46.0(react@19.2.7)
-      use-sync-external-store: 1.6.0(react@19.2.7)
+      react: 19.3.1
+      react-dom: 19.2.7(react@19.3.1)
+      react-stately: 3.46.0(react@19.3.1)
+      use-sync-external-store: 1.6.0(react@19.3.1)
 
-  react-dom@19.2.7(react@19.2.7):
+  react-dom@19.2.7(react@19.3.1):
     dependencies:
-      react: 19.2.7
+      react: 19.3.1
       scheduler: 0.27.0
 
-  react-icons@5.7.0(react@19.2.7):
+  react-icons@5.7.0(react@19.3.1):
     dependencies:
-      react: 19.2.7
+      react: 19.3.1
 
   react-is@16.13.1: {}
 
-  react-leaflet@5.0.0(leaflet@1.9.4)(react-dom@19.2.7(react@19.2.7))(react@19.2.7):
+  react-leaflet@5.0.0(leaflet@1.9.4)(react-dom@19.2.7(react@19.3.1))(react@19.3.1):
     dependencies:
-      '@react-leaflet/core': 3.0.0(leaflet@1.9.4)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+      '@react-leaflet/core': 3.0.0(leaflet@1.9.4)(react-dom@19.2.7(react@19.3.1))(react@19.3.1)
       leaflet: 1.9.4
-      react: 19.2.7
-      react-dom: 19.2.7(react@19.2.7)
+      react: 19.3.1
+      react-dom: 19.2.7(react@19.3.1)
 
-  react-stately@3.46.0(react@19.2.7):
+  react-stately@3.46.0(react@19.3.1):
     dependencies:
       '@internationalized/date': 3.12.1
       '@internationalized/number': 3.6.6
       '@internationalized/string': 3.2.8
-      '@react-types/shared': 3.34.0(react@19.2.7)
+      '@react-types/shared': 3.34.0(react@19.3.1)
       '@swc/helpers': 0.5.21
-      react: 19.2.7
-      use-sync-external-store: 1.6.0(react@19.2.7)
+      react: 19.3.1
+      use-sync-external-store: 1.6.0(react@19.3.1)
 
-  react@19.2.7: {}
+  react@19.3.1: {}
 
   reflect.getprototypeof@1.0.10:
     dependencies:
@@ -4013,9 +4014,9 @@ snapshots:
     dependencies:
       punycode: 2.3.1
 
-  use-sync-external-store@1.6.0(react@19.2.7):
+  use-sync-external-store@1.6.0(react@19.3.1):
     dependencies:
-      react: 19.2.7
+      react: 19.3.1
 
   vite-plugin-full-reload@1.2.0:
     dependencies:
